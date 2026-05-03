@@ -41,8 +41,8 @@
 ### Installation
 1. Clone the repository:
    ```bash
-   clone https://github.com/your-username/netvisualizer.git
-   cd netvisualizer
+   git clone https://github.com/Mono-Gen/NetVisualizer.git
+   cd NetVisualizer
    ```
 2. Install dependencies:
    ```bash
