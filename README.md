@@ -2,7 +2,7 @@
 
 **NetVisualizer** is a modern, interactive network simulator designed for beginners to explore and understand the fundamentals of the TCP/IP protocol suite. Through a high-fidelity visual interface, users can build virtual networks and observe real-time packet flow, protocol handshakes, and network services.
 
-![NetVisualizer UI](./docs/assets/ui_screenshot.png)
+<video src="./docs/assets/ui_screenshot.mp4" controls muted autoplay loop style="max-width: 100%; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);"></video>
 
 ## 🌟 Key Features
 
