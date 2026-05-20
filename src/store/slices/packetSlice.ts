@@ -219,33 +219,140 @@ export const createPacketSlice = (set: any, get: any) => ({
   })),
 
   tick: () => {
-    const { packets, pendingPackets, handlePacketArrival } = get();
+    const { packets, pendingPackets, handlePacketArrival, nodes } = get();
+    const now = Date.now();
 
-    // GC Stale Pending Packets (timeout after 30 seconds)
+    // 1. GC Stale Pending Packets (timeout after 30 seconds)
     if (pendingPackets && pendingPackets.length > 0) {
-      const now = Date.now();
       const validPending = pendingPackets.filter((p: NetPacket) => !p.timestamp || (now - p.timestamp < 30000));
       if (validPending.length !== pendingPackets.length) {
         set({ pendingPackets: validPending });
       }
     }
 
-    if (packets.length === 0) return;
+    // 2. Packet progress updating
+    if (packets.length > 0) {
+      const arrivedPackets: NetPacket[] = [];
+      const updatedPackets = packets.map((packet: NetPacket) => {
+        if (packet.progress >= 1) {
+          arrivedPackets.push(packet);
+          return null;
+        }
+        return { ...packet, progress: packet.progress + 0.1 };
+      }).filter((p: any) => p !== null);
 
-    const arrivedPackets: NetPacket[] = [];
-    const updatedPackets = packets.map((packet: NetPacket) => {
-      if (packet.progress >= 1) {
-        arrivedPackets.push(packet);
-        return null;
+      set({ packets: updatedPackets });
+      arrivedPackets.forEach(p => handlePacketArrival(p));
+    }
+
+    // 3. IGMP Snooping & Querier Aging / Processing
+    let nodesUpdated = false;
+    const updatedNodes = nodes.map((n: NetNode) => {
+      let nodeChanged = false;
+      let updatedTable = n.igmpSnoopingTable ? { ...n.igmpSnoopingTable } : undefined;
+      let updatedExpires = n.igmpSnoopingExpires ? { ...n.igmpSnoopingExpires } : undefined;
+      let updatedMrouterId = n.mrouterPortId;
+      let updatedMrouterExpires = n.mrouterPortExpiresAt;
+      let updatedStandby = n.igmpQuerierStandby;
+      
+      // mrouter aging
+      if (updatedMrouterId && updatedMrouterExpires && now > updatedMrouterExpires) {
+        updatedMrouterId = undefined;
+        updatedMrouterExpires = undefined;
+        nodeChanged = true;
+        
+        if (n.igmpQuerierEnabled && updatedStandby) {
+          updatedStandby = false;
+        }
       }
-      return { ...packet, progress: packet.progress + 0.1 };
-    }).filter((p: any) => p !== null);
+      
+      // snooping entries aging
+      if (updatedTable && updatedExpires) {
+        const newExpires = { ...updatedExpires };
+        const newTable = { ...updatedTable };
+        let tableChanged = false;
 
-    set({ packets: updatedPackets });
-    arrivedPackets.forEach(p => handlePacketArrival(p));
+        Object.keys(newExpires).forEach(groupIP => {
+          const groupExpires = { ...newExpires[groupIP] };
+          let groupChanged = false;
+          
+          Object.keys(groupExpires).forEach(portId => {
+            if (now > groupExpires[portId]) {
+              delete groupExpires[portId];
+              groupChanged = true;
+              nodeChanged = true;
+              tableChanged = true;
+            }
+          });
+          
+          if (groupChanged) {
+            newExpires[groupIP] = groupExpires;
+            const activePorts = Object.keys(groupExpires);
+            if (activePorts.length === 0) {
+              delete newTable[groupIP];
+              delete newExpires[groupIP];
+            } else {
+              newTable[groupIP] = activePorts;
+            }
+          }
+        });
 
-    // Cleanup expired DHCP leases for all DHCP nodes
-    nodes.filter((n: NetNode) => n.type === 'dhcp').forEach((n: NetNode) => {
+        if (tableChanged) {
+          updatedTable = newTable;
+          updatedExpires = newExpires;
+        }
+      }
+      
+      if (nodeChanged) {
+        nodesUpdated = true;
+        return {
+          ...n,
+          igmpSnoopingTable: updatedTable,
+          igmpSnoopingExpires: updatedExpires,
+          mrouterPortId: updatedMrouterId,
+          mrouterPortExpiresAt: updatedMrouterExpires,
+          igmpQuerierStandby: updatedStandby
+        };
+      }
+      return n;
+    });
+   
+    if (nodesUpdated) {
+      set({ nodes: updatedNodes });
+    }
+
+    const currentNodes = nodesUpdated ? updatedNodes : nodes;
+
+    // 4. IGMP Querier Periodic Query Transmission
+    currentNodes.forEach((n: NetNode) => {
+      if ((n.type === 'switch' || n.type === 'l3switch') && n.igmpQuerierEnabled && !n.igmpQuerierStandby) {
+        const intervalMs = (n.igmpQuerierInterval || 60) * 1000;
+        const lastTime = (n as any).lastQuerierTime || 0;
+        
+        if (now - lastTime >= intervalMs) {
+          const baseQuery = IGMPHandler.createQuery(n);
+          n.interfaces.forEach(iface => {
+            const portQuery = {
+              ...baseQuery,
+              fromInterfaceId: iface.id,
+              originatingInterfaceId: iface.id,
+              id: `p_igmp_q_${Date.now()}_${iface.id}`
+            };
+            const transmissionUpdate = NetworkEngine.prepareTransmission(n, portQuery, currentNodes, get().links, true);
+            get().applyEngineUpdate(transmissionUpdate);
+          });
+          
+          set((state: any) => ({
+            nodes: state.nodes.map((node: NetNode) => 
+              node.id === n.id ? { ...node, lastQuerierTime: now } as any : node
+            )
+          }));
+        }
+      }
+    });
+
+    // 5. Cleanup expired DHCP leases for all DHCP nodes
+    currentNodes.filter((n: NetNode) => n.type === 'dhcp').forEach((n: NetNode) => {
       const update = DHCPHandler.cleanupLeases(n);
       if (update.nodes) get().applyEngineUpdate(update);
     });

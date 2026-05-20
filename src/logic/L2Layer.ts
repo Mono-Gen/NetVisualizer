@@ -1,5 +1,5 @@
 import type { NetNode, NetPacket } from '../types/network';
-import { isMulticastMAC } from './MulticastEngine';
+import { isMulticastMAC, isLinkLocalMulticast } from './MulticastEngine';
 import { IGMPHandler } from './IGMPHandler';
 
 export interface L2ProcessingResult {
@@ -8,6 +8,9 @@ export interface L2ProcessingResult {
   updatedMacTable?: Record<string, string>;
   updatedArpTable?: Record<string, string>;
   updatedIgmpTable?: Record<string, string[]>;
+  updatedIgmpExpires?: Record<string, Record<string, number>>;
+  updatedMrouterPortId?: string;
+  updatedMrouterPortExpiresAt?: number;
   processAtL3?: boolean;
   log?: {
     status: 'error' | 'sent' | 'dropped';
@@ -93,16 +96,58 @@ export const processL2 = (
     }
 
     // IGMP Snooping Learning
-    if (packet.protocol === 'IGMP' && ingressPortId) {
+    if (packet.protocol === 'IGMP' && ingressPortId && currentNode.igmpSnoopingEnabled !== false) {
       const igmpResult = IGMPHandler.handleSnooping(currentNode, packet, ingressPortId);
       if (igmpResult.updatedIgmpTable) {
         result.updatedIgmpTable = igmpResult.updatedIgmpTable;
+      }
+      if (igmpResult.updatedIgmpExpires) {
+        result.updatedIgmpExpires = igmpResult.updatedIgmpExpires;
+      }
+      if (igmpResult.updatedMrouterPortId !== undefined) {
+        result.updatedMrouterPortId = igmpResult.updatedMrouterPortId;
+      }
+      if (igmpResult.updatedMrouterPortExpiresAt !== undefined) {
+        result.updatedMrouterPortExpiresAt = igmpResult.updatedMrouterPortExpiresAt;
       }
     }
 
     // IGMP Snooping Check
     if (isMulticast) {
-      const egressPortIds = IGMPHandler.getMulticastEgressPorts(currentNode, packet.targetIP, ingressPortId);
+      // RFC 4541: 224.0.0.x is Link-Local Multicast, which must always be flooded
+      if (isLinkLocalMulticast(packet.targetIP)) {
+        const otherPorts = currentNode.interfaces
+          .filter(iface => iface.id !== ingressPortId)
+          .map(iface => iface.id);
+        return { ...result, action: 'flood', forwardPorts: otherPorts };
+      }
+
+      // If Snooping is disabled, flood to all ports except ingress
+      if (currentNode.igmpSnoopingEnabled === false) {
+        const otherPorts = currentNode.interfaces
+          .filter(iface => iface.id !== ingressPortId)
+          .map(iface => iface.id);
+        return { ...result, action: 'flood', forwardPorts: otherPorts };
+      }
+
+      const snoopingTable = currentNode.igmpSnoopingTable || {};
+      const registeredPorts = snoopingTable[packet.targetIP] || [];
+      let egressPortIds = registeredPorts.filter(p => p !== ingressPortId);
+      
+      // If there's an active mrouter port and it's not the ingress port, duplicate traffic to it
+      const currentMrouterPortId = result.updatedMrouterPortId !== undefined ? result.updatedMrouterPortId : currentNode.mrouterPortId;
+      if (currentMrouterPortId && currentMrouterPortId !== ingressPortId && !egressPortIds.includes(currentMrouterPortId)) {
+        egressPortIds = [...egressPortIds, currentMrouterPortId];
+      }
+
+      // If no receiver or mrouter port is registered, strictly drop (no flooding)
+      if (egressPortIds.length === 0) {
+        return { 
+          action: 'drop', 
+          log: { status: 'dropped', info: `IGMP Snooping: Target ${packet.targetIP} is unregistered. Packet dropped on ${currentNode.label}.` } 
+        };
+      }
+
       return { ...result, action: 'forward', forwardPorts: egressPortIds };
     }
 

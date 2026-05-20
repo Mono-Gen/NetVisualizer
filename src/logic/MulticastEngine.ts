@@ -7,6 +7,10 @@ export const isMulticastIP = (ip: string): boolean => {
   return firstOctet >= 224 && firstOctet <= 239;
 };
 
+export const isLinkLocalMulticast = (ip: string): boolean => {
+  return ip.startsWith('224.0.0.');
+};
+
 /**
  * Maps an IPv4 Multicast address to an Ethernet Multicast address.
  * Logic: The low-order 23 bits of the IP address are mapped into the low-order 23 bits 

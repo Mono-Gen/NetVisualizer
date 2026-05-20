@@ -21,13 +21,17 @@
   - **DNS**: Resolve hostnames and observe the DNS cache in real-time.
 
 ### 🔊 Advanced Multicast Support
-- **IGMP Snooping**: Observe how switches intelligently forward multicast traffic only to interested ports.
+- **IGMP Snooping**: Observe how switches intelligently forward multicast traffic only to registered ports. Unknown multicast groups are strictly dropped (RFC 4541 Approach B), making the role of the Querier immediately visible.
+- **Configurable Aging Time**: Set the snooping entry lifetime (5–300 sec) per switch and watch port entries count down and expire in real time.
+- **IGMP Querier**: Enable a switch as an IGMP Querier to periodically send General Queries, keeping snooping entries alive. Supports automatic **Querier Election** — the switch with the lowest management IP becomes the Active Querier; others enter Standby.
+- **Switch Management IP**: Assign a management IP (VLAN 1) to a switch independently of the host subnet, demonstrating the separation of control plane and data plane.
+- **Router Port (mrouter) Learning**: Switches automatically learn which port leads to a multicast router or querier, enabling correct cross-switch multicast forwarding.
 - **Explicit Join/Leave**: Manually join multicast groups and see the node's membership status.
 - **mDNS Responder**: Enable mDNS on any node to resolve local hostnames without a central DNS server.
 
 ### 📚 Pedagogical Insights
-- **Live Tables**: View ARP tables, MAC tables, IGMP snooping tables, and DNS caches as they update dynamically.
-- **RFC Compliance**: Simulation logic is strictly aligned with networking standards (RFC 1112, 1122, 2131, 4607, 6762, etc.).
+- **Live Tables**: View ARP tables, MAC tables, IGMP snooping tables (with per-port countdown timers and mrouter port), and DNS caches as they update dynamically.
+- **RFC Compliance**: Simulation logic is strictly aligned with networking standards (RFC 1112, 1122, 2131, 2236, 4541, 6762, etc.).
 - **Detailed Packet Logs**: Inspect every event with color-coded logs for successful delivery, errors, and silent drops.
 
 ---

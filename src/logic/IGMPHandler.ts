@@ -33,24 +33,90 @@ export class IGMPHandler {
     return update;
   }
 
-  static handleSnooping(node: NetNode, packet: NetPacket, ingressPortId: string): { updatedIgmpTable?: Record<string, string[]> } {
+  static handleSnooping(
+    node: NetNode,
+    packet: NetPacket,
+    ingressPortId: string
+  ): {
+    updatedIgmpTable?: Record<string, string[]>;
+    updatedIgmpExpires?: Record<string, Record<string, number>>;
+    updatedMrouterPortId?: string | null;
+    updatedMrouterPortExpiresAt?: number | null;
+    updatedQuerierStandby?: boolean;
+  } {
     const table = { ...(node.igmpSnoopingTable || {}) };
+    const expires = { ...(node.igmpSnoopingExpires || {}) };
+    
+    // 1. Handle Query (Querier Election & mrouter Port Learning)
+    if (packet.type === 'query') {
+      const agingTime = (node.igmpSnoopingAgingTime || 30) * 1000;
+      const result: any = {
+        updatedMrouterPortId: ingressPortId,
+        updatedMrouterPortExpiresAt: Date.now() + (agingTime * 2)
+      };
+
+      // Querier Election
+      if (node.igmpQuerierEnabled && packet.senderIP) {
+        const myIP = node.managementIP || '';
+        const peerIP = packet.senderIP;
+
+        const ipToLong = (ip: string): number => {
+          if (!ip) return 0xFFFFFFFF;
+          const parts = ip.split('.').map(Number);
+          if (parts.length !== 4 || parts.some(isNaN)) return 0xFFFFFFFF;
+          return ((parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8) | parts[3]) >>> 0;
+        };
+
+        const myIPLong = ipToLong(myIP);
+        const peerIPLong = ipToLong(peerIP);
+
+        if (peerIPLong < myIPLong) {
+          result.updatedQuerierStandby = true; // Lost election
+        } else if (peerIPLong === myIPLong) {
+          // If IP is same or empty, tie-breaker with MAC
+          const myMAC = node.interfaces[0]?.mac || '';
+          const peerMAC = packet.senderMAC || '';
+          if (peerMAC < myMAC) {
+            result.updatedQuerierStandby = true;
+          }
+        }
+      }
+
+      return result;
+    }
+
+    // 2. Handle Report/Leave
     const groupIP = packet.payload?.group || packet.targetIP;
     const isReport = packet.type === 'report' || packet.type === 'membership-report';
     const isLeave = packet.type === 'leave' || packet.type === 'leave-group';
 
     if (isReport) {
       const currentPorts = table[groupIP] || [];
+      const updatedPorts = [...currentPorts];
       if (!currentPorts.includes(ingressPortId)) {
-        table[groupIP] = [...currentPorts, ingressPortId];
-        return { updatedIgmpTable: table };
+        updatedPorts.push(ingressPortId);
       }
+      table[groupIP] = updatedPorts;
+
+      if (!expires[groupIP]) expires[groupIP] = {};
+      const agingTime = (node.igmpSnoopingAgingTime || 30) * 1000;
+      expires[groupIP][ingressPortId] = Date.now() + agingTime;
+
+      return { updatedIgmpTable: table, updatedIgmpExpires: expires };
     } else if (isLeave) {
       const currentPorts = table[groupIP] || [];
       const updatedPorts = currentPorts.filter(p => p !== ingressPortId);
-      if (updatedPorts.length === 0) delete table[groupIP];
-      else table[groupIP] = updatedPorts;
-      return { updatedIgmpTable: table };
+      
+      if (updatedPorts.length === 0) {
+        delete table[groupIP];
+        delete expires[groupIP];
+      } else {
+        table[groupIP] = updatedPorts;
+        if (expires[groupIP]) {
+          delete expires[groupIP][ingressPortId];
+        }
+      }
+      return { updatedIgmpTable: table, updatedIgmpExpires: expires };
     }
 
     return {};
@@ -58,8 +124,23 @@ export class IGMPHandler {
 
   static createQuery(currentNode: NetNode): NetPacket {
     const matchingIface = currentNode.interfaces[0];
+    const senderIP = currentNode.managementIP || (matchingIface ? matchingIface.ip : '0.0.0.0');
+    const senderMAC = matchingIface ? matchingIface.mac : '00:00:00:00:00:00';
+    const faceId = matchingIface ? matchingIface.id : 'mgmt';
     return {
-      from: currentNode.id, to: 'BROADCAST', senderIP: matchingIface.ip, targetIP: '224.0.0.1', senderMAC: matchingIface.mac, targetMAC: multicastIPToMAC('224.0.0.1'), protocol: 'IGMP', type: 'query', status: 'pending', fromInterfaceId: matchingIface.id, originatingInterfaceId: matchingIface.id, id: `p_igmp_q_${Date.now()}`, progress: 0
+      from: currentNode.id,
+      to: 'BROADCAST',
+      senderIP: senderIP,
+      targetIP: '224.0.0.1',
+      senderMAC: senderMAC,
+      targetMAC: multicastIPToMAC('224.0.0.1'),
+      protocol: 'IGMP',
+      type: 'query',
+      status: 'pending',
+      fromInterfaceId: faceId,
+      originatingInterfaceId: faceId,
+      id: `p_igmp_q_${Date.now()}`,
+      progress: 0
     };
   }
 

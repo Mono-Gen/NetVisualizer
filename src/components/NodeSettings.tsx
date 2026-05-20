@@ -5,6 +5,7 @@ import { DNSConfig } from './settings/DNSConfig';
 import { MulticastConfig } from './settings/MulticastConfig';
 import { ServiceConfig } from './settings/ServiceConfig';
 import { DHCPConfig } from './settings/DHCPConfig';
+import { SwitchIGMPConfig } from './settings/SwitchIGMPConfig';
 import { X, Server, Activity, Trash2 } from 'lucide-react';
 
 export const NodeSettings: React.FC = () => {
@@ -61,6 +62,10 @@ export const NodeSettings: React.FC = () => {
         </div>
 
         <InterfaceConfig node={node} mode={mode} onUpdate={updateNode} />
+
+        {['switch', 'l3switch'].includes(node.type) && (
+          <SwitchIGMPConfig node={node} />
+        )}
 
         {/* Table Displays - Real-time Pedagogical Feedback */}
         {mode === 'SIMULATE' && (
@@ -240,17 +245,42 @@ export const NodeSettings: React.FC = () => {
                     <Activity size={14} /> IGMP SNOOPING TABLE
                   </label>
                 </div>
+
+                {/* Active mrouter Port display */}
+                {node.mrouterPortId && (
+                  <div style={{ fontSize: '10px', background: 'rgba(59, 130, 246, 0.1)', border: '1px dashed rgba(59, 130, 246, 0.3)', padding: '6px 10px', borderRadius: '6px', color: '#60a5fa', display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontFamily: 'JetBrains Mono, monospace' }}>
+                    <span>Router Port (mrouter):</span>
+                    <span>{node.interfaces.find(i => i.id === node.mrouterPortId)?.name || node.mrouterPortId}
+                      {node.mrouterPortExpiresAt && ` (${Math.max(0, Math.round((node.mrouterPortExpiresAt - Date.now()) / 1000))}s)`}
+                    </span>
+                  </div>
+                )}
+
                 <div style={{ fontSize: '11px' }}>
                   {Object.entries(node.igmpSnoopingTable || {}).length > 0 ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', opacity: 0.4, fontSize: '10px', paddingBottom: '4px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
                         <span>MULTICAST GROUP</span>
-                        <span>PORT / IFACE</span>
+                        <span>PORT / IFACE (EXPIRES)</span>
                       </div>
                       {Object.entries(node.igmpSnoopingTable || {}).map(([group, ports]) => (
-                        <div key={group} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
-                          <span className="label-mono" style={{ color: '#fbbf24' }}>{group}</span>
-                          <span className="label-mono" style={{ color: 'var(--text-dim)' }}>{(ports as string[]).map(pid => node.interfaces.find(i => i.id === pid)?.name || pid).join(', ')}</span>
+                        <div key={group} style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '4px 0', borderBottom: '1px dashed rgba(255,255,255,0.03)' }}>
+                          <span className="label-mono" style={{ color: '#fbbf24', fontWeight: 700 }}>{group}</span>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', paddingLeft: '8px', borderLeft: '2px solid rgba(251, 191, 36, 0.3)' }}>
+                            {(ports as string[]).map(pid => {
+                              const name = node.interfaces.find(i => i.id === pid)?.name || pid;
+                              const expireTime = node.igmpSnoopingExpires?.[group]?.[pid];
+                              const timeLeft = expireTime ? Math.max(0, Math.round((expireTime - Date.now()) / 1000)) : null;
+                              return (
+                                <div key={pid} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px' }} className="label-mono">
+                                  <span style={{ color: 'var(--text-main)' }}>{name}</span>
+                                  <span style={{ color: timeLeft !== null && timeLeft < 15 ? '#ef4444' : 'var(--text-dim)' }}>
+                                    {timeLeft !== null ? `${timeLeft}s left` : 'Static'}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
                       ))}
                     </div>

@@ -28,6 +28,16 @@ export interface NetNode {
   macTable?: Record<string, string>;
   arpTable?: Record<string, string>;
   igmpSnoopingTable?: Record<string, string[]>;
+  igmpSnoopingExpires?: Record<string, Record<string, number>>; // GroupIP -> { portId: expiresAt }
+  igmpSnoopingEnabled?: boolean;
+  igmpSnoopingAgingTime?: number; // seconds (default 30)
+  igmpQuerierEnabled?: boolean;
+  igmpQuerierInterval?: number; // seconds
+  mrouterPortId?: string;
+  mrouterPortExpiresAt?: number;
+  managementIP?: string;
+  managementSubnet?: string;
+  igmpQuerierStandby?: boolean;
   joinedGroups?: string[];
   tcpConnections?: Record<string, {
     state: 'CLOSED' | 'LISTEN' | 'SYN_SENT' | 'SYN_RECEIVED' | 'ESTABLISHED' | 'FIN_WAIT_1' | 'FIN_WAIT_2' | 'CLOSE_WAIT' | 'LAST_ACK' | 'TIME_WAIT';

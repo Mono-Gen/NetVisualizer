@@ -1,7 +1,7 @@
 {
   "name": "netvisualizer",
   "private": true,
-  "version": "0.9.0-beta.1",
+  "version": "0.9.1",
   "type": "module",
   "main": "electron/main.js",
   "scripts": {
@@ -23,8 +23,6 @@
       "electron/**/*"
     ],
     "win": {
-      "cscLink": null,
-      "forceCodeSigning": false,
       "target": [
         {
           "target": "portable",

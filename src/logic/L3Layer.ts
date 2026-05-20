@@ -20,8 +20,13 @@ export const processL3 = (
   packet: NetPacket
 ): L3ProcessingResult => {
   
-  // 1. Check if packet is for me (Any of my interfaces)
-  const matchingInterface = currentNode.interfaces.find(iface => iface.ip === packet.targetIP);
+  // 1. Check if packet is for me (Any of my interfaces or switch management IP)
+  const isSwitchManagementIP = ['switch', 'l3switch'].includes(currentNode.type) && 
+    currentNode.managementIP && currentNode.managementIP === packet.targetIP;
+
+  const matchingInterface = isSwitchManagementIP 
+    ? { ip: currentNode.managementIP!, subnet: currentNode.managementSubnet || '255.255.255.0', mac: currentNode.interfaces[0]?.mac || '', id: 'mgmt', name: 'Management' }
+    : currentNode.interfaces.find(iface => iface.ip === packet.targetIP);
   
   if (matchingInterface) {
     if (packet.protocol === 'ICMP' && packet.type === 'echo-request') {

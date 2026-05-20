@@ -38,23 +38,35 @@ export class NetworkEngine {
     }
 
     // Merge L2 Updates
-    if (l2Result.updatedMacTable || l2Result.updatedArpTable || l2Result.updatedIgmpTable) {
+    if (l2Result.updatedMacTable || l2Result.updatedArpTable || l2Result.updatedIgmpTable || 
+        l2Result.updatedIgmpExpires || l2Result.updatedMrouterPortId !== undefined || 
+        l2Result.updatedMrouterPortExpiresAt !== undefined || l2Result.updatedQuerierStandby !== undefined) {
       if (!update.nodes![receiverNode.id]) update.nodes![receiverNode.id] = {};
       if (l2Result.updatedMacTable) update.nodes![receiverNode.id].macTable = l2Result.updatedMacTable;
       if (l2Result.updatedArpTable) update.nodes![receiverNode.id].arpTable = l2Result.updatedArpTable;
       if (l2Result.updatedIgmpTable) update.nodes![receiverNode.id].igmpSnoopingTable = l2Result.updatedIgmpTable;
+      if (l2Result.updatedIgmpExpires) update.nodes![receiverNode.id].igmpSnoopingExpires = l2Result.updatedIgmpExpires;
+      if (l2Result.updatedMrouterPortId !== undefined) update.nodes![receiverNode.id].mrouterPortId = l2Result.updatedMrouterPortId || undefined;
+      if (l2Result.updatedMrouterPortExpiresAt !== undefined) update.nodes![receiverNode.id].mrouterPortExpiresAt = l2Result.updatedMrouterPortExpiresAt || undefined;
+      if (l2Result.updatedQuerierStandby !== undefined) update.nodes![receiverNode.id].igmpQuerierStandby = l2Result.updatedQuerierStandby;
     }
 
-    // Auto-learn MAC (Only if sender IP and MAC are valid)
-    if (['pc', 'router', 'server', 'dns', 'l3switch', 'dhcp'].includes(receiverNode.type) && packet.protocol !== 'ARP') {
+    // Auto-learn MAC / ARP (Only if sender IP and MAC are valid)
+    if (['pc', 'router', 'switch', 'l3switch', 'server', 'dns', 'dhcp'].includes(receiverNode.type) && packet.protocol !== 'ARP') {
       if (packet.senderIP && packet.senderMAC) {
         // Find the receiving interface (or default to first if unknown)
         const rxIface = receiverNode.interfaces.find(i => i.id === packet.toInterfaceId) || receiverNode.interfaces[0];
+        const targetIP = ['switch', 'l3switch'].includes(receiverNode.type) && receiverNode.managementIP
+          ? receiverNode.managementIP
+          : rxIface?.ip || '';
+        const targetSubnet = ['switch', 'l3switch'].includes(receiverNode.type) && receiverNode.managementSubnet
+          ? receiverNode.managementSubnet
+          : rxIface?.subnet || '255.255.255.0';
         
         // ONLY learn if the sender IP is in the SAME subnet as the receiving interface
         // OR if both are APIPA (169.254.x.x)
-        const isAPIPA = packet.senderIP.startsWith('169.254.') && rxIface.ip.startsWith('169.254.');
-        if (rxIface && (isAPIPA || isInSameSubnet(packet.senderIP, rxIface.ip, rxIface.subnet))) {
+        const isAPIPA = packet.senderIP.startsWith('169.254.') && targetIP.startsWith('169.254.');
+        if (targetIP && (isAPIPA || isInSameSubnet(packet.senderIP, targetIP, targetSubnet))) {
           const currentArpTable = (update.nodes![receiverNode.id] && update.nodes![receiverNode.id].arpTable) || receiverNode.arpTable || {};
           if (currentArpTable[packet.senderIP] !== packet.senderMAC) {
             if (!update.nodes![receiverNode.id]) update.nodes![receiverNode.id] = {};

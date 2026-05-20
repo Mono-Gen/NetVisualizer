@@ -1,7 +1,7 @@
 # NetVisualizer Operation Manual
 
 **Target Audience**: Beginners in Networking  
-**Version**: 1.0.0
+**Version**: 0.9.1
 
 ---
 
@@ -268,17 +268,165 @@ The sender does NOT need to be a member to send (a TV station doesn't watch its 
 
 1. After a node joins a group, look at the **switch** it's connected to.
 2. The switch will display an **"IGMP SNOOPING"** table below its icon.
-3. The table shows which group addresses map to which ports.
+3. The table shows which group addresses map to which ports, along with the remaining lifetime of each entry.
 
 ```
-┌──────────────────────────────┐
-│       IGMP SNOOPING          │
-│  224.2.2.2   → eth0, eth2   │
-│  224.0.0.251 → eth0, eth3   │
-└──────────────────────────────┘
+┌────────────────────────────────────────┐
+│         IGMP SNOOPING TABLE            │
+│  Router Port: eth2  (expires in 58s)   │
+│  224.2.2.2                             │
+│    └─ eth0  (expires in 27s)           │
+│  224.0.0.251                           │
+│    └─ eth1  (expires in 14s)           │
+└────────────────────────────────────────┘
 ```
 
 > **Why This Matters**: Without IGMP Snooping, multicast would flood all ports, wasting bandwidth. The snooping table ensures traffic only goes where it's needed.
+
+---
+
+### 5.5 Switch Management IP
+
+An L2/L3 Switch can have an optional **management IP address** configured on its VLAN 1 interface.
+
+#### How to Configure
+
+Click the switch → open the **"SWITCH IGMP CONFIG"** panel → fill in the **Management Interface (VLAN 1)** section.
+
+| Field | Description | Example |
+|-------|-------------|---------|
+| IP Address | Switch's management IP | `192.168.1.254` |
+| Subnet Mask | Management subnet mask | `255.255.255.0` |
+
+#### Key Points
+
+- If no management IP is set, the device shows **"UNMANAGED L2 SWITCH"** and operates as a plain L2 forwarder.  
+- If a management IP is set, it shows **"MANAGED L2 SWITCH"**.
+- **The management IP subnet is completely independent from the PC/host subnet.**  
+  Even if the switch uses `10.0.0.0/24` while all PCs use `192.168.1.0/24`, L2 forwarding between PCs is unaffected.  
+  This demonstrates a core networking principle: the *control plane* (management) and the *data plane* (frame forwarding) operate independently.
+- The management IP is required to enable the **IGMP Querier** function.
+
+---
+
+### 5.6 IGMP Snooping — Advanced Settings
+
+#### Enabling / Disabling Snooping
+
+| State | Behavior |
+|-------|----------|
+| **ENABLED** (default) | Learns group membership; forwards multicast only to registered ports |
+| **DISABLED** | Floods multicast to all ports (hub-like behavior) |
+
+#### Snooping Aging Time
+
+Each entry in the snooping table has a **time-to-live (TTL)** called the **Aging Time**.  
+When a port's timer reaches zero and no refresh arrives, that port is removed from the group.
+
+| Parameter | Default | Configurable Range |
+|-----------|---------|-------------------|
+| Snooping Aging Time | 30 sec | 5 – 300 sec |
+
+You can adjust this value in the **SWITCH IGMP CONFIG** panel while IGMP Snooping is enabled.
+
+#### ⚠️ Important: Strict Drop Behavior (by Design)
+
+> This simulator implements **RFC 4541 Approach B — Strict Multicast Filtering**.
+>
+> When IGMP Snooping is **ENABLED** and the destination multicast group has **no registered ports** in the snooping table (either because no one has joined, or because the entry has aged out), the packet is **immediately dropped and NOT flooded**.
+>
+> This is intentional. The purpose is to make the following observable and educational:
+> - The instant an entry expires, multicast delivery stops completely.
+> - Simply joining a group is not enough for sustained delivery — the membership must be continuously refreshed (via an IGMP Querier).
+> - This makes the role of the Querier vivid and undeniable.
+>
+> **Exception — Link-Local Multicast (`224.0.0.0/24`):**  
+> Addresses like `224.0.0.1` (All Hosts) and `224.0.0.251` (mDNS) are always flooded to all ports regardless of the snooping table, in compliance with RFC 4541. These are infrastructure-level multicast addresses that must not be filtered.
+
+---
+
+### 5.7 IGMP Querier
+
+The **IGMP Querier** periodically sends **IGMP General Query** messages to all ports, prompting group members to re-report their membership. This prevents snooping table entries from expiring.
+
+#### Requirements
+
+- The switch must have a **management IP** configured.
+
+#### How to Enable
+
+Click the switch → **SWITCH IGMP CONFIG** → toggle **IGMP Querier** to **ENABLED**.
+
+#### Querier Status
+
+| Status | Meaning |
+|--------|---------|
+| **Active** | This switch is the elected querier; it sends periodic General Queries |
+| **Standby (Lost Election)** | Another querier with a lower IP is active; this switch is silent |
+
+#### Query Interval
+
+The interval at which General Queries are sent.
+
+| Parameter | Default | Configurable Range |
+|-----------|---------|-------------------|
+| Query Interval | 60 sec | 5 – 300 sec |
+
+Shorter intervals refresh entries faster but generate more IGMP traffic.
+
+#### Querier Election
+
+If multiple switches on the same segment have the Querier enabled, they automatically elect a single **Active Querier**:
+
+- The switch with the **lowest management IP address** wins the election and becomes Active.
+- All others enter **Standby** mode and suppress their queries.
+- This mimics real-world IGMP Querier election behavior (RFC 2236).
+
+#### Manual Query
+
+Press **[Send General Query]** to immediately send a General Query from all ports of the switch, regardless of Querier state. Useful for instantly refreshing the snooping table during testing.
+
+---
+
+### 5.8 Router Port (mrouter) Learning
+
+When IGMP Snooping is enabled, the switch automatically learns which port leads toward a **multicast router or Active Querier**.
+
+- When a General Query arrives on port P, that port is recorded as the **mrouter port**.
+- Multicast traffic for any group is always forwarded to the mrouter port (routers need to receive all multicast for routing/PIM purposes).
+- The mrouter port entry expires after `Aging Time × 2` seconds.
+- The current mrouter port and its remaining lifetime are shown in the **IGMP SNOOPING TABLE** on the canvas.
+
+---
+
+### 5.9 Learning Scenarios
+
+#### Scenario A — Aging Out Without a Querier
+
+1. Switch: **Snooping ON, Querier OFF**, Aging Time = **30 sec**
+2. PC joins group `239.1.1.1` → entry appears in the snooping table with a 30-second countdown.
+3. Wait 30 seconds without sending any IGMP traffic.
+4. The entry disappears → subsequent multicast to `239.1.1.1` is **dropped** and does not reach the PC.
+
+→ **Lesson**: Without a querier, snooping entries eventually expire and multicast delivery silently stops.
+
+#### Scenario B — Sustained Delivery With a Querier
+
+1. Switch: Management IP set, **Snooping ON, Querier ON**, Query Interval = **15 sec**, Aging Time = **20 sec**
+2. PC joins the group → entry appears.
+3. Every 15 seconds, the switch sends a General Query → PC replies with a Report → entry timer resets.
+4. The timer never reaches zero; multicast delivery continues indefinitely.
+
+→ **Lesson**: The Querier acts as a heartbeat, keeping snooping entries alive and multicast flowing.
+
+#### Scenario C — Multi-Switch Querier Election
+
+1. SwitchA (IP: `10.0.0.1`) and SwitchB (IP: `10.0.0.2`) connected directly; both Querier ON.
+2. SwitchA (lower IP) becomes **Active**; SwitchB enters **Standby**.
+3. SwitchB records its uplink to SwitchA as its **mrouter port** upon receiving SwitchA's Query.
+4. Multicast is correctly forwarded across both switches via the mrouter port.
+
+→ **Lesson**: Querier election prevents duplicate queries; mrouter port learning enables cross-switch multicast forwarding.
 
 ---
 
@@ -437,4 +585,4 @@ Router:  LAN=192.168.1.1   WAN=10.0.0.1
 
 ---
 
-*This manual is for NetVisualizer v0.0.0.*
+*This manual is for NetVisualizer v0.9.1.*
