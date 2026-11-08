@@ -48,7 +48,7 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
         {mode === 'DESIGN' ? (
           isDeleteMode ? 'ERASER MODE: SELECT ITEMS TO REMOVE' : 
           isLinkMode ? (linkingSourceId ? 'WIRING: SELECT TARGET NetNode' : 'WIRING MODE: SELECT START NetNode') : 
-          'DESIGN MODE: ADD & ARRANGE COMPONENTS'
+          'DESIGN MODE: DRAG PARTS IN · DRAG PORT TO PORT TO CONNECT'
         ) : (
           isInspectMode ? 'INSPECT MODE: CLICK TO VIEW TABLES' : 'SIMULATION MODE: CLICK NODES TO START PACKETS'
         )}

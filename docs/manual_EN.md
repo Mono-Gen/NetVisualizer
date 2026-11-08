@@ -85,8 +85,9 @@ Click a node to select it. A settings panel will open in the left pane.
 
 ### 2.4 Creating Links (Cables)
 
-1. Select the port/interface on one node.
-2. Drag to the port of another node and release to create a **link** (virtual cable).
+1. Each device shows its **ports** as small circles along its bottom edge. An empty circle is a free port; a filled circle is connected. Hover a port to see its name, IP, and MAC.
+2. **Drag from a free port to a free port** on another device and release to create a **link** (virtual cable). While dragging, valid target ports are highlighted in green; press **Esc** to cancel.
+3. To change the number of ports on a switch, hub, or router, select the device and use **+ Add Port** / **Remove** in the settings panel. Removing a connected port also removes its cable (a confirmation appears).
 
 ### 2.5 Example Topology
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import type { NetNode, NetPacket } from '../../types/network';
+import { getPortPosition } from '../../logic/portLayout';
 
 interface PacketRendererProps {
   packet: NetPacket;
@@ -15,8 +16,11 @@ export const PacketRenderer: React.FC<PacketRendererProps> = ({
   const toNode = nodes.find((n) => n.id === packet.to);
   if (!fromNode || !toNode) return null;
   
-  const x = fromNode.x + 32 + (toNode.x - fromNode.x) * packet.progress;
-  const y = fromNode.y + 32 + (toNode.y - fromNode.y) * packet.progress;
+  // 送出ポートから受信ポートへ動かす(リンクの描画位置と一致させる)
+  const start = getPortPosition(fromNode, packet.fromInterfaceId);
+  const end = getPortPosition(toNode, packet.toInterfaceId);
+  const x = start.x + (end.x - start.x) * packet.progress;
+  const y = start.y + (end.y - start.y) * packet.progress;
   
   // Protocol Colors
   let color = '#3b82f6'; // Default ICMP

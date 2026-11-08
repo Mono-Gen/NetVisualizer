@@ -2,6 +2,8 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import type { NetNode } from '../../types/network';
 import { NodeIcon } from './NodeIcon';
+import { PortHandle } from './PortHandle';
+import { getPortCenter, getPortStripExtra, type PortRef } from '../../logic/portLayout';
 
 interface NodeRendererProps {
   node: NetNode;
@@ -15,6 +17,13 @@ interface NodeRendererProps {
   zoom: number;
   onUpdatePosition: (id: string, x: number, y: number) => void;
   onClick: (id: string) => void;
+  /** リンクで使用中のインターフェースID */
+  usedPortIds: Set<string>;
+  /** ポートからのドラッグ配線中の配線元(なければnull) */
+  wireSource: PortRef | null;
+  /** ポートからの配線を許可するか(DESIGNモードかつ消しゴムでない) */
+  canWire: boolean;
+  onPortStart: (nodeId: string, ifaceId: string) => void;
 }
 
 export const NodeRenderer: React.FC<NodeRendererProps> = ({
@@ -29,6 +38,10 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
   zoom,
   onUpdatePosition,
   onClick,
+  usedPortIds,
+  wireSource,
+  canWire,
+  onPortStart,
 }) => {
   const getHighlightColor = () => {
     if (isLinkingSource) return '#22c55e'; // Green for Wiring
@@ -75,7 +88,26 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
       }}>
         <NodeIcon type={node.type} />
       </div>
-      <span className="label-mono" style={{ marginTop: '8px', background: '#1e293b', padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)', fontSize: '10px', whiteSpace: 'nowrap' }}>{node.label}</span>
+      {node.interfaces.map((iface, index) => {
+        const c = getPortCenter(node, index);
+        const used = usedPortIds.has(iface.id);
+        const isSource = wireSource?.nodeId === node.id && wireSource.ifaceId === iface.id;
+        return (
+          <PortHandle
+            key={iface.id}
+            cx={c.x - node.x} cy={c.y - node.y}
+            name={iface.name}
+            tooltip={`${iface.name}${iface.ip ? ' • ' + iface.ip : ''}${iface.mac ? ' • ' + iface.mac : ''} — ${used ? 'connected' : 'free'}`}
+            used={used}
+            isWireSource={isSource}
+            isCandidate={!!wireSource && !isSource && !used && wireSource.nodeId !== node.id}
+            isBlocked={!!wireSource && !isSource && (used || wireSource.nodeId === node.id)}
+            interactive={canWire}
+            onStart={() => onPortStart(node.id, iface.id)}
+          />
+        );
+      })}
+      <span className="label-mono" style={{ marginTop: `${8 + getPortStripExtra(node.interfaces.length)}px`, background: '#1e293b', padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)', fontSize: '10px', whiteSpace: 'nowrap' }}>{node.label}</span>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '4px', gap: '2px' }}>
         {['pc', 'router', 'server', 'dns', 'l3switch'].includes(node.type) && node.interfaces.map(iface => (
           <div key={iface.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'rgba(0,0,0,0.2)', padding: '2px 6px', borderRadius: '4px' }}>
