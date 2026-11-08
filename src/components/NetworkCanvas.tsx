@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNetworkStore } from '../store/useNetworkStore';
 import { NodeRenderer } from './canvas/NodeRenderer';
-import { LinkRenderer } from './canvas/LinkRenderer';
+import { LinkRenderer, LinkPortLabels } from './canvas/LinkRenderer';
 import { PacketRenderer } from './canvas/PacketRenderer';
 import { CanvasControls } from './canvas/CanvasControls';
 import { PlaybackControls } from './canvas/PlaybackControls';
@@ -286,9 +286,6 @@ export const NetworkCanvas: React.FC = () => {
             const s = getPortPosition(srcNode, wiring.source.ifaceId);
             return <line x1={s.x} y1={s.y} x2={wiring.x} y2={wiring.y} strokeWidth="2" strokeDasharray="6 4" style={{ stroke: 'var(--c-orange)', pointerEvents: 'none' }} />;
           })()}
-          {packets.map(packet => (
-            <PacketRenderer key={packet.id} packet={packet} nodes={nodes} />
-          ))}
         </svg>
 
         {nodes.map(node => (
@@ -310,6 +307,16 @@ export const NetworkCanvas: React.FC = () => {
             onContextMenu={(target, x, y) => openMenu(target, x, y)}
           />
         ))}
+
+        {/* ノードより上の透明な層: パケットとポート名。ノードやポートの円に隠れないようにする */}
+        <svg style={{ position: 'absolute', inset: 0, width: '5000px', height: '5000px', pointerEvents: 'none', zIndex: 60 }}>
+          {links.map(link => (
+            <LinkPortLabels key={link.id} link={link} nodes={nodes} />
+          ))}
+          {packets.map(packet => (
+            <PacketRenderer key={packet.id} packet={packet} nodes={nodes} />
+          ))}
+        </svg>
       </div>
     </div>
   );

@@ -26,19 +26,9 @@ export const LinkRenderer: React.FC<LinkRendererProps> = ({
   const toNode = nodes.find((n) => n.id === link.to);
   if (!fromNode || !toNode) return null;
 
-  const fromIface = fromNode.interfaces.find(i => i.id === link.fromInterfaceId);
-  const toIface = toNode.interfaces.find(i => i.id === link.toInterfaceId);
-
   // 線の両端はノード中心ではなくポート位置にする
   const p1 = getPortPosition(fromNode, link.fromInterfaceId);
   const p2 = getPortPosition(toNode, link.toInterfaceId);
-  // ポート名の文字は線に沿って少し内側へ寄せる(ポート円と重ならないように)
-  const dx = p2.x - p1.x, dy = p2.y - p1.y;
-  const dist = Math.hypot(dx, dy) || 1;
-  const labelAt = (p: { x: number; y: number }, sign: number) => ({ x: p.x + sign * (dx / dist) * 22, y: p.y + sign * (dy / dist) * 22 });
-  const p1Pos = labelAt(p1, 1);
-  const p2Pos = labelAt(p2, -1);
-
   const mid = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
   const stroke = isSelected ? 'var(--c-yellow)' : 'rgba(96, 165, 250, 0.4)';
 
@@ -54,8 +44,6 @@ export const LinkRenderer: React.FC<LinkRendererProps> = ({
       {/* 当たり判定用の太い透明線。選択/削除できるときだけ反応させる */}
       <line x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y} stroke="transparent" strokeWidth="20" style={{ pointerEvents: canSelect ? 'auto' : 'none' }} />
       <line x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y} strokeWidth={isSelected ? 4 : 2} style={{ stroke, pointerEvents: 'none' }} />
-      <text x={p1Pos.x} y={p1Pos.y} fontSize="11" textAnchor="middle" style={{ fill: 'rgba(var(--ink), 0.75)', pointerEvents: 'none', userSelect: 'none' }} className="label-mono">{fromIface?.name || 'P'}</text>
-      <text x={p2Pos.x} y={p2Pos.y} fontSize="11" textAnchor="middle" style={{ fill: 'rgba(var(--ink), 0.75)', pointerEvents: 'none', userSelect: 'none' }} className="label-mono">{toIface?.name || 'P'}</text>
       {isSelected && canSelect && (
         <g onClick={(e) => { e.stopPropagation(); onRemove(link.id); }} style={{ cursor: 'pointer' }} role="button" aria-label="Remove cable">
           <title>Remove this cable (Delete)</title>
@@ -63,6 +51,44 @@ export const LinkRenderer: React.FC<LinkRendererProps> = ({
           <text x={mid.x} y={mid.y + 4} fill="#fecaca" fontSize="14" fontWeight="700" textAnchor="middle" style={{ pointerEvents: 'none', userSelect: 'none' }}>×</text>
         </g>
       )}
+    </g>
+  );
+};
+
+/**
+ * リンク両端のポート名(eth0など)。
+ * ノードより上の層に描く: ノード本体やポートの円の下に潜って読めなくなるのを防ぐ。
+ * 文字は背景色の縁取り(ハロー)を付け、線やノードの上でも読めるようにする。
+ */
+const LABEL_DISTANCE = 30;
+
+export const LinkPortLabels: React.FC<{ link: NetLink; nodes: NetNode[] }> = ({ link, nodes }) => {
+  const fromNode = nodes.find((n) => n.id === link.from);
+  const toNode = nodes.find((n) => n.id === link.to);
+  if (!fromNode || !toNode) return null;
+
+  const fromIface = fromNode.interfaces.find(i => i.id === link.fromInterfaceId);
+  const toIface = toNode.interfaces.find(i => i.id === link.toInterfaceId);
+  const p1 = getPortPosition(fromNode, link.fromInterfaceId);
+  const p2 = getPortPosition(toNode, link.toInterfaceId);
+  const dx = p2.x - p1.x, dy = p2.y - p1.y;
+  const dist = Math.hypot(dx, dy) || 1;
+  // 線に沿って相手側へ寄せ、さらに線に直交する方向へずらして、線そのものと文字が重ならないようにする
+  const nx = -dy / dist, ny = dx / dist;
+  const at = (p: { x: number; y: number }, sign: number) => ({
+    x: p.x + sign * (dx / dist) * LABEL_DISTANCE + nx * 10,
+    y: p.y + sign * (dy / dist) * LABEL_DISTANCE + ny * 10
+  });
+  const a = at(p1, 1), b = at(p2, -1);
+  const style: React.CSSProperties = {
+    fill: 'var(--text-main)', stroke: 'rgba(var(--panel-rgb), 0.9)', strokeWidth: 3, paintOrder: 'stroke',
+    pointerEvents: 'none', userSelect: 'none'
+  };
+
+  return (
+    <g>
+      <text x={a.x} y={a.y} fontSize="11" textAnchor="middle" style={style} className="label-mono">{fromIface?.name || 'P'}</text>
+      <text x={b.x} y={b.y} fontSize="11" textAnchor="middle" style={style} className="label-mono">{toIface?.name || 'P'}</text>
     </g>
   );
 };
