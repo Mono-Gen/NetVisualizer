@@ -380,7 +380,7 @@ The sender does NOT need to be a member to send (a TV station doesn't watch its 
 
 ### 5.5 Switch Management IP
 
-An L2/L3 Switch can have an optional **management IP address** configured on its VLAN 1 interface.
+A Switch can have an optional **management IP address** configured on its VLAN 1 interface.
 
 #### How to Configure
 
