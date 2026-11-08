@@ -2,10 +2,12 @@ import React from 'react';
 import { NetworkCanvas } from './components/NetworkCanvas';
 import { Sidebar } from './components/Sidebar';
 import { NodeSettings } from './components/NodeSettings';
+import { LogPanel } from './components/LogPanel';
 import { useNetworkStore } from './store/useNetworkStore';
 
 function App() {
   const selectedNodeId = useNetworkStore(state => state.selectedNodeId);
+  const mode = useNetworkStore(state => state.mode);
   const tick = useNetworkStore(state => state.tick);
 
   React.useEffect(() => {
@@ -30,8 +32,11 @@ function App() {
         gap: '24px',
         height: '100%'
       }}>
-        <div className="canvas-container" style={{ flex: 1 }}>
-          <NetworkCanvas />
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div className="canvas-container" style={{ flex: 1, minHeight: 0 }}>
+            <NetworkCanvas />
+          </div>
+          {mode === 'SIMULATE' && <LogPanel />}
         </div>
 
         {selectedNodeId && (

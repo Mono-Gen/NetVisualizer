@@ -7,17 +7,16 @@ import { SidebarCommandPanel } from './SidebarCommandPanel';
 import { SampleMenu } from './SampleMenu';
 import { ThemeToggle } from './ThemeToggle';
 import { NODE_PALETTE, DND_NODE_TYPE, createNode } from '../logic/nodeFactory';
-import { useT, useTLogInfo } from '../i18n/useT';
+import { useT } from '../i18n/useT';
 import type { DictKey } from '../i18n/en';
 import { LanguageToggle } from './LanguageToggle';
 
 export const Sidebar: React.FC = () => {
   const t = useT();
-  const tInfo = useTLogInfo();
   const { 
     nodes, addNode, mode, setMode, 
     isInspectMode, setInspectMode, 
-    clearCanvas, packetLogs, clearPacketLogs, selectedNodeId
+    clearCanvas, selectedNodeId
   } = useNetworkStore();
 
   const nodeTypes = NODE_PALETTE;
@@ -104,66 +103,6 @@ export const Sidebar: React.FC = () => {
                       </div>
                     );
                   })()}
-              </div>
-            </div>
-            
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', minHeight: 0 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <label className="form-label" style={{ fontSize: '11px', color: 'var(--text-dim)', margin: 0 }}>{t('sidebar.packetLogs')}</label>
-                <button 
-                  onClick={clearPacketLogs} 
-                  className="btn-text" 
-                  style={{ color: 'var(--c-blue)', fontSize: '11px', fontWeight: 600, background: 'rgba(59, 130, 246, 0.1)', padding: '4px 10px', borderRadius: '6px', border: '1px solid rgba(59, 130, 246, 0.2)', cursor: 'pointer' }}
-                >
-                  {t('sidebar.clearLogs')}
-                </button>
-              </div>
-              <div className="log-container" style={{ flex: 1, overflowY: 'auto', background: 'rgba(var(--shade), 0.2)', borderRadius: '8px', padding: '8px', fontSize: '11px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                {packetLogs.map((log: any) => {
-                  const isARP = log.protocol === 'ARP';
-                  const isDNS = log.protocol === 'DNS';
-                  const isError = log.status === 'error';
-                  const isDropped = log.status === 'dropped';
-                  const themeColor = isError ? 'var(--c-red)' : isDropped ? 'var(--c-slate)' : (isARP ? 'var(--c-amber)' : (isDNS ? 'var(--c-violet)' : 'var(--c-blue-strong)'));
-                  return (
-                    <div key={log.id} style={{ padding: '8px', background: 'rgba(var(--ink), 0.05)', borderRadius: '6px', borderLeft: `3px solid ${themeColor}`, display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', opacity: 0.6 }}>
-                        <span style={{ color: themeColor, fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <span>
-                            {isError ? t('log.error') : `${log.protocol} ${
-                              log.protocol === 'TCP' ? (
-                                (log.flags?.syn && log.flags?.ack) ? '[SYN, ACK]' :
-                                log.flags?.syn ? '[SYN]' :
-                                log.flags?.fin ? '[FIN]' :
-                                log.flags?.rst ? '[RST]' :
-                                (log.payload?.message ? '[DATA]' : '[ACK]')
-                              ) : log.type
-                            }`}
-                          </span>
-                          {log.status === 'received' && <span style={{ fontSize: '11px', background: 'rgba(var(--ink), 0.2)', padding: '2px 4px', borderRadius: '4px', color: 'var(--text-main)' }}>{t('log.rcvd')}</span>}
-                          {log.status === 'sent' && <span style={{ fontSize: '11px', background: 'rgba(var(--shade), 0.3)', padding: '2px 4px', borderRadius: '4px', color: 'var(--text-main)' }}>{t('log.sent')}</span>}
-                          {log.status === 'dropped' && <span style={{ fontSize: '11px', background: 'rgba(156,163,175,0.3)', padding: '2px 4px', borderRadius: '4px', color: 'var(--text-dim)' }}>{t('log.drop')}</span>}
-                        </span>
-                        <span>{log.time || new Date().toLocaleTimeString()}</span>
-                      </div>
-                      <div style={{ fontWeight: 600, fontSize: '11px' }}>
-                        {isARP 
-                          ? `${log.senderMAC || '??'} → ${log.targetMAC || 'FF:FF:FF:FF:FF:FF'}`
-                          : `${log.senderIP} → ${log.targetIP}`
-                        }
-                      </div>
-                      <div style={{ opacity: 0.8, fontSize: '11px', fontStyle: 'italic', color: isError ? 'var(--c-red)' : 'inherit' }}>{tInfo(log.info)}</div>
-                      {log.payload?.message && (
-                        <div style={{ marginTop: '4px', padding: '4px', background: 'rgba(var(--shade), 0.3)', borderRadius: '4px', borderLeft: '2px solid var(--c-violet)', color: 'var(--text-main)' }}>
-                          💬 "{log.payload.message}"
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-                {packetLogs.length === 0 && (
-                  <div style={{ textAlign: 'center', color: 'var(--text-dim)', marginTop: '20px' }}>{t('sidebar.noActivity')}</div>
-                )}
               </div>
             </div>
           </>

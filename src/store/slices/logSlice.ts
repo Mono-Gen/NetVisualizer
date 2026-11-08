@@ -1,3 +1,4 @@
+import { MAX_LOG_ENTRIES } from '../../logic/simLimits';
 import type { LogSlice } from '../../types/store';
 
 let logSequence = 0;
@@ -23,7 +24,7 @@ export const createLogSlice = (set: any, get: any) => ({
     };
     
     // Always put the newest log with highest sequence at the top
-    return { packetLogs: [newLog, ...logs].slice(0, 50) };
+    return { packetLogs: [newLog, ...logs].slice(0, MAX_LOG_ENTRIES) };
   }),
   clearPacketLogs: () => {
     logSequence = 0;

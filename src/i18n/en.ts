@@ -185,6 +185,17 @@ export const en = {
   "theme.dark": "Dark",
   "theme.aria": "Theme: {label}",
   "lang.group": "Language",
+  "logPanel.resize": "Drag to resize",
+  "logPanel.expand": "Show the packet log",
+  "logPanel.collapse": "Hide the packet log",
+  "logPanel.count": "{n} entries",
+  "logPanel.filter": "Protocol",
+  "logPanel.filterAll": "All",
+  "logPanel.colTime": "TIME",
+  "logPanel.colStatus": "STATUS",
+  "logPanel.colProtocol": "PROTOCOL",
+  "logPanel.colRoute": "FROM → TO",
+  "logPanel.colDetails": "DETAILS",
 };
 
 export type DictKey = keyof typeof en;

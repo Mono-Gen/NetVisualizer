@@ -9,6 +9,9 @@ import type { NetPacket } from '../types/network';
 /** 同時に飛行できるパケット数の上限。超えた分は破棄される(描画負荷の保護) */
 export const MAX_IN_FLIGHT_PACKETS = 300;
 
+/** パケットログの保持件数(古いものから捨てる) */
+export const MAX_LOG_ENTRIES = 200;
+
 /** ストーム警告を解除する閾値(上限のこの割合を下回ったら収束とみなす) */
 export const STORM_CLEAR_RATIO = 0.5;
 

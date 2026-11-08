@@ -543,25 +543,22 @@ When packets flow through the network, nodes automatically display the informati
 
 The log panel at the bottom shows all network events in chronological order.
 
-### Log Types
+### Reading a Row
 
-| Color / Type | Meaning |
+The log panel sits below the canvas in Simulation Mode. Each event is **one row**: time | status | protocol | from → to | details. Click a row to show its full text; hover to see it as a tooltip.
+
+| Status mark | Meaning |
 |-------------|---------|
-| **Blue (RCVD / received)** | Packet successfully received |
-| **Green (sent)** | Packet successfully sent |
-| **Red (ERROR)** | An error occurred (port unreachable, host unreachable, etc.) |
-| **Gray (dropped)** | Packet intentionally discarded (multicast group not joined, L2 filter, etc.) |
+| **↑ SENT** (blue) | A packet was sent |
+| **↓ RCVD** (green) | A packet was received |
+| **✖ ERROR** (red) | An error occurred (port unreachable, host unreachable, etc.) |
+| **⊘ DROP** (gray) | A packet was intentionally discarded (multicast group not joined, L2 filter, etc.) |
 
-### Sample Log Entry
+### Using the Panel
 
-```
-[ERROR]  21:24:56
-169.254.181.224 → 224.2.2.2
-UDP Port 8080 closed. Sending ICMP Port Unreachable.
-```
-
-- **Source IP → Destination IP**: Who sent to whom
-- **Description**: What happened
+- **Resize**: drag the top edge of the panel. **Hide / show**: use the arrow at its left. Both are remembered.
+- **Filter**: choose a protocol (ARP, ICMP, …) to see only those rows.
+- The most recent 200 events are kept, newest first.
 
 ---
 

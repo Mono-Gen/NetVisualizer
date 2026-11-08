@@ -6,7 +6,7 @@ import { DHCPHandler } from '../../logic/DHCPHandler';
 import { findEgressInterface } from '../../logic/networkUtils';
 import { multicastIPToMAC } from '../../logic/MulticastEngine';
 import { progressUntilNextArrival } from '../../logic/simClock';
-import { appendWithCap, isStormCleared } from '../../logic/simLimits';
+import { appendWithCap, isStormCleared, MAX_LOG_ENTRIES } from '../../logic/simLimits';
 
 /**
  * 上限で破棄したパケットがあればストーム状態にする。
@@ -46,7 +46,7 @@ export const createPacketSlice = (set: any, get: any) => ({
           targetIP: packetData.targetIP,
           info: `Loopback test successful. ${packetData.protocol || 'Packet'} processed internally.`
         };
-        return { packetLogs: [newLog, ...(state.packetLogs || [])].slice(0, 50) };
+        return { packetLogs: [newLog, ...(state.packetLogs || [])].slice(0, MAX_LOG_ENTRIES) };
       });
       return;
     }
@@ -63,8 +63,8 @@ export const createPacketSlice = (set: any, get: any) => ({
       if (result.pendingPacketsUpdate?.add) updates.pendingPackets = [...state.pendingPackets, ...result.pendingPacketsUpdate.add];
       if (result.addLogs) {
         // Reverse to ensure the very latest sub-event is at the top
-        const newLogs = [...result.addLogs].reverse().map(l => ({ ...l, id: `log_${Math.random()}` }));
-        updates.packetLogs = [...newLogs, ...(state.packetLogs || [])].slice(0, 50);
+        const newLogs = [...result.addLogs].reverse().map(l => ({ ...l, time: l.time ?? new Date().toLocaleTimeString(), id: `log_${Math.random()}` }));
+        updates.packetLogs = [...newLogs, ...(state.packetLogs || [])].slice(0, MAX_LOG_ENTRIES);
       }
       return updates;
     });
@@ -218,8 +218,8 @@ export const createPacketSlice = (set: any, get: any) => ({
       }
 
       if (update.addLogs) {
-        const newLogs = [...update.addLogs].reverse().map(l => ({ ...l, id: `log_${Math.random()}` }));
-        newState.packetLogs = [...newLogs, ...(newState.packetLogs || state.packetLogs || [])].slice(0, 50);
+        const newLogs = [...update.addLogs].reverse().map(l => ({ ...l, time: l.time ?? new Date().toLocaleTimeString(), id: `log_${Math.random()}` }));
+        newState.packetLogs = [...newLogs, ...(newState.packetLogs || state.packetLogs || [])].slice(0, MAX_LOG_ENTRIES);
       }
 
       if (update.pendingPacketsUpdate) {
