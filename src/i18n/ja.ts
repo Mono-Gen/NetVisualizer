@@ -191,7 +191,6 @@ export const ja: Record<DictKey, string> = {
   "legend.title": "パケットの色",
   "legend.show": "色の凡例を表示",
   "legend.hide": "色の凡例を隠す",
-  "cmd.dest": "宛先",
   "cmd.destIp": "IPアドレス / ホスト名",
   "cmd.destPort": "ポート",
   "cmd.ipPlaceholder": "例: 192.168.1.20",
@@ -217,6 +216,6 @@ export const ja: Record<DictKey, string> = {
   "cmd.tcp.hintStart": "「① 接続」(3ウェイハンドシェイク) から始め、② 送信、③ 切断の順に進めます。",
   "cmd.tcp.hintEstablished": "接続できました。メッセージを送るか、③ で切断します。",
   "cmd.portHint": "UDP/TCP用",
-  "cmd.udp.desc": "接続せず、すぐ送ります。届いたかどうかは確認しません。",
-  "cmd.tcp.desc": "先に接続してから送ります。届いたことを確認します。",
+  "cmd.udp.desc": "接続せず送信(到達は確認しない)",
+  "cmd.tcp.desc": "接続してから送信(到達を確認)",
 };

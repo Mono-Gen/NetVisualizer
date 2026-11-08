@@ -61,13 +61,12 @@ export const SidebarCommandPanel: React.FC<SidebarCommandPanelProps> = ({ node }
     key ? <div role="status" style={{ fontSize: '11px', lineHeight: 1.4, color: tone === 'error' ? 'var(--c-red)' : 'var(--text-dim)' }}>ⓘ {t(key)}</div> : null;
 
   return (
-    <div style={{ marginTop: '8px', padding: '12px', background: 'rgba(var(--ink), 0.06)', borderRadius: '12px', border: '1px solid rgba(var(--ink), 0.12)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+    <div style={{ marginTop: '8px', padding: '12px', background: 'rgba(var(--ink), 0.06)', borderRadius: '12px', border: '1px solid rgba(var(--ink), 0.12)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
       <span style={sectionTitle}>
         <Play size={12} /> {t('cmd.commandFor', { name: node.label.toUpperCase() })}
       </span>
 
       {/* 宛先: Ping / UDP / TCP で共通 */}
-      <span style={{ ...sectionTitle, color: 'var(--text-dim)' }}>{t('cmd.dest')}</span>
       <label style={fieldLabel} htmlFor="cmd-dest">{t('cmd.destIp')}</label>
       <div style={{ display: 'flex', gap: '6px' }}>
         <input
@@ -135,10 +134,11 @@ export const SidebarCommandPanel: React.FC<SidebarCommandPanelProps> = ({ node }
       <div style={divider} />
 
       {/* Network Services / Multicast */}
-      <span style={sectionTitle}>
-        <Search size={12} /> {t('cmd.services')}
-      </span>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+      <details>
+        <summary style={{ ...sectionTitle, cursor: 'pointer', listStyle: 'none' }}>
+          <Search size={12} /> {t('cmd.services')}
+        </summary>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '8px' }}>
         <div style={{ display: 'flex', gap: '6px' }}>
           <button
             onClick={() => requestDHCP(node.id)}
@@ -187,6 +187,7 @@ export const SidebarCommandPanel: React.FC<SidebarCommandPanelProps> = ({ node }
           )}
         </div>
       </div>
+      </details>
     </div>
   );
 };
