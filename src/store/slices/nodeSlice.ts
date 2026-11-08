@@ -1,5 +1,6 @@
 import type { NetNode, NetLink } from '../../types/network';
 import { PORT_LIMITS, createInterface, collectMacs } from '../../logic/interfaceFactory';
+import { forgetPortState, pruneAfterLinkRemoved, pruneAfterNodeRemoved } from '../../logic/pruning';
 import { clampZoom } from '../../logic/viewport';
 import { SIM_SPEEDS, shiftNodeTimers, shiftPendingTimestamps } from '../../logic/simClock';
 
@@ -24,11 +25,20 @@ export const createNodeSlice = (set: any, get: any) => ({
   updateNodePosition: (id: string, x: number, y: number) => set((state: any) => ({
     nodes: state.nodes.map((n: NetNode) => (n.id === id ? { ...n, x, y } : n))
   })),
-  removeNode: (id: string) => set((state: any) => ({
-    nodes: state.nodes.filter((n: NetNode) => n.id !== id),
-    links: state.links.filter((l: NetLink) => l.from !== id && l.to !== id)
-  })),
-  // ポートを1つ追加する。上限を超える場合は何もしない(UI側でも無効化する)
+  // 機器を消すとき: つながっていたケーブル、相手側のMAC/ARPの記憶、飛行中のパケットも片付ける
+  removeNode: (id: string) => set((state: any) => {
+    const removed: NetNode | undefined = state.nodes.find((n: NetNode) => n.id === id);
+    if (!removed) return {};
+    const removedLinks = state.links.filter((l: NetLink) => l.from === id || l.to === id);
+    const pruned = pruneAfterNodeRemoved(state.nodes, state.packets, state.pendingPackets, removed, removedLinks);
+    return {
+      nodes: pruned.nodes,
+      links: state.links.filter((l: NetLink) => l.from !== id && l.to !== id),
+      packets: pruned.packets,
+      pendingPackets: pruned.pending,
+      pendingPings: state.pendingPings.filter((p: { nodeId: string }) => p.nodeId !== id)
+    };
+  }),
   addInterface: (nodeId: string) => set((state: any) => {
     const node: NetNode | undefined = state.nodes.find((n: NetNode) => n.id === nodeId);
     if (!node || node.interfaces.length >= PORT_LIMITS[node.type].max) return {};
@@ -41,35 +51,28 @@ export const createNodeSlice = (set: any, get: any) => ({
     const node: NetNode | undefined = state.nodes.find((n: NetNode) => n.id === nodeId);
     if (!node || node.interfaces.length <= PORT_LIMITS[node.type].min) return {};
 
-    const macTable = Object.fromEntries(Object.entries(node.macTable || {}).filter(([, port]) => port !== ifaceId));
-    const igmpSnoopingTable: Record<string, string[]> = {};
-    Object.entries(node.igmpSnoopingTable || {}).forEach(([group, ports]) => {
-      const rest = ports.filter(p => p !== ifaceId);
-      if (rest.length > 0) igmpSnoopingTable[group] = rest;
-    });
-    const igmpSnoopingExpires: Record<string, Record<string, number>> = {};
-    Object.entries(node.igmpSnoopingExpires || {}).forEach(([group, ports]) => {
-      const rest = Object.fromEntries(Object.entries(ports).filter(([p]) => p !== ifaceId));
-      if (Object.keys(rest).length > 0) igmpSnoopingExpires[group] = rest;
-    });
-    const mrouterGone = node.mrouterPortId === ifaceId;
-
     return {
       nodes: state.nodes.map((n: NetNode) => n.id !== nodeId ? n : {
-        ...n,
-        interfaces: n.interfaces.filter(i => i.id !== ifaceId),
-        macTable, igmpSnoopingTable, igmpSnoopingExpires,
-        ...(mrouterGone ? { mrouterPortId: undefined, mrouterPortExpiresAt: undefined } : {})
+        ...forgetPortState(n, ifaceId),
+        interfaces: n.interfaces.filter(i => i.id !== ifaceId)
       }),
       links: state.links.filter((l: NetLink) =>
         !((l.from === nodeId && l.fromInterfaceId === ifaceId) || (l.to === nodeId && l.toInterfaceId === ifaceId)))
     };
   }),
   addLink: (link: NetLink) => set((state: any) => ({ links: [...state.links, link] })),
-  removeLink: (id: string) => set((state: any) => ({
-    links: state.links.filter((l: NetLink) => l.id !== id),
-    selectedLinkId: state.selectedLinkId === id ? null : state.selectedLinkId
-  })),
+  // ケーブルを抜くとき: そのポートのMAC等の記憶と、そのケーブルを飛行中のパケットを片付ける
+  removeLink: (id: string) => set((state: any) => {
+    const link: NetLink | undefined = state.links.find((l: NetLink) => l.id === id);
+    if (!link) return {};
+    const pruned = pruneAfterLinkRemoved(state.nodes, state.packets, state.pendingPackets, link);
+    return {
+      nodes: pruned.nodes,
+      links: state.links.filter((l: NetLink) => l.id !== id),
+      packets: pruned.packets,
+      selectedLinkId: state.selectedLinkId === id ? null : state.selectedLinkId
+    };
+  }),
   
   // モードを切り替えたら一時停止も解除する。解除時は停止分の時間を期限へ加算する(setPausedと同じ補正)
   setMode: (mode: any) => {
