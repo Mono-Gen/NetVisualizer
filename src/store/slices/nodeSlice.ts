@@ -13,6 +13,7 @@ export const createNodeSlice = (set: any, get: any) => ({
   isDeleteMode: false,
   isInspectMode: false,
   linkingSourceId: null,
+  selectedLinkId: null,
   isPaused: false,
   simSpeed: 1,
   pausedAt: null,
@@ -67,7 +68,8 @@ export const createNodeSlice = (set: any, get: any) => ({
   }),
   addLink: (link: NetLink) => set((state: any) => ({ links: [...state.links, link] })),
   removeLink: (id: string) => set((state: any) => ({
-    links: state.links.filter((l: NetLink) => l.id !== id)
+    links: state.links.filter((l: NetLink) => l.id !== id),
+    selectedLinkId: state.selectedLinkId === id ? null : state.selectedLinkId
   })),
   
   // モードを切り替えたら一時停止も解除する。解除時は停止分の時間を期限へ加算する(setPausedと同じ補正)
@@ -92,7 +94,9 @@ export const createNodeSlice = (set: any, get: any) => ({
   setLinkMode: (enabled: any) => set({ isLinkMode: enabled, isDeleteMode: false, linkingSourceId: null }),
   setDeleteMode: (enabled: any) => set({ isDeleteMode: enabled, isLinkMode: false, linkingSourceId: null }),
   setLinkingSourceId: (id: any) => set({ linkingSourceId: id }),
-  setSelectedNodeId: (id: any) => set({ selectedNodeId: id, isLinkMode: false, isDeleteMode: false }),
+  // ノードとリンクは同時に選択しない(設定パネルと削除対象が食い違うのを防ぐ)
+  setSelectedNodeId: (id: any) => set((state: any) => ({ selectedNodeId: id, selectedLinkId: id ? null : state.selectedLinkId, isLinkMode: false, isDeleteMode: false })),
+  setSelectedLinkId: (id: any) => set((state: any) => ({ selectedLinkId: id, selectedNodeId: id ? null : state.selectedNodeId, isLinkMode: false, isDeleteMode: false })),
   setSimSourceId: (id: any) => set({ simSourceId: id }),
   setInspectMode: (enabled: any) => set({ isInspectMode: enabled, simSourceId: null }),
 });

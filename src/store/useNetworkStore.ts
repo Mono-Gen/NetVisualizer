@@ -10,6 +10,7 @@ export const useNetworkStore = create<NetworkState>((set, get) => ({
   ...createLogSlice(set, get),
 
   clearCanvas: () => set({ 
+    selectedLinkId: null,
     nodes: [], 
     links: [], 
     packets: [], 
@@ -28,6 +29,7 @@ export const useNetworkStore = create<NetworkState>((set, get) => ({
     selectedNodeId: null,
     simSourceId: null,
     linkingSourceId: null,
+    selectedLinkId: null,
     isLinkMode: false,
     isDeleteMode: false,
     isInspectMode: false,

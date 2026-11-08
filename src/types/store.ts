@@ -11,6 +11,7 @@ export type NodeSlice = {
   isDeleteMode: boolean;
   isInspectMode: boolean;
   linkingSourceId: string | null;
+  selectedLinkId: string | null;
   isPaused: boolean;
   simSpeed: number;
   pausedAt: number | null;
@@ -31,6 +32,7 @@ export type NodeSlice = {
   setLinkingSourceId: (id: string | null) => void;
   setSelectedNodeId: (id: string | null) => void;
   setSimSourceId: (id: string | null) => void;
+  setSelectedLinkId: (id: string | null) => void;
   setInspectMode: (enabled: boolean) => void;
   setPaused: (paused: boolean) => void;
   setSimSpeed: (speed: number) => void;

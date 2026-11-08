@@ -78,7 +78,7 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
       whileTap={{ cursor: 'grabbing' }}
     >
       <div style={{ 
-        width: '64px', height: '64px',
+        width: '64px', height: '64px', flexShrink: 0, // 縮むとポート位置(本体64px前提)とずれる
         background: '#1e293b', borderRadius: '16px', 
         border: `2px solid ${highlightColor}`,
         boxShadow: getShadow(),

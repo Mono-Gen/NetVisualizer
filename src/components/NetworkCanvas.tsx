@@ -14,7 +14,7 @@ import { PORT_SIZE, findNearestPort, getPortPosition, isPortUsed, validateConnec
 export const NetworkCanvas: React.FC = () => {
   const { 
     nodes, links, packets, mode, isLinkMode, isDeleteMode, linkingSourceId, 
-    selectedNodeId, simSourceId, zoom, isInspectMode, isPaused,
+    selectedNodeId, selectedLinkId, setSelectedLinkId, simSourceId, zoom, isInspectMode, isPaused,
     updateNodePosition, addNode, setLinkingSourceId, setSelectedNodeId, setSimSourceId, 
     setZoom, addLink, sendPacket, removeNode, removeLink 
   } = useNetworkStore();
@@ -45,6 +45,7 @@ export const NetworkCanvas: React.FC = () => {
     return ids;
   }, [links]);
   const canWire = mode === 'DESIGN' && !isDeleteMode && !isLinkMode;
+  const canSelectLinks = canWire;
 
   const handlePortStart = (nodeId: string, ifaceId: string) => {
     const node = nodes.find(n => n.id === nodeId);
@@ -117,18 +118,23 @@ export const NetworkCanvas: React.FC = () => {
   // Keyboard Shortcuts (Delete Node)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (mode === 'DESIGN' && selectedNodeId) {
+      if (mode === 'DESIGN' && (selectedNodeId || selectedLinkId)) {
         const activeElement = document.activeElement;
-        const isTyping = activeElement instanceof HTMLInputElement || activeElement instanceof HTMLTextAreaElement;
+        const isTyping = activeElement instanceof HTMLInputElement || activeElement instanceof HTMLTextAreaElement || activeElement instanceof HTMLSelectElement;
         if (!isTyping && (e.key === 'Delete' || e.key === 'Backspace')) {
-          removeNode(selectedNodeId);
-          setSelectedNodeId(null);
+          if (selectedLinkId) {
+            removeLink(selectedLinkId);
+            setSelectedLinkId(null);
+          } else if (selectedNodeId) {
+            removeNode(selectedNodeId);
+            setSelectedNodeId(null);
+          }
         }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [mode, selectedNodeId, removeNode, setSelectedNodeId]);
+  }, [mode, selectedNodeId, selectedLinkId, removeNode, removeLink, setSelectedNodeId, setSelectedLinkId]);
 
   const selectPort = (nodeId: string, interfaceId: string, isSource: boolean) => {
     if (isSource) {
@@ -213,6 +219,7 @@ export const NetworkCanvas: React.FC = () => {
       onPointerDown={(e) => {
         if (e.target === e.currentTarget) {
           setSelectedNodeId(null);
+          setSelectedLinkId(null);
           setSimSourceId(null);
         }
       }}
@@ -251,9 +258,10 @@ export const NetworkCanvas: React.FC = () => {
       )}
 
       <div style={{ transform: `scale(${zoom})`, transformOrigin: '0 0', transition: 'transform 0.15s ease-out', width: '100%', height: '100%' }}>
-        <svg style={{ position: 'absolute', inset: 0, width: '5000px', height: '5000px' }}>
+        {/* svg自体はクリックを素通りさせ、リンクの当たり判定だけを個別に有効にする(空白クリックで選択解除できるように) */}
+        <svg style={{ position: 'absolute', inset: 0, width: '5000px', height: '5000px', pointerEvents: 'none' }}>
           {links.map(link => (
-            <LinkRenderer key={link.id} link={link} nodes={nodes} isDeleteMode={isDeleteMode} onRemove={removeLink} />
+            <LinkRenderer key={link.id} link={link} nodes={nodes} isDeleteMode={isDeleteMode} isSelected={link.id === selectedLinkId} canSelect={canSelectLinks} onSelect={setSelectedLinkId} onRemove={removeLink} />
           ))}
           {wiring && (() => {
             const srcNode = nodes.find(n => n.id === wiring.source.nodeId);

@@ -23,6 +23,10 @@ export const InterfaceConfig: React.FC<InterfaceConfigProps> = ({ node, mode, on
   const isLinked = (ifaceId: string) =>
     links.some(l => (l.from === node.id && l.fromInterfaceId === ifaceId) || (l.to === node.id && l.toInterfaceId === ifaceId));
 
+  // 末尾から数えて最初の「未接続」ポートを削除する(ケーブルは抜けない安全な削除)
+  const lastFreeIface = [...node.interfaces].reverse().find(i => !isLinked(i.id));
+  const canRemoveFree = !!lastFreeIface && node.interfaces.length > limits.min;
+
   // 接続中のポートを消すとケーブルも抜ける。破壊的操作なので確認する。
   const handleRemove = (ifaceId: string, name: string) => {
     if (isLinked(ifaceId) && !window.confirm(`${name} is connected. Removing it will also remove the cable. Continue?`)) return;
@@ -34,9 +38,14 @@ export const InterfaceConfig: React.FC<InterfaceConfigProps> = ({ node, mode, on
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
         <label className="form-label" style={{ margin: 0 }}>Network Interfaces</label>
         {canHaveMultipleInterfaces && mode === 'DESIGN' && (
+          <div style={{ display: 'flex', gap: '6px' }}>
+          <button onClick={() => lastFreeIface && removeInterface(node.id, lastFreeIface.id)} disabled={!canRemoveFree} title={canRemoveFree ? `Remove ${lastFreeIface!.name} (unconnected)` : (node.interfaces.length <= limits.min ? `Minimum ${limits.min} ports` : 'All ports are connected. Remove a cable first, or use Remove on a port below.')} className="btn btn-glass btn-small" style={{ fontSize: '11px' }}>
+            − Remove Port
+          </button>
           <button onClick={() => addInterface(node.id)} disabled={node.interfaces.length >= limits.max} title={node.interfaces.length >= limits.max ? `Maximum ${limits.max} ports` : 'Add a port'} className="btn btn-glass btn-small" style={{ fontSize: '11px' }}>
             + Add Port ({node.interfaces.length}/{limits.max})
           </button>
+          </div>
         )}
       </div>
       

@@ -6,6 +6,10 @@ interface LinkRendererProps {
   link: NetLink;
   nodes: NetNode[];
   isDeleteMode: boolean;
+  isSelected: boolean;
+  /** 選択できるか(DESIGNモードで配線/消しゴムモードでないとき) */
+  canSelect: boolean;
+  onSelect: (id: string) => void;
   onRemove: (id: string) => void;
 }
 
@@ -13,6 +17,9 @@ export const LinkRenderer: React.FC<LinkRendererProps> = ({
   link,
   nodes,
   isDeleteMode,
+  isSelected,
+  canSelect,
+  onSelect,
   onRemove,
 }) => {
   const fromNode = nodes.find((n) => n.id === link.from);
@@ -32,12 +39,30 @@ export const LinkRenderer: React.FC<LinkRendererProps> = ({
   const p1Pos = labelAt(p1, 1);
   const p2Pos = labelAt(p2, -1);
 
+  const mid = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
+  const stroke = isDeleteMode ? '#ef4444' : isSelected ? '#fbbf24' : 'rgba(96, 165, 250, 0.4)';
+
   return (
-    <g key={link.id} style={{ cursor: isDeleteMode ? 'pointer' : 'default' }} onClick={() => isDeleteMode && onRemove(link.id)}>
-      <line x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y} stroke="transparent" strokeWidth="20" style={{ pointerEvents: isDeleteMode ? 'auto' : 'none' }} />
-      <line x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y} stroke={isDeleteMode ? '#ef4444' : 'rgba(96, 165, 250, 0.4)'} strokeWidth="2" style={{ pointerEvents: 'none' }} />
-      <text x={p1Pos.x} y={p1Pos.y} fill="rgba(255,255,255,0.4)" fontSize="8" textAnchor="middle" style={{ pointerEvents: 'none', userSelect: 'none' }} className="label-mono">{fromIface?.name || 'P'}</text>
-      <text x={p2Pos.x} y={p2Pos.y} fill="rgba(255,255,255,0.4)" fontSize="8" textAnchor="middle" style={{ pointerEvents: 'none', userSelect: 'none' }} className="label-mono">{toIface?.name || 'P'}</text>
+    <g
+      key={link.id}
+      style={{ cursor: isDeleteMode || canSelect ? 'pointer' : 'default' }}
+      onClick={(e) => {
+        if (isDeleteMode) onRemove(link.id);
+        else if (canSelect) { e.stopPropagation(); onSelect(link.id); }
+      }}
+    >
+      {/* 当たり判定用の太い透明線。選択/削除できるときだけ反応させる */}
+      <line x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y} stroke="transparent" strokeWidth="20" style={{ pointerEvents: isDeleteMode || canSelect ? 'auto' : 'none' }} />
+      <line x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y} stroke={stroke} strokeWidth={isSelected ? 4 : 2} style={{ pointerEvents: 'none' }} />
+      <text x={p1Pos.x} y={p1Pos.y} fill="rgba(255,255,255,0.6)" fontSize="10" textAnchor="middle" style={{ pointerEvents: 'none', userSelect: 'none' }} className="label-mono">{fromIface?.name || 'P'}</text>
+      <text x={p2Pos.x} y={p2Pos.y} fill="rgba(255,255,255,0.6)" fontSize="10" textAnchor="middle" style={{ pointerEvents: 'none', userSelect: 'none' }} className="label-mono">{toIface?.name || 'P'}</text>
+      {isSelected && canSelect && (
+        <g onClick={(e) => { e.stopPropagation(); onRemove(link.id); }} style={{ cursor: 'pointer' }} role="button" aria-label="Remove cable">
+          <title>Remove this cable (Delete)</title>
+          <circle cx={mid.x} cy={mid.y} r="11" fill="#7f1d1d" stroke="#f87171" strokeWidth="2" style={{ pointerEvents: 'auto' }} />
+          <text x={mid.x} y={mid.y + 4} fill="#fecaca" fontSize="14" fontWeight="700" textAnchor="middle" style={{ pointerEvents: 'none', userSelect: 'none' }}>×</text>
+        </g>
+      )}
     </g>
   );
 };
