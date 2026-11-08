@@ -2,6 +2,7 @@ import type { NetNode, NetPacket, NetInterface } from '../types/network';
 import { isInSameSubnet, isGatewayValid, lookupRoute } from './networkUtils';
 import type { ICMPErrorType } from './ICMPHandler';
 import { isMulticastMAC } from './MulticastEngine';
+import { evaluateFirewall } from './firewall';
 
 export interface L3ProcessingResult {
   action: 'send' | 'forward' | 'reply' | 'drop' | 'none';
@@ -64,6 +65,16 @@ export const processL3 = (
         errorType: 'TTL Expired',
         log: { status: 'error', info: `Time Exceeded: TTL=0 when forwarding to ${packet.targetIP}` }
       };
+    }
+
+    // ファイアウォール: 拒否は黙って捨てる(ICMPエラーは返さない。実機のDROP相当)
+    const fw = evaluateFirewall(currentNode, packet);
+    if (fw.action === 'deny') {
+      // 文言は固定の2通り(ログの翻訳テンプレートと全文一致させるため、組み立てずに分ける)
+      const info = fw.ruleNumber !== undefined
+        ? `Firewall: ${packet.protocol} ${packet.senderIP} -> ${packet.targetIP} denied by rule ${fw.ruleNumber}`
+        : `Firewall: ${packet.protocol} ${packet.senderIP} -> ${packet.targetIP} denied by the default policy`;
+      return { action: 'drop', log: { status: 'error', info } };
     }
 
     // 経路の検索は、ホストの出口NIC選択と同じ規則(最長プレフィックス一致 → メトリック → 先頭)を使う

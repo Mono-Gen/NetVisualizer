@@ -161,4 +161,19 @@ const multiNic: SampleTopology = {
   }
 };
 
-export const SAMPLE_TOPOLOGIES: SampleTopology[] = [basicLan, routed, igmp, switchLoop, multiNic];
+const firewall: SampleTopology = {
+  id: 'firewall',
+  name: '6. Firewall Blocks Ping',
+  description: 'Same network as sample 2, but the router denies ping from 192.168.1.0/24 to 192.168.2.0/24. Ping from PC 1 times out; open the router to see the rule.',
+  build: () => {
+    const { nodes, links } = routed.build();
+    const rt = nodes.find(n => n.id === 'rt1')!;
+    rt.firewall = {
+      rules: [{ id: 'fw_sample_1', action: 'deny', protocol: 'ICMP', src: '192.168.1.0/24', dst: '192.168.2.0/24' }],
+      defaultAction: 'allow'
+    };
+    return { nodes, links };
+  }
+};
+
+export const SAMPLE_TOPOLOGIES: SampleTopology[] = [basicLan, routed, igmp, switchLoop, multiNic, firewall];

@@ -20,6 +20,21 @@ export interface ListeningPort {
   service?: string;
 }
 
+/** ファイアウォールの1ルール。src/dst は 'any'、a.b.c.d、または a.b.c.d/長さ */
+export interface FwRule {
+  id: string;
+  action: 'allow' | 'deny';
+  protocol: 'any' | 'ICMP' | 'TCP' | 'UDP';
+  src: string;
+  dst: string;
+  dstPort?: number; // TCP/UDP のときだけ。未指定=すべて
+}
+
+export interface FirewallConfig {
+  rules: FwRule[];
+  defaultAction: 'allow' | 'deny'; // どのルールにも一致しないときの動作
+}
+
 export interface NetNode {
   id: string;
   type: NodeType;
@@ -49,6 +64,7 @@ export interface NetNode {
     seq: number;
     ack: number;
   }>;
+  firewall?: FirewallConfig;
   dnsTable?: Record<string, string>;
   dnsRecords?: Record<string, string>; // DNS server records (hostname -> IP)
   dnsCache?: Record<string, string>;

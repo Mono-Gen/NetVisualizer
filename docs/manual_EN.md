@@ -320,6 +320,20 @@ PC                               Multicast Group 224.0.0.251
 
 > **Requirement**: The responding node must have **mDNS RESPONDER set to ENABLED** and be a member of the `224.0.0.251` multicast group.
 
+### 4.3 Firewall (Router)
+
+A router can block some traffic with a **firewall**. Select a router and open the **FIREWALL** panel.
+
+- Each rule has an action (**Allow** / **Deny**), a protocol (any / ICMP / TCP / UDP), a source, a destination and, for TCP/UDP, a port. The source and destination are `any`, an address (`192.168.1.10`) or a network (`192.168.1.0/24`).
+- Rules are checked **from the top**. The **first rule that matches** decides. Use the arrows to change the order.
+- The last row, **No rule matched**, sets what happens when no rule matches. The default is **Allow**, so a router with no rules behaves as before. Set it to **Deny** to block everything that is not explicitly allowed (an *implicit deny*, as on real equipment).
+- A denied packet is **dropped silently**: no error comes back. The sender only sees a timeout. The log shows which rule denied it.
+- Only traffic the router **forwards** is checked. Traffic addressed to the router itself is not.
+- The firewall is **stateless**: a reply is checked as a separate packet. If you set the default to Deny and allow only `PC 1 → PC 2`, the reply `PC 2 → PC 1` is blocked. Allow both directions.
+- A rule with a problem (for example a port on an ICMP rule) shows a message and is **ignored** until fixed.
+
+Try the sample "6. Firewall Blocks Ping".
+
 ---
 
 ## Chapter 5 — Multicast and IGMP

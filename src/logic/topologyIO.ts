@@ -1,4 +1,5 @@
-import type { NetNode, NetLink, NetInterface, NodeType } from '../types/network';
+import type { NetNode, NetLink, NetInterface, NodeType, FwRule } from '../types/network';
+import { fwRuleIssue } from './firewall';
 
 /**
  * トポロジー(構成)の保存形式と、読み込み時の検証(純粋関数)。
@@ -35,7 +36,7 @@ const configOf = (n: NetNode): NetNode => {
   };
   const copy = <K extends keyof NetNode>(k: K) => { if (n[k] !== undefined) (out as any)[k] = n[k]; };
   (['managementIP', 'managementSubnet', 'igmpSnoopingEnabled', 'igmpSnoopingAgingTime', 'igmpQuerierEnabled',
-    'igmpQuerierInterval', 'joinedGroups', 'dnsRecords', 'listeningPorts', 'services'] as (keyof NetNode)[]).forEach(copy);
+    'igmpQuerierInterval', 'joinedGroups', 'dnsRecords', 'listeningPorts', 'services', 'firewall'] as (keyof NetNode)[]).forEach(copy);
   if (n.dhcpScope) out.dhcpScope = { ...n.dhcpScope, leases: {} };
   return out;
 };
@@ -105,6 +106,16 @@ export const parseTopology = (text: string): ParseResult => {
     }
     if (Array.isArray(raw.services)) {
       node.services = raw.services.filter(isObj).filter(p => num(p.port) && str(p.protocol)).map(p => ({ port: p.port as number, protocol: p.protocol as string }));
+    }
+    if (isObj(raw.firewall)) {
+      // 不正なルールだけを捨てる(全体の読込は失敗させない)
+      const rules: FwRule[] = Array.isArray(raw.firewall.rules) ? raw.firewall.rules.filter(isObj).flatMap(x => {
+        if (!str(x.id) || (x.action !== 'allow' && x.action !== 'deny') || !str(x.src) || !str(x.dst)) return [];
+        if (x.protocol !== 'any' && x.protocol !== 'ICMP' && x.protocol !== 'TCP' && x.protocol !== 'UDP') return [];
+        const rule: FwRule = { id: x.id, action: x.action, protocol: x.protocol, src: x.src, dst: x.dst, ...(num(x.dstPort) ? { dstPort: x.dstPort } : {}) };
+        return fwRuleIssue(rule) === null ? [rule] : [];
+      }) : [];
+      node.firewall = { rules, defaultAction: raw.firewall.defaultAction === 'deny' ? 'deny' : 'allow' };
     }
     if (isObj(raw.dhcpScope)) {
       const d = raw.dhcpScope;

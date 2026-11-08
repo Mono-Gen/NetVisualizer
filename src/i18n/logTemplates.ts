@@ -18,6 +18,10 @@ export const LOG_TEMPLATES: ReadonlyArray<readonly [string, string]> = [
   ['Route: {dest} via {port} - connected network /{prefix}, metric {metric}', '経路: {dest} は {port} から送信 (直接つながったネットワーク /{prefix}、メトリック {metric})'],
   ['Route: {dest} via {port} - default gateway {gw}, metric {metric}', '経路: {dest} は {port} から送信 (デフォルトゲートウェイ {gw}、メトリック {metric})'],
 
+  // ファイアウォール
+  ['Firewall: {proto} {src} -> {dst} denied by rule {n}', 'ファイアウォール: {proto} {src} → {dst} をルール{n}で拒否しました'],
+  ['Firewall: {proto} {src} -> {dst} denied by the default policy', 'ファイアウォール: {proto} {src} → {dst} を既定の動作(拒否)で破棄しました'],
+
   // L2 / L3
   ['L2 Flood: {proto}', 'L2フラッド: {proto}'],
   ['L2 Loop Detected: Packet dropped by {label} (L2 TTL expired)', 'L2ループ検出: {label} でパケットを破棄しました (L2 TTL 超過)'],

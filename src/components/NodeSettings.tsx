@@ -2,6 +2,7 @@ import React from 'react';
 import { useNetworkStore } from '../store/useNetworkStore';
 import { InterfaceConfig } from './settings/InterfaceConfig';
 import { DNSConfig } from './settings/DNSConfig';
+import { FirewallConfig } from './settings/FirewallConfig';
 import { MulticastConfig } from './settings/MulticastConfig';
 import { ServiceConfig } from './settings/ServiceConfig';
 import { DHCPConfig } from './settings/DHCPConfig';
@@ -321,6 +322,10 @@ export const NodeSettings: React.FC = () => {
 
         {node.type === 'dns' && (
           <DNSConfig node={node} onUpdate={updateNode} />
+        )}
+
+        {node.type === 'router' && (
+          <FirewallConfig node={node} onUpdate={updateNode} />
         )}
 
         {['pc', 'server'].includes(node.type) && (
