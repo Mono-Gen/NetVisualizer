@@ -42,15 +42,15 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
   onContextMenu,
 }) => {
   const getHighlightColor = () => {
-    if (isSimSource) return '#f97316'; // Orange for Sender
-    if (isSimTarget) return '#3b82f6'; // Blue for Target
-    if (isSelected) return 'rgba(255,255,255,0.8)'; // Subtle white for selection
-    return 'rgba(255,255,255,0.1)';
+    if (isSimSource) return 'var(--c-orange)'; // Orange for Sender
+    if (isSimTarget) return 'var(--c-blue-strong)'; // Blue for Target
+    if (isSelected) return 'rgba(var(--ink), 0.8)'; // Subtle white for selection
+    return 'rgba(var(--ink), 0.1)';
   };
 
   const getShadow = () => {
-    if (isSimSource) return '0 0 25px #f97316';
-    if (isSimTarget) return '0 0 25px #3b82f6';
+    if (isSimSource) return '0 0 25px var(--c-orange)';
+    if (isSimTarget) return '0 0 25px var(--c-blue-strong)';
     return 'none';
   };
 
@@ -76,11 +76,11 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
     >
       <div style={{ 
         width: '64px', height: '64px', flexShrink: 0, // 縮むとポート位置(本体64px前提)とずれる
-        background: '#1e293b', borderRadius: '16px', 
+        background: 'var(--node-bg)', borderRadius: '16px', 
         border: `2px solid ${highlightColor}`,
         boxShadow: getShadow(),
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        color: isGlow ? highlightColor : 'white',
+        color: isGlow ? highlightColor : 'var(--text-main)',
         transition: 'all 0.2s'
       }}>
         <NodeIcon type={node.type} />
@@ -105,12 +105,12 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
           />
         );
       })}
-      <span className="label-mono" style={{ marginTop: `${8 + getPortStripExtra(node.interfaces.length)}px`, background: '#1e293b', padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)', fontSize: '10px', whiteSpace: 'nowrap' }}>{node.label}</span>
+      <span className="label-mono" style={{ marginTop: `${8 + getPortStripExtra(node.interfaces.length)}px`, background: 'var(--node-bg)', padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(var(--ink), 0.1)', fontSize: '11px', whiteSpace: 'nowrap' }}>{node.label}</span>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '4px', gap: '2px' }}>
         {['pc', 'router', 'server', 'dns', 'l3switch'].includes(node.type) && node.interfaces.map(iface => (
-          <div key={iface.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'rgba(0,0,0,0.2)', padding: '2px 6px', borderRadius: '4px' }}>
-            {iface.ip && <span className="label-mono" style={{ fontSize: '10px', color: '#60a5fa', fontWeight: 600 }}>{iface.ip}</span>}
-            <span className="label-mono" style={{ fontSize: '9px', color: 'rgba(255,255,255,0.6)', letterSpacing: '0.05em' }}>{iface.mac}</span>
+          <div key={iface.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'rgba(var(--shade), 0.2)', padding: '2px 6px', borderRadius: '4px' }}>
+            {iface.ip && <span className="label-mono" style={{ fontSize: '11px', color: 'var(--c-blue)', fontWeight: 600 }}>{iface.ip}</span>}
+            <span className="label-mono" style={{ fontSize: '11px', color: 'rgba(var(--ink), 0.6)', letterSpacing: '0.05em' }}>{iface.mac}</span>
           </div>
         ))}
       </div>
@@ -122,11 +122,11 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
           {/* L3 ARP Table */}
           {['pc', 'router', 'server', 'l3switch'].includes(node.type) && node.arpTable && Object.keys(node.arpTable).length > 0 && (
             <div style={{ background: 'rgba(74, 222, 128, 0.1)', border: '1px solid rgba(74, 222, 128, 0.2)', borderRadius: '6px', padding: '4px', display: 'flex', flexDirection: 'column', gap: '2px', backdropFilter: 'blur(4px)', minWidth: '80px' }}>
-              <div style={{ fontSize: '8px', color: '#4ade80', fontWeight: 700, textAlign: 'center', borderBottom: '1px solid rgba(74, 222, 128, 0.2)', paddingBottom: '2px', marginBottom: '2px' }}>ARP TABLE</div>
+              <div style={{ fontSize: '11px', color: 'var(--c-green)', fontWeight: 700, textAlign: 'center', borderBottom: '1px solid rgba(74, 222, 128, 0.2)', paddingBottom: '2px', marginBottom: '2px' }}>ARP TABLE</div>
               {Object.entries(node.arpTable).map(([ip, mac]) => (
-                <div key={ip} style={{ display: 'flex', gap: '8px', justifyContent: 'space-between', fontSize: '8px', fontFamily: 'monospace' }}>
-                  <span style={{ color: '#4ade80' }}>{ip}</span>
-                  <span style={{ color: 'rgba(255,255,255,0.6)' }}>{mac.slice(-5)}</span>
+                <div key={ip} style={{ display: 'flex', gap: '8px', justifyContent: 'space-between', fontSize: '11px', fontFamily: 'monospace' }}>
+                  <span style={{ color: 'var(--c-green)' }}>{ip}</span>
+                  <span style={{ color: 'rgba(var(--ink), 0.6)' }}>{mac.slice(-5)}</span>
                 </div>
               ))}
             </div>
@@ -135,11 +135,11 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
           {/* DNS Cache */}
           {['pc', 'server', 'router'].includes(node.type) && node.dnsCache && Object.keys(node.dnsCache).length > 0 && (
             <div style={{ background: 'rgba(167, 139, 250, 0.1)', border: '1px solid rgba(167, 139, 250, 0.2)', borderRadius: '6px', padding: '4px', display: 'flex', flexDirection: 'column', gap: '2px', backdropFilter: 'blur(4px)', minWidth: '80px' }}>
-              <div style={{ fontSize: '8px', color: '#a78bfa', fontWeight: 700, textAlign: 'center', borderBottom: '1px solid rgba(167, 139, 250, 0.2)', paddingBottom: '2px', marginBottom: '2px' }}>DNS CACHE</div>
+              <div style={{ fontSize: '11px', color: 'var(--c-violet)', fontWeight: 700, textAlign: 'center', borderBottom: '1px solid rgba(167, 139, 250, 0.2)', paddingBottom: '2px', marginBottom: '2px' }}>DNS CACHE</div>
               {Object.entries(node.dnsCache).map(([name, ip]) => (
-                <div key={name} style={{ display: 'flex', gap: '8px', justifyContent: 'space-between', fontSize: '8px', fontFamily: 'monospace' }}>
-                  <span style={{ color: '#a78bfa' }}>{name}</span>
-                  <span style={{ color: 'rgba(255,255,255,0.6)' }}>{ip}</span>
+                <div key={name} style={{ display: 'flex', gap: '8px', justifyContent: 'space-between', fontSize: '11px', fontFamily: 'monospace' }}>
+                  <span style={{ color: 'var(--c-violet)' }}>{name}</span>
+                  <span style={{ color: 'rgba(var(--ink), 0.6)' }}>{ip}</span>
                 </div>
               ))}
             </div>
@@ -148,11 +148,11 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
           {/* L2 MAC Table for Switches */}
           {['switch', 'l3switch'].includes(node.type) && node.macTable && Object.keys(node.macTable).length > 0 && (
             <div style={{ background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.2)', borderRadius: '6px', padding: '4px', display: 'flex', flexDirection: 'column', gap: '2px', backdropFilter: 'blur(4px)', minWidth: '80px' }}>
-              <div style={{ fontSize: '8px', color: '#60a5fa', fontWeight: 700, textAlign: 'center', borderBottom: '1px solid rgba(59, 130, 246, 0.2)', paddingBottom: '2px', marginBottom: '2px' }}>MAC TABLE</div>
+              <div style={{ fontSize: '11px', color: 'var(--c-blue)', fontWeight: 700, textAlign: 'center', borderBottom: '1px solid rgba(59, 130, 246, 0.2)', paddingBottom: '2px', marginBottom: '2px' }}>MAC TABLE</div>
               {Object.entries(node.macTable).map(([mac, portId]) => (
-                <div key={mac} style={{ display: 'flex', gap: '8px', justifyContent: 'space-between', fontSize: '8px', fontFamily: 'monospace' }}>
-                  <span style={{ color: '#60a5fa' }}>{mac.slice(-5)}</span>
-                  <span style={{ color: 'rgba(255,255,255,0.6)' }}>{node.interfaces.find(i => i.id === portId)?.name || 'P'}</span>
+                <div key={mac} style={{ display: 'flex', gap: '8px', justifyContent: 'space-between', fontSize: '11px', fontFamily: 'monospace' }}>
+                  <span style={{ color: 'var(--c-blue)' }}>{mac.slice(-5)}</span>
+                  <span style={{ color: 'rgba(var(--ink), 0.6)' }}>{node.interfaces.find(i => i.id === portId)?.name || 'P'}</span>
                 </div>
               ))}
             </div>
@@ -161,16 +161,16 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
           {/* IGMP Table (Joined Groups for PC/Server, Snooping for Switches) */}
           {( (node.joinedGroups && node.joinedGroups.length > 0) || (node.igmpSnoopingTable && Object.keys(node.igmpSnoopingTable).length > 0) ) && (
             <div style={{ background: 'rgba(251, 191, 36, 0.1)', border: '1px solid rgba(251, 191, 36, 0.2)', borderRadius: '6px', padding: '4px', display: 'flex', flexDirection: 'column', gap: '2px', backdropFilter: 'blur(4px)', minWidth: '80px' }}>
-              <div style={{ fontSize: '8px', color: '#fbbf24', fontWeight: 700, textAlign: 'center', borderBottom: '1px solid rgba(251, 191, 36, 0.2)', paddingBottom: '2px', marginBottom: '2px' }}>
+              <div style={{ fontSize: '11px', color: 'var(--c-yellow)', fontWeight: 700, textAlign: 'center', borderBottom: '1px solid rgba(251, 191, 36, 0.2)', paddingBottom: '2px', marginBottom: '2px' }}>
                 {['switch', 'l3switch'].includes(node.type) ? 'IGMP SNOOPING' : 'JOINED GROUPS'}
               </div>
               {node.joinedGroups?.map(group => (
-                <div key={group} style={{ fontSize: '8px', color: '#fbbf24', textAlign: 'center', fontFamily: 'monospace' }}>{group}</div>
+                <div key={group} style={{ fontSize: '11px', color: 'var(--c-yellow)', textAlign: 'center', fontFamily: 'monospace' }}>{group}</div>
               ))}
               {['switch', 'l3switch'].includes(node.type) && node.igmpSnoopingTable && Object.entries(node.igmpSnoopingTable).map(([group, ports]) => (
-                <div key={group} style={{ display: 'flex', gap: '8px', justifyContent: 'space-between', fontSize: '8px', fontFamily: 'monospace' }}>
-                  <span style={{ color: '#fbbf24' }}>{group}</span>
-                  <span style={{ color: 'rgba(255,255,255,0.6)' }}>{(ports as string[]).map(pid => node.interfaces.find(i => i.id === pid)?.name || 'P').join(',')}</span>
+                <div key={group} style={{ display: 'flex', gap: '8px', justifyContent: 'space-between', fontSize: '11px', fontFamily: 'monospace' }}>
+                  <span style={{ color: 'var(--c-yellow)' }}>{group}</span>
+                  <span style={{ color: 'rgba(var(--ink), 0.6)' }}>{(ports as string[]).map(pid => node.interfaces.find(i => i.id === pid)?.name || 'P').join(',')}</span>
                 </div>
               ))}
             </div>
@@ -179,11 +179,11 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
           {/* TCP Sockets */}
           {['pc', 'server', 'router'].includes(node.type) && node.tcpConnections && Object.keys(node.tcpConnections).length > 0 && (
             <div style={{ background: 'rgba(236, 72, 153, 0.1)', border: '1px solid rgba(236, 72, 153, 0.2)', borderRadius: '6px', padding: '4px', display: 'flex', flexDirection: 'column', gap: '2px', backdropFilter: 'blur(4px)', minWidth: '80px' }}>
-              <div style={{ fontSize: '8px', color: '#ec4899', fontWeight: 700, textAlign: 'center', borderBottom: '1px solid rgba(236, 72, 153, 0.2)', paddingBottom: '2px', marginBottom: '2px' }}>TCP SOCKETS</div>
+              <div style={{ fontSize: '11px', color: 'var(--c-pink)', fontWeight: 700, textAlign: 'center', borderBottom: '1px solid rgba(236, 72, 153, 0.2)', paddingBottom: '2px', marginBottom: '2px' }}>TCP SOCKETS</div>
               {Object.entries(node.tcpConnections).map(([key, conn]: [string, any]) => (
-                <div key={key} style={{ display: 'flex', gap: '8px', justifyContent: 'space-between', fontSize: '8px', fontFamily: 'monospace' }}>
-                  <span style={{ color: '#ec4899' }}>:{conn.localPort}</span>
-                  <span style={{ color: 'rgba(255,255,255,0.6)' }}>{conn.remoteIP}:{conn.remotePort}</span>
+                <div key={key} style={{ display: 'flex', gap: '8px', justifyContent: 'space-between', fontSize: '11px', fontFamily: 'monospace' }}>
+                  <span style={{ color: 'var(--c-pink)' }}>:{conn.localPort}</span>
+                  <span style={{ color: 'rgba(var(--ink), 0.6)' }}>{conn.remoteIP}:{conn.remotePort}</span>
                 </div>
               ))}
             </div>
@@ -196,7 +196,7 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
             <div className="node-table-section">
               <div className="node-table-header"><span>MY INTERFACES</span></div>
               {node.interfaces.map(iface => (
-                <div key={iface.id} className="node-table-row"><span className="node-table-key" style={{ color: '#60a5fa' }}>{iface.ip || 'no-ip'}</span><span className="node-table-val" style={{ color: 'rgba(255,255,255,0.4)' }}>{iface.mac}</span></div>
+                <div key={iface.id} className="node-table-row"><span className="node-table-key" style={{ color: 'var(--c-blue)' }}>{iface.ip || 'no-ip'}</span><span className="node-table-val" style={{ color: 'rgba(var(--ink), 0.4)' }}>{iface.mac}</span></div>
               ))}
             </div>
           )}
@@ -204,7 +204,7 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
             <div className="node-table-section">
               <div className="node-table-header"><span>ARP TABLE (CACHE)</span><span>{Object.keys(node.arpTable).length}</span></div>
               {Object.entries(node.arpTable).map(([ip, mac]) => (
-                <div key={ip} className="node-table-row"><span className="node-table-key" style={{ color: '#4ade80' }}>{ip}</span><span className="node-table-val">{mac}</span></div>
+                <div key={ip} className="node-table-row"><span className="node-table-key" style={{ color: 'var(--c-green)' }}>{ip}</span><span className="node-table-val">{mac}</span></div>
               ))}
             </div>
           )}

@@ -21,7 +21,7 @@ export const ServiceConfig: React.FC<ServiceConfigProps> = ({ node, mode, onUpda
 
   return (
     <div style={{ padding: '12px', background: 'rgba(245, 158, 11, 0.05)', borderRadius: '8px', border: '1px solid rgba(245, 158, 11, 0.1)' }}>
-      <label className="form-label" style={{ fontSize: '10px', color: 'var(--primary-orange)' }}>Listening Services (Ports)</label>
+      <label className="form-label" style={{ fontSize: '11px', color: 'var(--primary-orange)' }}>Listening Services (Ports)</label>
       {mode === 'DESIGN' && (
         <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
           <input 
@@ -47,15 +47,15 @@ export const ServiceConfig: React.FC<ServiceConfigProps> = ({ node, mode, onUpda
       )}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
         {(node.listeningPorts || []).map(p => (
-          <span key={`${p.protocol}-${p.port}`} className="label-mono" style={{ fontSize: '10px', background: 'rgba(245, 158, 11, 0.2)', padding: '2px 6px', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <span key={`${p.protocol}-${p.port}`} className="label-mono" style={{ fontSize: '11px', background: 'rgba(245, 158, 11, 0.2)', padding: '2px 6px', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
             {p.protocol}:{p.port}
             {mode === 'DESIGN' && (
-              <button onClick={() => removePort(p.port, p.protocol)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', padding: 0 }}>x</button>
+              <button onClick={() => removePort(p.port, p.protocol)} style={{ background: 'none', border: 'none', color: 'var(--text-main)', cursor: 'pointer', padding: 0 }}>x</button>
             )}
           </span>
         ))}
         {(!node.listeningPorts || node.listeningPorts.length === 0) && (
-          <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.2)' }}>No services listening</span>
+          <span style={{ fontSize: '11px', color: 'rgba(var(--ink), 0.2)' }}>No services listening</span>
         )}
       </div>
     </div>

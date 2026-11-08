@@ -11,6 +11,7 @@
 - **Dynamic Linking**: Connect nodes with virtual Ethernet cables and manage multiple interfaces.
 - **Node Configuration**: Manually configure IP addresses, subnet masks, and default gateways, or use automated services.
 
+- **Light / Dark Theme**: Follows your system setting by default, with a manual switch.
 - **Sample Topologies**: Load ready-made networks (basic LAN, routed networks, IGMP Snooping) from the sidebar and start experimenting right away.
 
 ### 🔬 Real-time Protocol Simulation

@@ -21,7 +21,7 @@ export const MulticastConfig: React.FC<MulticastConfigProps> = ({ node, onUpdate
 
   return (
     <div style={{ padding: '12px', background: 'rgba(59, 130, 246, 0.05)', borderRadius: '8px', border: '1px solid rgba(59, 130, 246, 0.1)' }}>
-      <label className="form-label" style={{ fontSize: '10px', color: 'var(--primary-blue)' }}>Multicast Groups (IGMP)</label>
+      <label className="form-label" style={{ fontSize: '11px', color: 'var(--primary-blue)' }}>Multicast Groups (IGMP)</label>
       <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
         <input 
           id="mcast-input"
@@ -46,18 +46,18 @@ export const MulticastConfig: React.FC<MulticastConfigProps> = ({ node, onUpdate
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '12px' }}>
         {(node.joinedGroups || []).map(group => (
-          <span key={group} className="label-mono" style={{ fontSize: '10px', background: 'rgba(59, 130, 246, 0.2)', padding: '2px 6px', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <span key={group} className="label-mono" style={{ fontSize: '11px', background: 'rgba(59, 130, 246, 0.2)', padding: '2px 6px', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
             {group}
-            <button onClick={() => removeMulticastGroup(group)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', padding: 0 }}>x</button>
+            <button onClick={() => removeMulticastGroup(group)} style={{ background: 'none', border: 'none', color: 'var(--text-main)', cursor: 'pointer', padding: 0 }}>x</button>
           </span>
         ))}
       </div>
 
-      <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px', marginTop: '8px' }}>
+      <div style={{ borderTop: '1px solid rgba(var(--ink), 0.05)', paddingTop: '12px', marginTop: '8px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <div style={{ fontSize: '11px', fontWeight: 600, color: '#fbbf24' }}>mDNS Responder</div>
-            <div style={{ fontSize: '9px', color: 'var(--text-dim)', opacity: 0.7 }}>Enable name discovery (224.0.0.251)</div>
+            <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--c-yellow)' }}>mDNS Responder</div>
+            <div style={{ fontSize: '11px', color: 'var(--text-dim)', opacity: 0.7 }}>Enable name discovery (224.0.0.251)</div>
           </div>
           <button 
             onClick={() => {
@@ -68,12 +68,12 @@ export const MulticastConfig: React.FC<MulticastConfigProps> = ({ node, onUpdate
             style={{
               padding: '4px 12px',
               borderRadius: '20px',
-              fontSize: '10px',
+              fontSize: '11px',
               fontWeight: 700,
               cursor: 'pointer',
               border: 'none',
-              background: (node.joinedGroups || []).includes('224.0.0.251') ? '#fbbf24' : 'rgba(255,255,255,0.1)',
-              color: (node.joinedGroups || []).includes('224.0.0.251') ? '#000' : '#fff',
+              background: (node.joinedGroups || []).includes('224.0.0.251') ? 'var(--c-yellow)' : 'rgba(var(--ink), 0.1)',
+              color: (node.joinedGroups || []).includes('224.0.0.251') ? 'var(--on-accent)' : 'var(--text-main)',
               transition: 'all 0.2s'
             }}
           >

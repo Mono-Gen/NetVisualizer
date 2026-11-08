@@ -51,13 +51,13 @@ export const InterfaceConfig: React.FC<InterfaceConfigProps> = ({ node, mode, on
       
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {node.interfaces.map((iface) => (
-          <div key={iface.id} style={{ padding: '12px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+          <div key={iface.id} style={{ padding: '12px', background: 'rgba(var(--ink), 0.02)', borderRadius: '8px', border: '1px solid rgba(var(--ink), 0.05)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <span className="label-mono" style={{ fontSize: '10px', color: 'var(--primary-blue)', fontWeight: 700 }}>{iface.name}</span>
+              <span className="label-mono" style={{ fontSize: '11px', color: 'var(--primary-blue)', fontWeight: 700 }}>{iface.name}</span>
               {canHaveMultipleInterfaces && node.interfaces.length > limits.min && mode === 'DESIGN' && (
                 <button 
                   onClick={() => handleRemove(iface.id, iface.name)}
-                  style={{ background: 'none', border: 'none', color: 'rgba(248, 113, 113, 0.5)', cursor: 'pointer', fontSize: '10px' }}
+                  style={{ background: 'none', border: 'none', color: 'rgba(248, 113, 113, 0.5)', cursor: 'pointer', fontSize: '11px' }}
                 >
                   Remove
                 </button>
@@ -68,7 +68,7 @@ export const InterfaceConfig: React.FC<InterfaceConfigProps> = ({ node, mode, on
               <>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                   <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '10px' }}>IP Address</label>
+                    <label className="form-label" style={{ fontSize: '11px' }}>IP Address</label>
                     <input 
                       className="input" 
                       style={{ fontSize: '11px', padding: '6px' }}
@@ -78,7 +78,7 @@ export const InterfaceConfig: React.FC<InterfaceConfigProps> = ({ node, mode, on
                     />
                   </div>
                   <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '10px' }}>Subnet Mask</label>
+                    <label className="form-label" style={{ fontSize: '11px' }}>Subnet Mask</label>
                     <input 
                       className="input" 
                       style={{ fontSize: '11px', padding: '6px' }}
@@ -91,7 +91,7 @@ export const InterfaceConfig: React.FC<InterfaceConfigProps> = ({ node, mode, on
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '4px' }}>
                   <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '10px' }}>Default Gateway</label>
+                    <label className="form-label" style={{ fontSize: '11px' }}>Default Gateway</label>
                     <input 
                       className="input" 
                       style={{ fontSize: '11px', padding: '6px' }}
@@ -101,7 +101,7 @@ export const InterfaceConfig: React.FC<InterfaceConfigProps> = ({ node, mode, on
                     />
                   </div>
                   <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '10px' }}>DNS Server</label>
+                    <label className="form-label" style={{ fontSize: '11px' }}>DNS Server</label>
                     <input 
                       className="input" 
                       style={{ fontSize: '11px', padding: '6px' }}
@@ -116,7 +116,7 @@ export const InterfaceConfig: React.FC<InterfaceConfigProps> = ({ node, mode, on
 
             {node.type !== 'hub' && (
               <div className="form-group" style={{ marginTop: '4px' }}>
-                <label className="form-label" style={{ fontSize: '10px' }}>MAC Address</label>
+                <label className="form-label" style={{ fontSize: '11px' }}>MAC Address</label>
                 <input 
                   className="input" 
                   style={{ fontSize: '11px', padding: '6px' }}

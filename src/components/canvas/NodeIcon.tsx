@@ -10,25 +10,25 @@ interface NodeIconProps {
 
 export const NodeIcon: React.FC<NodeIconProps> = ({ type, size = 32, color }) => {
   const defaultColor = color || (
-    type === 'pc' ? '#60a5fa' :
-    type === 'router' ? '#f87171' :
-    type === 'server' ? '#4ade80' :
-    type === 'switch' ? '#c084fc' :
-    type === 'l3switch' ? '#38bdf8' :
-    type === 'hub' ? '#94a3b8' :
-    type === 'dns' ? '#fbbf24' : 
-    type === 'dhcp' ? '#ec4899' : '#ffffff'
+    type === 'pc' ? 'var(--c-blue)' :
+    type === 'router' ? 'var(--c-red)' :
+    type === 'server' ? 'var(--c-green)' :
+    type === 'switch' ? 'var(--c-purple)' :
+    type === 'l3switch' ? 'var(--c-sky)' :
+    type === 'hub' ? 'var(--c-slate)' :
+    type === 'dns' ? 'var(--c-yellow)' : 
+    type === 'dhcp' ? 'var(--c-pink)' : 'var(--text-main)'
   );
 
   switch (type) {
-    case 'pc': return <Monitor size={size} color={defaultColor} />;
-    case 'router': return <Router size={size} color={defaultColor} />;
-    case 'server': return <Server size={size} color={defaultColor} />;
-    case 'switch': return <Network size={size} color={defaultColor} />;
-    case 'l3switch': return <Waypoints size={size} color={defaultColor} />;
-    case 'hub': return <Layout size={size} color={defaultColor} />;
-    case 'dns': return <HelpCircle size={size} color={defaultColor} />;
-    case 'dhcp': return <Database size={size} color={defaultColor} />;
+    case 'pc': return <Monitor size={size} style={{ color: defaultColor }} />;
+    case 'router': return <Router size={size} style={{ color: defaultColor }} />;
+    case 'server': return <Server size={size} style={{ color: defaultColor }} />;
+    case 'switch': return <Network size={size} style={{ color: defaultColor }} />;
+    case 'l3switch': return <Waypoints size={size} style={{ color: defaultColor }} />;
+    case 'hub': return <Layout size={size} style={{ color: defaultColor }} />;
+    case 'dns': return <HelpCircle size={size} style={{ color: defaultColor }} />;
+    case 'dhcp': return <Database size={size} style={{ color: defaultColor }} />;
     default: return null;
   }
 };

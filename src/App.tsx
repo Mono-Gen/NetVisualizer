@@ -18,7 +18,7 @@ function App() {
   return (
     <div className="app-container" style={{ 
       flexDirection: 'row', 
-      background: 'radial-gradient(circle at center, #111827 0%, #020617 100%)',
+      background: 'var(--app-gradient)',
       padding: '24px'
     }}>
       <Sidebar />

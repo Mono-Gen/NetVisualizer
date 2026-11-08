@@ -40,7 +40,7 @@ export const LinkRenderer: React.FC<LinkRendererProps> = ({
   const p2Pos = labelAt(p2, -1);
 
   const mid = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
-  const stroke = isSelected ? '#fbbf24' : 'rgba(96, 165, 250, 0.4)';
+  const stroke = isSelected ? 'var(--c-yellow)' : 'rgba(96, 165, 250, 0.4)';
 
   return (
     <g
@@ -53,9 +53,9 @@ export const LinkRenderer: React.FC<LinkRendererProps> = ({
     >
       {/* 当たり判定用の太い透明線。選択/削除できるときだけ反応させる */}
       <line x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y} stroke="transparent" strokeWidth="20" style={{ pointerEvents: canSelect ? 'auto' : 'none' }} />
-      <line x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y} stroke={stroke} strokeWidth={isSelected ? 4 : 2} style={{ pointerEvents: 'none' }} />
-      <text x={p1Pos.x} y={p1Pos.y} fill="rgba(255,255,255,0.6)" fontSize="10" textAnchor="middle" style={{ pointerEvents: 'none', userSelect: 'none' }} className="label-mono">{fromIface?.name || 'P'}</text>
-      <text x={p2Pos.x} y={p2Pos.y} fill="rgba(255,255,255,0.6)" fontSize="10" textAnchor="middle" style={{ pointerEvents: 'none', userSelect: 'none' }} className="label-mono">{toIface?.name || 'P'}</text>
+      <line x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y} strokeWidth={isSelected ? 4 : 2} style={{ stroke, pointerEvents: 'none' }} />
+      <text x={p1Pos.x} y={p1Pos.y} fontSize="11" textAnchor="middle" style={{ fill: 'rgba(var(--ink), 0.75)', pointerEvents: 'none', userSelect: 'none' }} className="label-mono">{fromIface?.name || 'P'}</text>
+      <text x={p2Pos.x} y={p2Pos.y} fontSize="11" textAnchor="middle" style={{ fill: 'rgba(var(--ink), 0.75)', pointerEvents: 'none', userSelect: 'none' }} className="label-mono">{toIface?.name || 'P'}</text>
       {isSelected && canSelect && (
         <g onClick={(e) => { e.stopPropagation(); onRemove(link.id); }} style={{ cursor: 'pointer' }} role="button" aria-label="Remove cable">
           <title>Remove this cable (Delete)</title>

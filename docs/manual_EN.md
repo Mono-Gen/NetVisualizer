@@ -45,6 +45,10 @@ With this tool, you can:
 
 > **Important**: Build your network correctly in Design Mode before switching to Simulation Mode.
 
+### 1.2 Theme (Light / Dark)
+
+Use the three buttons at the top of the sidebar to choose **Auto** (follow your operating system setting), **Light**, or **Dark**. Your choice is remembered on this device.
+
 ---
 
 ## Chapter 2 — Building a Network (Design Mode)

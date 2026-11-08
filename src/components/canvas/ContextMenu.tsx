@@ -58,9 +58,9 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, boundsWidth, bou
       onPointerDown={(e) => e.stopPropagation()}
       style={{
         position: 'absolute', left, top, width: MENU_WIDTH, zIndex: 200, padding: '6px',
-        background: 'rgba(15, 23, 42, 0.96)', backdropFilter: 'blur(12px)',
-        border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px',
-        boxShadow: '0 12px 32px rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column', gap: '2px',
+        background: 'rgba(var(--panel-rgb), 0.96)', backdropFilter: 'blur(12px)',
+        border: '1px solid rgba(var(--ink), 0.15)', borderRadius: '10px',
+        boxShadow: '0 12px 32px rgba(var(--shade), 0.5)', display: 'flex', flexDirection: 'column', gap: '2px',
         maxHeight: Math.max(120, boundsHeight - 16), overflowY: 'auto'
       }}
     >
@@ -69,7 +69,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, boundsWidth, bou
           return <div key={item.key} style={{ padding: '6px 10px', fontSize: '11px', color: 'var(--text-dim)', fontWeight: 700, letterSpacing: '0.04em' }}>{item.label}</div>;
         }
         if (item.kind === 'separator') {
-          return <div key={item.key} role="separator" style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '4px 0' }} />;
+          return <div key={item.key} role="separator" style={{ height: '1px', background: 'rgba(var(--ink), 0.1)', margin: '4px 0' }} />;
         }
         return (
           <button
@@ -80,12 +80,12 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, boundsWidth, bou
             onClick={() => { onClose(); item.run(); }}
             style={{
               textAlign: 'left', padding: '8px 10px', fontSize: '12px', borderRadius: '6px', border: 'none',
-              background: 'transparent', color: item.danger ? '#f87171' : 'white',
+              background: 'transparent', color: item.danger ? 'var(--c-red)' : 'var(--text-main)',
               opacity: item.disabled ? 0.4 : 1, cursor: item.disabled ? 'not-allowed' : 'pointer'
             }}
-            onMouseEnter={(e) => { if (!item.disabled) e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
+            onMouseEnter={(e) => { if (!item.disabled) e.currentTarget.style.background = 'rgba(var(--ink), 0.08)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-            onFocus={(e) => { if (!item.disabled) e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
+            onFocus={(e) => { if (!item.disabled) e.currentTarget.style.background = 'rgba(var(--ink), 0.08)'; }}
             onBlur={(e) => { e.currentTarget.style.background = 'transparent'; }}
           >
             {item.label}

@@ -42,10 +42,10 @@ export const PortHandle: React.FC<PortHandleProps> = ({
     return () => el.removeEventListener('pointerdown', handler);
   }, [interactive, onStart]);
 
-  const border = isWireSource ? '3px solid #f97316'
-    : isCandidate ? '2px solid #22c55e'
-    : isBlocked ? '2px dashed #64748b'
-    : `2px solid ${used ? '#60a5fa' : '#94a3b8'}`;
+  const border = isWireSource ? '3px solid var(--c-orange)'
+    : isCandidate ? '2px solid var(--c-green-strong)'
+    : isBlocked ? '2px dashed var(--c-slate)'
+    : `2px solid ${used ? 'var(--c-blue)' : 'var(--c-slate)'}`;
 
   return (
     <div
@@ -58,9 +58,9 @@ export const PortHandle: React.FC<PortHandleProps> = ({
         left: cx - PORT_SIZE / 2, top: cy - PORT_SIZE / 2,
         width: PORT_SIZE, height: PORT_SIZE, borderRadius: '50%',
         boxSizing: 'border-box',
-        background: used ? '#60a5fa' : '#0f172a',
+        background: used ? 'var(--c-blue)' : 'var(--node-bg)',
         border,
-        boxShadow: isCandidate ? '0 0 0 3px rgba(34,197,94,0.35), 0 0 10px #22c55e' : 'none',
+        boxShadow: isCandidate ? '0 0 0 3px rgba(34,197,94,0.35), 0 0 10px var(--c-green-strong)' : 'none',
         opacity: isBlocked ? 0.4 : 1,
         cursor: interactive ? (used ? 'not-allowed' : 'crosshair') : 'default',
         zIndex: 40, touchAction: 'none'

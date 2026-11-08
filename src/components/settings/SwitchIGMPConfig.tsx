@@ -81,23 +81,23 @@ export const SwitchIGMPConfig: React.FC<SwitchIGMPConfigProps> = ({ node }) => {
   return (
     <div className="switch-igmp-config animate-slide-up" style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '8px' }}>
       {/* 1. Device Mode Header & Warning */}
-      <div style={{ padding: '12px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+      <div style={{ padding: '12px', background: 'rgba(var(--ink), 0.03)', borderRadius: '12px', border: '1px solid rgba(var(--ink), 0.05)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-          <Cpu size={16} color={isUnmanaged ? '#f59e0b' : '#3b82f6'} />
+          <Cpu size={16} color={isUnmanaged ? 'var(--c-amber)' : 'var(--c-blue-strong)'} />
           <span style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.05em' }}>
             {isUnmanaged ? 'UNMANAGED L2 SWITCH' : 'MANAGED L2 SWITCH'}
           </span>
         </div>
         
         {isUnmanaged ? (
-          <div style={{ display: 'flex', gap: '8px', color: '#f59e0b', fontSize: '10px', lineHeight: '1.4' }}>
+          <div style={{ display: 'flex', gap: '8px', color: 'var(--c-amber)', fontSize: '11px', lineHeight: '1.4' }}>
             <AlertCircle size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
             <div>
               No management IP address set. The device operates as a simple unmanaged L2 switch. IGMP Querier is disabled.
             </div>
           </div>
         ) : (
-          <div style={{ display: 'flex', gap: '8px', color: '#10b981', fontSize: '10px', lineHeight: '1.4' }}>
+          <div style={{ display: 'flex', gap: '8px', color: 'var(--c-teal)', fontSize: '11px', lineHeight: '1.4' }}>
             <Layers size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
             <div>
               Management IP is active. Even if the subnet differs from PCs, L2 forwarding (data plane) works independently.
@@ -108,11 +108,11 @@ export const SwitchIGMPConfig: React.FC<SwitchIGMPConfigProps> = ({ node }) => {
 
       {/* 2. Management IP & Subnet Settings */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        <h4 className="heading-sm" style={{ fontSize: '9px', marginBottom: '0' }}>Management Interface (VLAN 1)</h4>
+        <h4 className="heading-sm" style={{ fontSize: '11px', marginBottom: '0' }}>Management Interface (VLAN 1)</h4>
         
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
           <div>
-            <label style={{ fontSize: '9px', color: 'var(--text-dim)', display: 'block', marginBottom: '4px' }}>IP Address</label>
+            <label style={{ fontSize: '11px', color: 'var(--text-dim)', display: 'block', marginBottom: '4px' }}>IP Address</label>
             <input
               type="text"
               value={ip}
@@ -123,7 +123,7 @@ export const SwitchIGMPConfig: React.FC<SwitchIGMPConfigProps> = ({ node }) => {
             />
           </div>
           <div>
-            <label style={{ fontSize: '9px', color: 'var(--text-dim)', display: 'block', marginBottom: '4px' }}>Subnet Mask</label>
+            <label style={{ fontSize: '11px', color: 'var(--text-dim)', display: 'block', marginBottom: '4px' }}>Subnet Mask</label>
             <input
               type="text"
               value={subnet}
@@ -137,11 +137,11 @@ export const SwitchIGMPConfig: React.FC<SwitchIGMPConfigProps> = ({ node }) => {
       </div>
 
       {/* 3. IGMP Snooping Config */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '8px 0', borderBottom: '1px solid rgba(var(--ink), 0.05)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
             <div style={{ fontSize: '12px', fontWeight: 600 }}>IGMP Snooping</div>
-            <div style={{ fontSize: '9px', color: 'var(--text-dim)' }}>
+            <div style={{ fontSize: '11px', color: 'var(--text-dim)' }}>
               {isSnoopingEnabled ? 'Filters multicast to registered ports only' : 'Floods multicast to all ports (Hub behavior)'}
             </div>
           </div>
@@ -155,8 +155,8 @@ export const SwitchIGMPConfig: React.FC<SwitchIGMPConfigProps> = ({ node }) => {
         </div>
 
         {isSnoopingEnabled && (
-          <div className="animate-fade" style={{ display: 'flex', gap: '8px', alignItems: 'center', background: 'rgba(0,0,0,0.2)', padding: '8px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.03)' }}>
-            <label style={{ fontSize: '10px', color: 'var(--text-dim)', flexShrink: 0 }}>Snooping Aging Time (sec):</label>
+          <div className="animate-fade" style={{ display: 'flex', gap: '8px', alignItems: 'center', background: 'rgba(var(--shade), 0.2)', padding: '8px', borderRadius: '8px', border: '1px solid rgba(var(--ink), 0.03)' }}>
+            <label style={{ fontSize: '11px', color: 'var(--text-dim)', flexShrink: 0 }}>Snooping Aging Time (sec):</label>
             <input
               type="number"
               value={agingTime}
@@ -175,7 +175,7 @@ export const SwitchIGMPConfig: React.FC<SwitchIGMPConfigProps> = ({ node }) => {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
             <div style={{ fontSize: '12px', fontWeight: 600 }}>IGMP Querier</div>
-            <div style={{ fontSize: '9px', color: 'var(--text-dim)' }}>
+            <div style={{ fontSize: '11px', color: 'var(--text-dim)' }}>
               {isQuerierEnabled 
                 ? (node.igmpQuerierStandby ? 'Standby (Lost Election)' : 'Sending Periodic Queries') 
                 : 'Querier function is disabled'}
@@ -192,8 +192,8 @@ export const SwitchIGMPConfig: React.FC<SwitchIGMPConfigProps> = ({ node }) => {
         </div>
 
         {isQuerierEnabled && !isUnmanaged && (
-          <div className="animate-fade" style={{ display: 'flex', gap: '8px', alignItems: 'center', background: 'rgba(0,0,0,0.2)', padding: '8px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.03)' }}>
-            <label style={{ fontSize: '10px', color: 'var(--text-dim)', flexShrink: 0 }}>Query Interval (sec):</label>
+          <div className="animate-fade" style={{ display: 'flex', gap: '8px', alignItems: 'center', background: 'rgba(var(--shade), 0.2)', padding: '8px', borderRadius: '8px', border: '1px solid rgba(var(--ink), 0.03)' }}>
+            <label style={{ fontSize: '11px', color: 'var(--text-dim)', flexShrink: 0 }}>Query Interval (sec):</label>
             <input
               type="number"
               value={interval}

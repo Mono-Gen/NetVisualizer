@@ -284,7 +284,7 @@ export const NetworkCanvas: React.FC = () => {
             const srcNode = nodes.find(n => n.id === wiring.source.nodeId);
             if (!srcNode) return null;
             const s = getPortPosition(srcNode, wiring.source.ifaceId);
-            return <line x1={s.x} y1={s.y} x2={wiring.x} y2={wiring.y} stroke="#f97316" strokeWidth="2" strokeDasharray="6 4" style={{ pointerEvents: 'none' }} />;
+            return <line x1={s.x} y1={s.y} x2={wiring.x} y2={wiring.y} strokeWidth="2" strokeDasharray="6 4" style={{ stroke: 'var(--c-orange)', pointerEvents: 'none' }} />;
           })()}
           {packets.map(packet => (
             <PacketRenderer key={packet.id} packet={packet} nodes={nodes} />

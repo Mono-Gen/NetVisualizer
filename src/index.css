@@ -11,19 +11,119 @@
   font-family: 'Inter', system-ui, sans-serif;
   color-scheme: dark;
   --bg-color: #020617;
+  --body-gradient: radial-gradient(circle at 0% 0%, #1e1b4b 0%, #020617 100%);
+  --app-gradient: radial-gradient(circle at center, #111827 0%, #020617 100%);
+  --canvas-bg: #020617;
+  --canvas-inset: inset 0 0 60px rgba(0, 0, 0, 0.8);
   --glass-bg: rgba(15, 23, 42, 0.7);
-  --border-color: rgba(255, 255, 255, 0.08);
-  --primary-blue: #3b82f6;
+  --panel-rgb: 15, 23, 42;
+  --node-bg: #1e293b;
+  /* ink: 文字・枠線・薄い面に使う前景色のRGB。shade: 入力欄などの凹んだ面 */
+  --ink: 255, 255, 255;
+  --shade: 0, 0, 0;
+  --border-color: rgba(var(--ink), 0.08);
+  --primary-blue: #2563eb;
   --primary-green: #10b981;
   --primary-purple: #8b5cf6;
   --primary-orange: #f59e0b;
-  --text-main: rgba(255, 255, 255, 0.95);
-  --text-dim: rgba(255, 255, 255, 0.4);
+  --text-main: rgba(var(--ink), 0.95);
+  --text-dim: rgba(var(--ink), 0.62);
   --glow-blue: 0 0 20px rgba(59, 130, 246, 0.3);
+  /* アクセント色(文字・線・アイコン用)。ライトでは背景に対して十分なコントラストが出る濃い色にする */
+  --c-blue: #60a5fa;
+  --c-blue-strong: #5b9cf8;
+  --c-yellow: #fbbf24;
+  --c-amber: #f59e0b;
+  --c-pink: #f472b6;
+  --c-violet: #a78bfa;
+  --c-violet-strong: #a78bfa;
+  --c-purple: #c084fc;
+  --c-red: #f87171;
+  --c-green: #4ade80;
+  --c-green-strong: #22c55e;
+  --c-orange: #f97316;
+  --c-teal: #10b981;
+  --c-slate: #94a3b8;
+  --c-sky: #38bdf8;
+  --solid-green: #15803d;
+  /* 強調色(黄など)の背景の上に載せる文字色 */
+  --on-accent: #000000;
+}
+
+/* ライト: OS設定に従う(Auto)。手動で dark を選んだ場合は除外する */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+    --bg-color: #f1f5f9;
+    --body-gradient: linear-gradient(135deg, #e0e7ff 0%, #f1f5f9 100%);
+    --app-gradient: radial-gradient(circle at center, #f8fafc 0%, #e2e8f0 100%);
+    --canvas-bg: #f8fafc;
+    --canvas-inset: inset 0 0 40px rgba(15, 23, 42, 0.12);
+    --glass-bg: rgba(255, 255, 255, 0.78);
+    --panel-rgb: 255, 255, 255;
+    --node-bg: #ffffff;
+    --ink: 15, 23, 42;
+    --shade: 15, 23, 42;
+    --border-color: rgba(var(--ink), 0.14);
+    --text-main: rgba(var(--ink), 0.95);
+    --text-dim: rgba(var(--ink), 0.66);
+    --c-blue: #1d4ed8;
+    --c-blue-strong: #2563eb;
+    --c-yellow: #8a5a06;
+    --c-amber: #b45309;
+    --c-pink: #be185d;
+    --c-violet: #6d28d9;
+    --c-violet-strong: #6d28d9;
+    --c-purple: #7e22ce;
+    --c-red: #b91c1c;
+    --c-green: #15803d;
+    --c-green-strong: #15803d;
+    --c-orange: #c2410c;
+    --c-teal: #047857;
+    --c-slate: #475569;
+  --c-sky: #0369a1;
+  --solid-green: #15803d;
+  --on-accent: #ffffff;
+  }
+}
+
+/* ライト: 手動で選んだ場合 */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg-color: #f1f5f9;
+  --body-gradient: linear-gradient(135deg, #e0e7ff 0%, #f1f5f9 100%);
+  --app-gradient: radial-gradient(circle at center, #f8fafc 0%, #e2e8f0 100%);
+  --canvas-bg: #f8fafc;
+  --canvas-inset: inset 0 0 40px rgba(15, 23, 42, 0.12);
+  --glass-bg: rgba(255, 255, 255, 0.78);
+  --panel-rgb: 255, 255, 255;
+  --node-bg: #ffffff;
+  --ink: 15, 23, 42;
+  --shade: 15, 23, 42;
+  --border-color: rgba(var(--ink), 0.14);
+  --text-main: rgba(var(--ink), 0.95);
+  --text-dim: rgba(var(--ink), 0.66);
+  --c-blue: #1d4ed8;
+  --c-blue-strong: #2563eb;
+  --c-yellow: #8a5a06;
+  --c-amber: #b45309;
+  --c-pink: #be185d;
+  --c-violet: #6d28d9;
+  --c-violet-strong: #6d28d9;
+  --c-purple: #7e22ce;
+  --c-red: #b91c1c;
+  --c-green: #15803d;
+  --c-green-strong: #15803d;
+  --c-orange: #c2410c;
+  --c-teal: #047857;
+  --c-slate: #475569;
+  --c-sky: #0369a1;
+  --solid-green: #15803d;
+  --on-accent: #ffffff;
 }
 
 body {
-  background: radial-gradient(circle at 0% 0%, #1e1b4b 0%, #020617 100%);
+  background: var(--body-gradient);
   color: var(--text-main);
   min-height: 100vh;
   overflow: hidden;
@@ -37,11 +137,11 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(var(--ink), 0.05);
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(var(--ink), 0.1);
 }
 
 /* --- Layout Utils --- */
@@ -74,10 +174,10 @@ body {
 .canvas-container {
   flex: 1;
   position: relative;
-  background: #020617;
+  background: var(--canvas-bg);
   border-radius: 24px;
   border: 1px solid var(--border-color);
-  box-shadow: inset 0 0 60px rgba(0,0,0,0.8);
+  box-shadow: var(--canvas-inset);
   overflow: hidden;
 }
 
@@ -87,8 +187,8 @@ body {
   position: absolute;
   inset: 0;
   background-image: 
-    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+    linear-gradient(rgba(var(--ink),0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(var(--ink),0.04) 1px, transparent 1px);
   background-size: 40px 40px;
   pointer-events: none;
 }
@@ -116,7 +216,7 @@ body {
 }
 
 .btn-primary:hover {
-  background: #2563eb;
+  background: #1d4ed8;
   transform: translateY(-1px);
   box-shadow: 0 0 25px rgba(59, 130, 246, 0.5);
 }
@@ -134,14 +234,14 @@ body {
 }
 
 .btn-glass {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(var(--ink), 0.03);
   color: var(--text-main);
   border: 1px solid var(--border-color);
 }
 
 .btn-glass:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(var(--ink), 0.08);
+  border-color: rgba(var(--ink), 0.2);
 }
 
 .btn-small {
@@ -161,7 +261,7 @@ body {
 
 .label-mono {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: -0.01em;
 }
 
@@ -169,10 +269,10 @@ body {
 .input {
   width: 100%;
   padding: 10px 14px;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(var(--shade), 0.3);
   border: 1px solid var(--border-color);
   border-radius: 10px;
-  color: white;
+  color: var(--text-main);
   font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
   transition: all 0.2s;
@@ -181,7 +281,7 @@ body {
 .input:focus {
   outline: none;
   border-color: var(--primary-blue);
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(var(--shade), 0.4);
   box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
 }
 
@@ -209,7 +309,7 @@ body {
   left: 110%;
   top: 0;
   min-width: 220px; /* Increased for full MAC */
-  background: rgba(15, 23, 42, 0.95);
+  background: rgba(var(--panel-rgb), 0.95);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(59, 130, 246, 0.4);
   border-radius: 12px;
@@ -230,14 +330,14 @@ body {
 
 .node-table-header {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 8px;
+  font-size: 11px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(var(--ink), 0.4);
   text-transform: uppercase;
   letter-spacing: 0.1em;
   padding-bottom: 4px;
   margin-bottom: 6px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(var(--ink), 0.1);
   display: flex;
   justify-content: space-between;
 }
@@ -247,17 +347,17 @@ body {
   justify-content: space-between;
   gap: 12px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
+  font-size: 11px;
   padding: 2px 0;
 }
 
 .node-table-val {
-  color: #60a5fa;
+  color: var(--c-blue);
   font-weight: 500;
 }
 
 .node-table-key {
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(var(--ink), 0.7);
 }
 
 @keyframes slideInRight {

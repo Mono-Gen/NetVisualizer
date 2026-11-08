@@ -27,25 +27,25 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
         </button>
         <button onClick={(e) => { e.stopPropagation(); setZoom(1.0); }} className="btn btn-glass btn-small" style={{ borderRadius: '8px', padding: '8px' }}>
           <Maximize size={18} />
-          <span style={{ fontSize: '10px', marginLeft: '4px' }}>{Math.round(zoom * 100)}%</span>
+          <span style={{ fontSize: '11px', marginLeft: '4px' }}>{Math.round(zoom * 100)}%</span>
         </button>
       </div>
 
       <div className="label-mono" style={{ 
-        position: 'absolute',  top: '32px', left: '32px', color: 'white',
+        position: 'absolute',  top: '32px', left: '32px', color: 'var(--text-main)',
         background: 'rgba(59, 130, 246, 0.2)', padding: '8px 16px', borderRadius: '8px',
         border: '1px solid rgba(59, 130, 246, 0.3)', backdropFilter: 'blur(4px)',
         fontSize: '12px', fontWeight: 600, pointerEvents: 'none',
         display: 'flex', alignItems: 'center', gap: '8px', zIndex: 5
       }}>
-        <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: mode === 'DESIGN' ? '#fbbf24' : '#22c55e', boxShadow: `0 0 10px ${mode === 'DESIGN' ? '#fbbf24' : '#22c55e'}` }} />
+        <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: mode === 'DESIGN' ? 'var(--c-yellow)' : 'var(--c-green-strong)', boxShadow: `0 0 10px ${mode === 'DESIGN' ? 'var(--c-yellow)' : 'var(--c-green-strong)'}` }} />
         {mode === 'DESIGN' ? (
           'DESIGN MODE: DRAG PARTS IN · DRAG PORT TO PORT TO CONNECT'
         ) : (
           isInspectMode ? 'INSPECT MODE: CLICK TO VIEW TABLES' : 'SIMULATION MODE: CLICK NODES TO START PACKETS'
         )}
         {mode === 'SIMULATE' && isPaused && (
-          <span style={{ marginLeft: '8px', padding: '2px 8px', borderRadius: '4px', background: 'rgba(251, 191, 36, 0.25)', color: '#fbbf24', border: '1px solid rgba(251, 191, 36, 0.5)' }}>
+          <span style={{ marginLeft: '8px', padding: '2px 8px', borderRadius: '4px', background: 'rgba(251, 191, 36, 0.25)', color: 'var(--c-yellow)', border: '1px solid rgba(251, 191, 36, 0.5)' }}>
             ⏸ PAUSED
           </span>
         )}

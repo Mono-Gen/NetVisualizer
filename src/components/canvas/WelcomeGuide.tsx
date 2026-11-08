@@ -17,9 +17,9 @@ export const WelcomeGuide: React.FC = () => {
 
   return (
     <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', zIndex: 4 }}>
-      <div style={{ pointerEvents: 'auto', maxWidth: '440px', padding: '24px', borderRadius: '16px', background: 'rgba(15, 23, 42, 0.85)', border: '1px solid rgba(255,255,255,0.12)', backdropFilter: 'blur(8px)' }}>
+      <div style={{ pointerEvents: 'auto', maxWidth: '440px', padding: '24px', borderRadius: '16px', background: 'rgba(var(--panel-rgb), 0.85)', border: '1px solid rgba(var(--ink), 0.12)', backdropFilter: 'blur(8px)' }}>
         <h2 style={{ margin: '0 0 12px', fontSize: '16px' }}>Build your first network</h2>
-        <ol style={{ margin: '0 0 16px', paddingLeft: '20px', fontSize: '13px', lineHeight: 1.7, color: 'rgba(255,255,255,0.85)' }}>
+        <ol style={{ margin: '0 0 16px', paddingLeft: '20px', fontSize: '13px', lineHeight: 1.7, color: 'rgba(var(--ink), 0.85)' }}>
           {steps.map(s => <li key={s}>{s}</li>)}
         </ol>
         <div style={{ fontSize: '12px', color: 'var(--text-dim)', marginBottom: '8px' }}>Or start from a ready-made example:</div>

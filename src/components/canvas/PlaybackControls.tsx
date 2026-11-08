@@ -31,8 +31,8 @@ export const PlaybackControls: React.FC = () => {
         position: 'absolute', bottom: '20px', left: '50%', transform: 'translateX(-50%)',
         display: 'flex', alignItems: 'center', gap: '8px', zIndex: 100,
         padding: '8px', borderRadius: '12px',
-        background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(8px)',
-        border: `1px solid ${isPaused ? 'rgba(251, 191, 36, 0.6)' : 'rgba(255,255,255,0.1)'}`
+        background: 'rgba(var(--panel-rgb), 0.85)', backdropFilter: 'blur(8px)',
+        border: `1px solid ${isPaused ? 'rgba(251, 191, 36, 0.6)' : 'rgba(var(--ink), 0.1)'}`
       }}
     >
       <button
@@ -58,7 +58,7 @@ export const PlaybackControls: React.FC = () => {
         Step
       </button>
 
-      <span className="label-mono" style={{ fontSize: '12px', color: packets.length >= MAX_IN_FLIGHT_PACKETS ? '#f87171' : 'var(--text-dim)' }} title="Packets currently in flight (limit shown after the slash)">
+      <span className="label-mono" style={{ fontSize: '12px', color: packets.length >= MAX_IN_FLIGHT_PACKETS ? 'var(--c-red)' : 'var(--text-dim)' }} title="Packets currently in flight (limit shown after the slash)">
         In flight: {packets.length}/{MAX_IN_FLIGHT_PACKETS}
       </span>
 
@@ -69,12 +69,12 @@ export const PlaybackControls: React.FC = () => {
           onChange={(e) => setSimSpeed(Number(e.target.value))}
           aria-label="Simulation speed"
           style={{
-            background: 'rgba(0,0,0,0.3)', color: 'white', fontSize: '12px',
-            border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', padding: '6px 8px'
+            background: 'rgba(var(--shade), 0.3)', color: 'var(--text-main)', fontSize: '12px',
+            border: '1px solid rgba(var(--ink), 0.15)', borderRadius: '6px', padding: '6px 8px'
           }}
         >
           {SIM_SPEEDS.map(s => (
-            <option key={s} value={s} style={{ color: 'black' }}>{s}x</option>
+            <option key={s} value={s} style={{ color: 'var(--text-main)', background: 'var(--node-bg)' }}>{s}x</option>
           ))}
         </select>
       </label>
