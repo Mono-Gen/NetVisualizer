@@ -69,31 +69,32 @@ export const SidebarCommandPanel: React.FC<SidebarCommandPanelProps> = ({ node }
       {/* 宛先: Ping / UDP / TCP で共通 */}
       <span style={{ ...sectionTitle, color: 'var(--text-dim)' }}>{t('cmd.dest')}</span>
       <label style={fieldLabel} htmlFor="cmd-dest">{t('cmd.destIp')}</label>
-      <input
-        id="cmd-dest"
-        className="input"
-        style={inputStyle}
-        placeholder={t('cmd.ipPlaceholder')}
-        value={targetIP}
-        onChange={(e) => setTargetIP(e.target.value)}
-        onKeyDown={(e) => { if (e.key === 'Enter' && avail.ping.enabled) resolveAndPing(node.id, targetIP); }}
-      />
-      <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-end' }}>
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          <label style={fieldLabel} htmlFor="cmd-port">{t('cmd.destPort')}</label>
-          <input
-            id="cmd-port"
-            className="input"
-            type="number"
-            min={1}
-            max={65535}
-            aria-invalid={portInvalid}
-            value={targetPort}
-            onChange={e => setTargetPort(e.target.value)}
-            style={{ ...inputStyle, padding: '6px', borderColor: portInvalid ? 'var(--c-red)' : undefined }}
-          />
-        </div>
-        {actionButton(avail.ping, () => resolveAndPing(node.id, targetIP), 'Ping', { flex: 1, background: avail.ping.enabled ? 'var(--proto-icmp)' : undefined, color: avail.ping.enabled ? 'var(--on-proto)' : undefined })}
+      <div style={{ display: 'flex', gap: '6px' }}>
+        <input
+          id="cmd-dest"
+          className="input"
+          style={{ ...inputStyle, flex: 1, minWidth: 0 }}
+          placeholder={t('cmd.ipPlaceholder')}
+          value={targetIP}
+          onChange={(e) => setTargetIP(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter' && avail.ping.enabled) resolveAndPing(node.id, targetIP); }}
+        />
+        {actionButton(avail.ping, () => resolveAndPing(node.id, targetIP), 'Ping', { width: '64px', flexShrink: 0, background: avail.ping.enabled ? 'var(--proto-icmp)' : undefined, color: avail.ping.enabled ? 'var(--on-proto)' : undefined })}
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <label style={fieldLabel} htmlFor="cmd-port">{t('cmd.destPort')}</label>
+        <input
+          id="cmd-port"
+          className="input"
+          type="number"
+          min={1}
+          max={65535}
+          aria-invalid={portInvalid}
+          value={targetPort}
+          onChange={e => setTargetPort(e.target.value)}
+          style={{ ...inputStyle, padding: '6px', width: '80px', flexShrink: 0, borderColor: portInvalid ? 'var(--c-red)' : undefined }}
+        />
+        <span style={{ fontSize: '11px', color: 'var(--text-dim)' }}>{t('cmd.portHint')}</span>
       </div>
       {hintLine(destHint, portInvalid ? 'error' : 'dim')}
       {hintLine(ipv4Note)}
@@ -112,6 +113,7 @@ export const SidebarCommandPanel: React.FC<SidebarCommandPanelProps> = ({ node }
 
       {/* UDP: 接続なし。1回押すと1回送る */}
       <span style={{ ...sectionTitle, color: 'var(--proto-udp-text)' }}>{t('cmd.udp.title')}</span>
+      <div style={{ fontSize: '11px', color: 'var(--text-dim)', lineHeight: 1.4, marginTop: '-4px' }}>{t('cmd.udp.desc')}</div>
       {actionButton(avail.udp, () => { if (port !== null) sendUDPMessage(node.id, dest, port, message); }, t('cmd.udpSend'), { borderColor: 'var(--proto-udp)', color: 'var(--proto-udp-text)' })}
       {hintLine(udpHint)}
 
@@ -122,6 +124,7 @@ export const SidebarCommandPanel: React.FC<SidebarCommandPanelProps> = ({ node }
           {PHASE_GLYPH[phase]} {t(PHASE_KEY[phase])}
         </span>
       </div>
+      <div style={{ fontSize: '11px', color: 'var(--text-dim)', lineHeight: 1.4, marginTop: '-4px' }}>{t('cmd.tcp.desc')}</div>
       <div style={{ display: 'flex', gap: '4px' }}>
         {actionButton(avail.tcpConnect, () => { if (port !== null) startTCPHandshake(node.id, dest, port); }, t('cmd.step.connect'), { flex: 1, padding: 0, borderColor: 'var(--proto-tcp)', color: 'var(--proto-tcp-text)' })}
         {actionButton(avail.tcpSend, () => { if (port !== null) sendTCPData(node.id, dest, port, message); }, t('cmd.step.send'), { flex: 1, padding: 0, borderColor: 'var(--proto-tcp)', color: 'var(--proto-tcp-text)' })}
@@ -140,14 +143,14 @@ export const SidebarCommandPanel: React.FC<SidebarCommandPanelProps> = ({ node }
           <button
             onClick={() => requestDHCP(node.id)}
             className="btn btn-glass"
-            style={{ flex: 1, fontSize: '11px', height: '26px', borderColor: 'var(--proto-dhcp)', color: 'var(--proto-dhcp-text)' }}
+            style={{ flex: 1, minWidth: 0, fontSize: '11px', minHeight: '28px', padding: '4px 6px', whiteSpace: 'normal', lineHeight: 1.2, borderColor: 'var(--proto-dhcp)', color: 'var(--proto-dhcp-text)' }}
           >
             {t('cmd.dhcpRenew')}
           </button>
           <button
             onClick={() => sendmDNSQuery(node.id, targetIP || 'Web Server')}
             className="btn btn-glass"
-            style={{ flex: 1, fontSize: '11px', height: '26px', borderColor: 'var(--proto-mdns)', color: 'var(--proto-mdns-text)' }}
+            style={{ flex: 1, minWidth: 0, fontSize: '11px', minHeight: '28px', padding: '4px 6px', whiteSpace: 'normal', lineHeight: 1.2, borderColor: 'var(--proto-mdns)', color: 'var(--proto-mdns-text)' }}
             title={t('cmd.mdnsQueryTitle')}
           >
             {t('cmd.mdnsQuery')}

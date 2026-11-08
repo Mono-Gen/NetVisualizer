@@ -194,11 +194,11 @@ export const en = {
   "legend.hide": "Hide the color legend",
   "cmd.dest": "DESTINATION",
   "cmd.destIp": "IP address / Hostname",
-  "cmd.destPort": "Port (for UDP / TCP)",
+  "cmd.destPort": "Port",
   "cmd.ipPlaceholder": "e.g. 192.168.1.20",
   "cmd.message": "Message (UDP and TCP)",
-  "cmd.udp.title": "UDP (no connection)",
-  "cmd.tcp.title": "TCP (connection)",
+  "cmd.udp.title": "UDP",
+  "cmd.tcp.title": "TCP",
   "cmd.tcp.phase.none": "Not connected",
   "cmd.tcp.phase.connecting": "Connecting…",
   "cmd.tcp.phase.established": "Connected",
@@ -217,6 +217,9 @@ export const en = {
   "cmd.tcp.notConnected": "Nothing to close: not connected.",
   "cmd.tcp.hintStart": "Start with ① Connect (3-way handshake), then ② Send, then ③ Close.",
   "cmd.tcp.hintEstablished": "Connected. Send a message, or close with ③.",
+  "cmd.portHint": "Used by UDP and TCP",
+  "cmd.udp.desc": "Sends right away, without connecting. It does not check that the data arrived.",
+  "cmd.tcp.desc": "Connects first, then sends. It confirms that the data arrived.",
 };
 
 export type DictKey = keyof typeof en;
