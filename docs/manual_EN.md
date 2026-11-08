@@ -53,7 +53,11 @@ Use the three buttons at the bottom of the sidebar to choose **Auto** (follow yo
 
 Use the **日本語 / EN** buttons at the bottom of the sidebar to switch the screen language. The first time, the language follows your browser setting; after that, your choice is remembered on this device. Protocol names (ARP, ICMP, DHCP, …) are not translated.
 
-### 1.4 Moving Around the Canvas
+### 1.4 Your Work Is Saved Automatically
+
+The devices and cables you build are **saved automatically in this browser** (nothing is sent anywhere), and restored the next time you open the app. Learned information such as ARP and MAC tables is not saved, so you always start from a clean state. **Clear All** (or loading a sample) replaces what was saved. If the browser blocks storage, the app still works; it just cannot remember.
+
+### 1.5 Moving Around the Canvas
 
 | To do this | Do this |
 |------------|---------|
@@ -99,6 +103,8 @@ Click a node to select it. A settings panel will open in the left pane.
 | Subnet Mask | Defines the network boundary | `255.255.255.0` (/24) |
 | Gateway | Default gateway IP (required for inter-subnet traffic) | `192.168.1.1` |
 | DNS | IP address of the DNS server | `192.168.2.20` |
+
+> **Input checks**: while you type, the settings panel points out likely mistakes, such as an address that is not a valid IPv4 address, an invalid subnet mask, the network or broadcast address of a subnet, an IP address already used by another interface, or a gateway that is not in the same network. Your input is never blocked; the message says what is wrong and how to fix it.
 
 > **Glossary**:
 > - **IP Address**: A unique address on the network, like a postal address.
@@ -619,6 +625,10 @@ When communication fails, work through this checklist in order.
 - [ ] Is the gateway IP correctly configured on the source node?
 - [ ] Is the gateway IP within the same subnet as the source?
 - [ ] Does the router have IP addresses configured on both interfaces?
+
+### ✅ "Request timed out"
+
+When a ping gets no answer, the log shows **Request timed out: no reply from …**. The same happens when a DNS server does not answer. Check, in this order: the destination IP address, the subnet mask, the gateway (for another network), and the cables. The settings panel also marks suspicious values in red.
 
 ### ✅ Layer 4 Checks (Port)
 
