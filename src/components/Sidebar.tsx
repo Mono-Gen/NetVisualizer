@@ -1,11 +1,11 @@
 import React from 'react';
 import { useNetworkStore } from '../store/useNetworkStore';
 import { NodeIcon } from './canvas/NodeIcon';
-import type { NetNode, NodeType, NetInterface } from '../types/network';
+import type { NodeType } from '../types/network';
 import { Plus, Play, Settings, Trash2, Link as LinkIcon, Activity } from 'lucide-react';
 import { SidebarCommandPanel } from './SidebarCommandPanel';
 import { SampleMenu } from './SampleMenu';
-import { DEFAULT_PORT_COUNT, createInterface, collectMacs } from '../logic/interfaceFactory';
+import { NODE_PALETTE, DND_NODE_TYPE, createNode } from '../logic/nodeFactory';
 
 export const Sidebar: React.FC = () => {
   const { 
@@ -14,50 +14,10 @@ export const Sidebar: React.FC = () => {
     clearCanvas, packetLogs, clearPacketLogs, selectedNodeId
   } = useNetworkStore();
 
-  const nodeTypes: { type: NodeType; label: string }[] = [
-    { type: 'pc', label: 'PC' },
-    { type: 'router', label: 'Router' },
-    { type: 'switch', label: 'Switch' },
-    { type: 'l3switch', label: 'L3 Switch' },
-    { type: 'server', label: 'Server' },
-    { type: 'hub', label: 'Hub' },
-    { type: 'dns', label: 'DNS Server' },
-    { type: 'dhcp', label: 'DHCP Server' },
-  ];
+  const nodeTypes = NODE_PALETTE;
 
-  const handleAddNode = (type: NodeType, label: string) => {
-    // ポート数・名前・MAC・既定IPは共通ファクトリーで決める(全ノードのMACと重複しない)
-    const usedMacs = collectMacs(nodes);
-    const interfaces: NetInterface[] = [];
-    for (let i = 0; i < DEFAULT_PORT_COUNT[type]; i++) {
-      interfaces.push(createInterface(type, interfaces, usedMacs));
-    }
-
-    const newNode: NetNode = {
-      id: `n_${Math.random().toString(36).substr(2, 9)}`,
-      type,
-      x: 350 + Math.random() * 100,
-      y: 150 + Math.random() * 100,
-      label: `${label} ${nodes.length + 1}`,
-      interfaces,
-      macTable: {},
-      arpTable: {},
-      igmpSnoopingTable: {},
-      joinedGroups: [],
-      ...(type === 'dhcp' ? {
-        dhcpScope: {
-          startIP: '192.168.1.100',
-          endIP: '192.168.1.200',
-          gateway: '192.168.1.1',
-          dns: '192.168.1.1',
-          subnet: '255.255.255.0',
-          leaseTime: 3600,
-          leases: {}
-        }
-      } : {})
-    };
-    addNode(newNode);
-  };
+  // クリックでも追加できる(キーボード/タッチ向け)。位置は空いているグリッドに自動配置
+  const handleAddNode = (type: NodeType) => addNode(createNode(type, nodes));
 
   return (
     <div className="sidebar glass" style={{ width: '280px', height: '100%', display: 'flex', flexDirection: 'column', gap: '20px', padding: '20px' }}>
@@ -94,7 +54,10 @@ export const Sidebar: React.FC = () => {
                 {nodeTypes.map((nt) => (
                   <button 
                     key={nt.type}
-                    onClick={() => handleAddNode(nt.type, nt.label)}
+                    draggable
+                    onDragStart={(e) => { e.dataTransfer.setData(DND_NODE_TYPE, nt.type); e.dataTransfer.effectAllowed = 'copy'; }}
+                    onClick={() => handleAddNode(nt.type)}
+                    title={`Drag onto the canvas, or click to add (${nt.label})`}
                     className="btn btn-glass"
                     style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', padding: '12px', height: 'auto', fontSize: '10px' }}
                   >

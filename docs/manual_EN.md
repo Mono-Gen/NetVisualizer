@@ -61,9 +61,9 @@ With this tool, you can:
 
 ### 2.2 Adding Nodes
 
-1. In Design Mode, **right-click** on an empty area of the canvas.
-2. Choose the node type from the menu.
-3. Drag the node to adjust its position.
+1. In Design Mode, **drag a component** from the sidebar onto the canvas and drop it where you want it.
+   (Clicking a component also adds it, placed automatically in a free spot.)
+2. Drag the node on the canvas to adjust its position.
 
 ### 2.3 Configuring a Node
 

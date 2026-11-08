@@ -6,16 +6,30 @@ import { PacketRenderer } from './canvas/PacketRenderer';
 import { CanvasControls } from './canvas/CanvasControls';
 import { InterfaceSelector } from './canvas/InterfaceSelector';
 import { PlaybackControls } from './canvas/PlaybackControls';
+import { DND_NODE_TYPE, createNode } from '../logic/nodeFactory';
+import type { NodeType } from '../types/network';
 
 export const NetworkCanvas: React.FC = () => {
   const { 
     nodes, links, packets, mode, isLinkMode, isDeleteMode, linkingSourceId, 
     selectedNodeId, simSourceId, zoom, isInspectMode, isPaused,
-    updateNodePosition, setLinkingSourceId, setSelectedNodeId, setSimSourceId, 
+    updateNodePosition, addNode, setLinkingSourceId, setSelectedNodeId, setSimSourceId, 
     setZoom, addLink, sendPacket, removeNode, removeLink 
   } = useNetworkStore();
 
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // サイドバーからのドロップでノードを追加する(DESIGNモードのみ)。
+  // 画面座標 → キャンバス座標: コンテナ左上を引き、ズームで割る(ノード中心がカーソルに来るよう半分戻す)
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    const type = e.dataTransfer.getData(DND_NODE_TYPE) as NodeType;
+    if (!type || mode !== 'DESIGN') return;
+    e.preventDefault();
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = Math.max(0, (e.clientX - rect.left) / zoom - 32);
+    const y = Math.max(0, (e.clientY - rect.top) / zoom - 32);
+    addNode(createNode(type, nodes, { x, y }));
+  };
   const [portMenu, setPortMenu] = useState<{ nodeId: string, isSource: boolean } | null>(null);
   const [pendingFromInterfaceId, setPendingFromInterfaceId] = useState<string | null>(null);
   const [simTargetId, setSimTargetId] = useState<string | null>(null);
@@ -128,6 +142,8 @@ export const NetworkCanvas: React.FC = () => {
   return (
     <div 
       ref={containerRef}
+      onDragOver={(e) => { if (mode === 'DESIGN' && e.dataTransfer.types.includes(DND_NODE_TYPE)) { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; } }}
+      onDrop={handleDrop}
       onPointerDown={(e) => {
         if (e.target === e.currentTarget) {
           setSelectedNodeId(null);
