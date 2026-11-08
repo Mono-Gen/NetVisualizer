@@ -1,5 +1,6 @@
 import type { NetNode, NetPacket, NatEntry } from '../types/network';
 import type { NetInterface } from '../types/network';
+import { lookupRoute } from './networkUtils';
 
 /**
  * ルーターのNAT(NAPT / IPマスカレード)の純粋関数。
@@ -101,13 +102,22 @@ export const translateInbound = (node: NetNode, packet: NetPacket): NetPacket | 
   return restored;
 };
 
-/** 外側ポートのIPあての、表に載っていないパケットを、NATが破棄すべきか(ルーター自身へのping要求は除く) */
+/**
+ * 外側ポートで受けた、変換表に載っていないパケットを、NATが破棄すべきか。
+ * 対象は2つ: (1) 外側ポート自身のIPあての、応答ではない通信(ルーター自身へのping要求は除く)、
+ * (2) 内側のネットワークへ転送されるはずの通信(外から中へは入れない)。
+ * 他のポートのIPなど、ルーター自身あての通信は、ルーターが従来どおり扱う。
+ */
 export const shouldDropUntranslated = (node: NetNode, packet: NetPacket, ingressInterfaceId: string | undefined): boolean => {
   const outside = natOutsideInterface(node);
-  if (!outside || ingressInterfaceId !== outside.id || packet.targetIP !== outside.ip) return false;
+  if (!outside || ingressInterfaceId !== outside.id) return false;
   if (!natProtocolOf(packet)) return false;
-  if (packet.protocol === 'ICMP' && packet.type === 'echo-request') return false; // ルーター自身への ping
-  return true;
+  if (node.interfaces.some(i => i.ip && i.ip === packet.targetIP)) {
+    if (packet.targetIP !== outside.ip) return false;
+    return !(packet.protocol === 'ICMP' && packet.type === 'echo-request'); // ルーター自身への ping は応答する
+  }
+  const route = lookupRoute(node, packet.targetIP);
+  return !!route && route.iface.id !== outside.id; // 内側へ向かう通信は入れない(経路が無ければ、通常の到達不能になる)
 };
 
 /** 変換表を、削除された機器のIPを内側に持つ分だけ減らす */

@@ -354,7 +354,7 @@ PC 1 192.168.1.10:50001 ◄─ Router ◄─ 203.0.113.1:40000 ◄─ Server
 ```
 
 - Two PCs can use the same inside port at the same time, because each gets a different outside port.
-- Traffic arriving at the outside address that is **not a reply** (no matching table entry) is **dropped**, and the log says so. This is why devices behind NAT cannot be reached directly from the outside. (A ping to the router's own outside address is still answered by the router.)
+- Traffic arriving from the outside that is **not a reply** (no matching table entry) is **dropped**, and the log says so. This holds whether it is sent to the router's outside address or straight to an inside address, which is why devices behind NAT cannot be reached directly from the outside. (A ping to the router's own addresses is still answered by the router.)
 - The table keeps up to **64** entries; the oldest are removed first. The trash button clears it. Unplugging a cable on the router, or deleting an inside device, also removes the related entries. The table is not saved.
 - Firewall rules are checked with the **inside address** (before the address is changed on the way out, and after it is restored on the way back).
 - Not covered: port forwarding, translation of ICMP error messages, and expiry of idle entries.
