@@ -3,12 +3,14 @@ import type { NetNode } from '../../types/network';
 import { useNetworkStore } from '../../store/useNetworkStore';
 import { IGMPHandler } from '../../logic/IGMPHandler';
 import { AlertCircle, Cpu, RefreshCw, Layers } from 'lucide-react';
+import { useT } from '../../i18n/useT';
 
 interface SwitchIGMPConfigProps {
   node: NetNode;
 }
 
 export const SwitchIGMPConfig: React.FC<SwitchIGMPConfigProps> = ({ node }) => {
+  const t = useT();
   const { updateNode, sendPacket } = useNetworkStore();
   const [ip, setIp] = useState(node.managementIP || '');
   const [subnet, setSubnet] = useState(node.managementSubnet || '255.255.255.0');
@@ -85,7 +87,7 @@ export const SwitchIGMPConfig: React.FC<SwitchIGMPConfigProps> = ({ node }) => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
           <Cpu size={16} color={isUnmanaged ? 'var(--c-amber)' : 'var(--c-blue-strong)'} />
           <span style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.05em' }}>
-            {isUnmanaged ? 'UNMANAGED L2 SWITCH' : 'MANAGED L2 SWITCH'}
+            {isUnmanaged ? t('igmp.unmanaged') : t('igmp.managed')}
           </span>
         </div>
         
@@ -93,14 +95,14 @@ export const SwitchIGMPConfig: React.FC<SwitchIGMPConfigProps> = ({ node }) => {
           <div style={{ display: 'flex', gap: '8px', color: 'var(--c-amber)', fontSize: '11px', lineHeight: '1.4' }}>
             <AlertCircle size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
             <div>
-              No management IP address set. The device operates as a simple unmanaged L2 switch. IGMP Querier is disabled.
+              {t('igmp.unmanagedNote')}
             </div>
           </div>
         ) : (
           <div style={{ display: 'flex', gap: '8px', color: 'var(--c-teal)', fontSize: '11px', lineHeight: '1.4' }}>
             <Layers size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
             <div>
-              Management IP is active. Even if the subnet differs from PCs, L2 forwarding (data plane) works independently.
+              {t('igmp.managedNote')}
             </div>
           </div>
         )}
@@ -108,27 +110,27 @@ export const SwitchIGMPConfig: React.FC<SwitchIGMPConfigProps> = ({ node }) => {
 
       {/* 2. Management IP & Subnet Settings */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        <h4 className="heading-sm" style={{ fontSize: '11px', marginBottom: '0' }}>Management Interface (VLAN 1)</h4>
+        <h4 className="heading-sm" style={{ fontSize: '11px', marginBottom: '0' }}>{t('igmp.mgmtTitle')}</h4>
         
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
           <div>
-            <label style={{ fontSize: '11px', color: 'var(--text-dim)', display: 'block', marginBottom: '4px' }}>IP Address</label>
+            <label style={{ fontSize: '11px', color: 'var(--text-dim)', display: 'block', marginBottom: '4px' }}>{t('iface.ip')}</label>
             <input
               type="text"
               value={ip}
               onChange={handleIpChange}
-              placeholder="e.g. 192.168.1.254"
+              placeholder={t('igmp.exampleIp')}
               className="input"
               style={{ padding: '8px 10px', fontSize: '11px' }}
             />
           </div>
           <div>
-            <label style={{ fontSize: '11px', color: 'var(--text-dim)', display: 'block', marginBottom: '4px' }}>Subnet Mask</label>
+            <label style={{ fontSize: '11px', color: 'var(--text-dim)', display: 'block', marginBottom: '4px' }}>{t('iface.subnet')}</label>
             <input
               type="text"
               value={subnet}
               onChange={handleSubnetChange}
-              placeholder="e.g. 255.255.255.0"
+              placeholder={t('igmp.exampleMask')}
               className="input"
               style={{ padding: '8px 10px', fontSize: '11px' }}
             />
@@ -142,7 +144,7 @@ export const SwitchIGMPConfig: React.FC<SwitchIGMPConfigProps> = ({ node }) => {
           <div>
             <div style={{ fontSize: '12px', fontWeight: 600 }}>IGMP Snooping</div>
             <div style={{ fontSize: '11px', color: 'var(--text-dim)' }}>
-              {isSnoopingEnabled ? 'Filters multicast to registered ports only' : 'Floods multicast to all ports (Hub behavior)'}
+              {isSnoopingEnabled ? t('igmp.filters') : t('igmp.floods')}
             </div>
           </div>
           <button
@@ -150,13 +152,13 @@ export const SwitchIGMPConfig: React.FC<SwitchIGMPConfigProps> = ({ node }) => {
             className={`btn btn-small ${isSnoopingEnabled ? 'btn-primary' : 'btn-glass'}`}
             style={{ width: '80px', display: 'flex', justifyContent: 'center' }}
           >
-            {isSnoopingEnabled ? 'ENABLED' : 'DISABLED'}
+            {isSnoopingEnabled ? t('state.enabled') : t('state.disabled')}
           </button>
         </div>
 
         {isSnoopingEnabled && (
           <div className="animate-fade" style={{ display: 'flex', gap: '8px', alignItems: 'center', background: 'rgba(var(--shade), 0.2)', padding: '8px', borderRadius: '8px', border: '1px solid rgba(var(--ink), 0.03)' }}>
-            <label style={{ fontSize: '11px', color: 'var(--text-dim)', flexShrink: 0 }}>Snooping Aging Time (sec):</label>
+            <label style={{ fontSize: '11px', color: 'var(--text-dim)', flexShrink: 0 }}>{t('igmp.agingTime')}</label>
             <input
               type="number"
               value={agingTime}
@@ -177,8 +179,8 @@ export const SwitchIGMPConfig: React.FC<SwitchIGMPConfigProps> = ({ node }) => {
             <div style={{ fontSize: '12px', fontWeight: 600 }}>IGMP Querier</div>
             <div style={{ fontSize: '11px', color: 'var(--text-dim)' }}>
               {isQuerierEnabled 
-                ? (node.igmpQuerierStandby ? 'Standby (Lost Election)' : 'Sending Periodic Queries') 
-                : 'Querier function is disabled'}
+                ? (node.igmpQuerierStandby ? t('igmp.standby') : t('igmp.sending')) 
+                : t('igmp.querierDisabled')}
             </div>
           </div>
           <button
@@ -187,13 +189,13 @@ export const SwitchIGMPConfig: React.FC<SwitchIGMPConfigProps> = ({ node }) => {
             className={`btn btn-small ${isQuerierEnabled ? 'btn-success' : 'btn-glass'}`}
             style={{ width: '80px', display: 'flex', justifyContent: 'center', opacity: isUnmanaged ? 0.4 : 1, cursor: isUnmanaged ? 'not-allowed' : 'pointer' }}
           >
-            {isQuerierEnabled ? 'ENABLED' : 'DISABLED'}
+            {isQuerierEnabled ? t('state.enabled') : t('state.disabled')}
           </button>
         </div>
 
         {isQuerierEnabled && !isUnmanaged && (
           <div className="animate-fade" style={{ display: 'flex', gap: '8px', alignItems: 'center', background: 'rgba(var(--shade), 0.2)', padding: '8px', borderRadius: '8px', border: '1px solid rgba(var(--ink), 0.03)' }}>
-            <label style={{ fontSize: '11px', color: 'var(--text-dim)', flexShrink: 0 }}>Query Interval (sec):</label>
+            <label style={{ fontSize: '11px', color: 'var(--text-dim)', flexShrink: 0 }}>{t('igmp.queryInterval')}</label>
             <input
               type="number"
               value={interval}
@@ -214,7 +216,7 @@ export const SwitchIGMPConfig: React.FC<SwitchIGMPConfigProps> = ({ node }) => {
           className="btn btn-glass btn-small"
           style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
         >
-          <RefreshCw size={12} /> Send General Query
+          <RefreshCw size={12} /> {t('igmp.sendQuery')}
         </button>
       </div>
     </div>

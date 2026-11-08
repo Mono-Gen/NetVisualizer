@@ -1,6 +1,7 @@
 import React from 'react';
 import type { NetNode, NetLink } from '../../types/network';
 import { getPortPosition } from '../../logic/portLayout';
+import { useT } from '../../i18n/useT';
 
 interface LinkRendererProps {
   link: NetLink;
@@ -22,6 +23,7 @@ export const LinkRenderer: React.FC<LinkRendererProps> = ({
   onContextMenu,
   onRemove,
 }) => {
+  const t = useT();
   const fromNode = nodes.find((n) => n.id === link.from);
   const toNode = nodes.find((n) => n.id === link.to);
   if (!fromNode || !toNode) return null;
@@ -45,8 +47,8 @@ export const LinkRenderer: React.FC<LinkRendererProps> = ({
       <line x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y} stroke="transparent" strokeWidth="20" style={{ pointerEvents: canSelect ? 'auto' : 'none' }} />
       <line x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y} strokeWidth={isSelected ? 4 : 2} style={{ stroke, pointerEvents: 'none' }} />
       {isSelected && canSelect && (
-        <g onClick={(e) => { e.stopPropagation(); onRemove(link.id); }} style={{ cursor: 'pointer' }} role="button" aria-label="Remove cable">
-          <title>Remove this cable (Delete)</title>
+        <g onClick={(e) => { e.stopPropagation(); onRemove(link.id); }} style={{ cursor: 'pointer' }} role="button" aria-label={t('link.removeAria')}>
+          <title>{t('link.removeTitle')}</title>
           <circle cx={mid.x} cy={mid.y} r="11" fill="#7f1d1d" stroke="#f87171" strokeWidth="2" style={{ pointerEvents: 'auto' }} />
           <text x={mid.x} y={mid.y + 4} fill="#fecaca" fontSize="14" fontWeight="700" textAnchor="middle" style={{ pointerEvents: 'none', userSelect: 'none' }}>×</text>
         </g>

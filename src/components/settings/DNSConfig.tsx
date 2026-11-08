@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { NetNode } from '../../types/network';
 import { Plus, Trash2, Book } from 'lucide-react';
+import { useT } from '../../i18n/useT';
 
 interface DNSConfigProps {
   node: NetNode;
@@ -8,6 +9,7 @@ interface DNSConfigProps {
 }
 
 export const DNSConfig: React.FC<DNSConfigProps> = ({ node, onUpdate }) => {
+  const t = useT();
   const [newName, setNewName] = useState('');
   const [newIP, setNewIP] = useState('');
 
@@ -30,7 +32,7 @@ export const DNSConfig: React.FC<DNSConfigProps> = ({ node, onUpdate }) => {
   return (
     <div style={{ marginTop: '16px', padding: '16px', background: 'rgba(var(--ink), 0.03)', borderRadius: '12px', border: '1px solid rgba(var(--ink), 0.05)' }}>
       <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', color: 'var(--c-yellow)' }}>
-        <Book size={16} /> DNS RECORDS (NAME TO IP)
+        <Book size={16} /> {t('dns.records')}
       </label>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
@@ -47,7 +49,7 @@ export const DNSConfig: React.FC<DNSConfigProps> = ({ node, onUpdate }) => {
         ))}
         {Object.keys(records).length === 0 && (
           <div style={{ textAlign: 'center', padding: '12px', fontSize: '11px', color: 'var(--text-dim)', fontStyle: 'italic' }}>
-            No records found. Add one below.
+            {t('dns.noRecords')}
           </div>
         )}
       </div>
@@ -56,7 +58,7 @@ export const DNSConfig: React.FC<DNSConfigProps> = ({ node, onUpdate }) => {
         <input 
           className="input" 
           style={{ fontSize: '11px', padding: '8px' }}
-          placeholder="Hostname (e.g. google.com)"
+          placeholder={t('dns.hostnamePlaceholder')}
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
         />
@@ -64,7 +66,7 @@ export const DNSConfig: React.FC<DNSConfigProps> = ({ node, onUpdate }) => {
           <input 
             className="input" 
             style={{ fontSize: '11px', padding: '8px', flex: 1 }}
-            placeholder="IP Address"
+            placeholder={t('iface.ip')}
             value={newIP}
             onChange={(e) => setNewIP(e.target.value)}
           />

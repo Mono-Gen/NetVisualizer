@@ -1,4 +1,6 @@
 import type { NetNode, NetLink } from '../types/network';
+import { msg } from '../i18n/msg';
+import type { Msg } from '../i18n/translate';
 
 /**
  * ポートの配置・当たり判定・接続検証(純粋関数)。
@@ -59,7 +61,7 @@ export const findNearestPort = (nodes: NetNode[], point: Point, radius: number):
   return best ? (best as { ref: PortRef }).ref : null;
 };
 
-export type ConnectionCheck = { ok: true } | { ok: false; reason: string };
+export type ConnectionCheck = { ok: true } | { ok: false; reason: Msg };
 
 /** 接続の可否。理由は初心者向けに「何が/どうすれば」を含める */
 export const validateConnection = (nodes: NetNode[], links: NetLink[], a: PortRef, b: PortRef): ConnectionCheck => {
@@ -69,9 +71,9 @@ export const validateConnection = (nodes: NetNode[], links: NetLink[], a: PortRe
     return node && iface ? { node, iface } : null;
   };
   const pa = find(a), pb = find(b);
-  if (!pa || !pb) return { ok: false, reason: 'That port no longer exists.' };
-  if (a.nodeId === b.nodeId) return { ok: false, reason: `Cannot connect ${pa.node.label} to itself. Drop on a port of another device.` };
-  if (isPortUsed(links, a.nodeId, a.ifaceId)) return { ok: false, reason: `${pa.node.label} ${pa.iface.name} is already connected.` };
-  if (isPortUsed(links, b.nodeId, b.ifaceId)) return { ok: false, reason: `${pb.node.label} ${pb.iface.name} is already connected. Use a free port, or remove that cable first.` };
+  if (!pa || !pb) return { ok: false, reason: msg('conn.missing') };
+  if (a.nodeId === b.nodeId) return { ok: false, reason: msg('conn.self', { node: pa.node.label }) };
+  if (isPortUsed(links, a.nodeId, a.ifaceId)) return { ok: false, reason: msg('conn.sourceUsed', { node: pa.node.label, port: pa.iface.name }) };
+  if (isPortUsed(links, b.nodeId, b.ifaceId)) return { ok: false, reason: msg('conn.targetUsed', { node: pb.node.label, port: pb.iface.name }) };
   return { ok: true };
 };

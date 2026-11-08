@@ -4,6 +4,7 @@ import type { NetNode } from '../../types/network';
 import { NodeIcon } from './NodeIcon';
 import { PortHandle } from './PortHandle';
 import { getPortCenter, getPortStripExtra, type PortRef } from '../../logic/portLayout';
+import { useT } from '../../i18n/useT';
 
 interface NodeRendererProps {
   node: NetNode;
@@ -41,6 +42,7 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
   onPortStart,
   onContextMenu,
 }) => {
+  const t = useT();
   const getHighlightColor = () => {
     if (isSimSource) return 'var(--c-orange)'; // Orange for Sender
     if (isSimTarget) return 'var(--c-blue-strong)'; // Blue for Target
@@ -94,7 +96,7 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
             key={iface.id}
             cx={c.x - node.x} cy={c.y - node.y}
             name={iface.name}
-            tooltip={`${iface.name}${iface.ip ? ' • ' + iface.ip : ''}${iface.mac ? ' • ' + iface.mac : ''} — ${used ? 'connected' : 'free'}`}
+            tooltip={`${iface.name}${iface.ip ? ' • ' + iface.ip : ''}${iface.mac ? ' • ' + iface.mac : ''} — ${used ? t('port.connected') : t('port.free')}`}
             used={used}
             isWireSource={isSource}
             isCandidate={!!wireSource && !isSource && !used && wireSource.nodeId !== node.id}
@@ -122,7 +124,7 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
           {/* L3 ARP Table */}
           {['pc', 'router', 'server', 'l3switch'].includes(node.type) && node.arpTable && Object.keys(node.arpTable).length > 0 && (
             <div style={{ background: 'rgba(74, 222, 128, 0.1)', border: '1px solid rgba(74, 222, 128, 0.2)', borderRadius: '6px', padding: '4px', display: 'flex', flexDirection: 'column', gap: '2px', backdropFilter: 'blur(4px)', minWidth: '80px' }}>
-              <div style={{ fontSize: '11px', color: 'var(--c-green)', fontWeight: 700, textAlign: 'center', borderBottom: '1px solid rgba(74, 222, 128, 0.2)', paddingBottom: '2px', marginBottom: '2px' }}>ARP TABLE</div>
+              <div style={{ fontSize: '11px', color: 'var(--c-green)', fontWeight: 700, textAlign: 'center', borderBottom: '1px solid rgba(74, 222, 128, 0.2)', paddingBottom: '2px', marginBottom: '2px' }}>{t('table.arp')}</div>
               {Object.entries(node.arpTable).map(([ip, mac]) => (
                 <div key={ip} style={{ display: 'flex', gap: '8px', justifyContent: 'space-between', fontSize: '11px', fontFamily: 'monospace' }}>
                   <span style={{ color: 'var(--c-green)' }}>{ip}</span>
@@ -135,7 +137,7 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
           {/* DNS Cache */}
           {['pc', 'server', 'router'].includes(node.type) && node.dnsCache && Object.keys(node.dnsCache).length > 0 && (
             <div style={{ background: 'rgba(167, 139, 250, 0.1)', border: '1px solid rgba(167, 139, 250, 0.2)', borderRadius: '6px', padding: '4px', display: 'flex', flexDirection: 'column', gap: '2px', backdropFilter: 'blur(4px)', minWidth: '80px' }}>
-              <div style={{ fontSize: '11px', color: 'var(--c-violet)', fontWeight: 700, textAlign: 'center', borderBottom: '1px solid rgba(167, 139, 250, 0.2)', paddingBottom: '2px', marginBottom: '2px' }}>DNS CACHE</div>
+              <div style={{ fontSize: '11px', color: 'var(--c-violet)', fontWeight: 700, textAlign: 'center', borderBottom: '1px solid rgba(167, 139, 250, 0.2)', paddingBottom: '2px', marginBottom: '2px' }}>{t('table.dnsCache')}</div>
               {Object.entries(node.dnsCache).map(([name, ip]) => (
                 <div key={name} style={{ display: 'flex', gap: '8px', justifyContent: 'space-between', fontSize: '11px', fontFamily: 'monospace' }}>
                   <span style={{ color: 'var(--c-violet)' }}>{name}</span>
@@ -148,7 +150,7 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
           {/* L2 MAC Table for Switches */}
           {['switch', 'l3switch'].includes(node.type) && node.macTable && Object.keys(node.macTable).length > 0 && (
             <div style={{ background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.2)', borderRadius: '6px', padding: '4px', display: 'flex', flexDirection: 'column', gap: '2px', backdropFilter: 'blur(4px)', minWidth: '80px' }}>
-              <div style={{ fontSize: '11px', color: 'var(--c-blue)', fontWeight: 700, textAlign: 'center', borderBottom: '1px solid rgba(59, 130, 246, 0.2)', paddingBottom: '2px', marginBottom: '2px' }}>MAC TABLE</div>
+              <div style={{ fontSize: '11px', color: 'var(--c-blue)', fontWeight: 700, textAlign: 'center', borderBottom: '1px solid rgba(59, 130, 246, 0.2)', paddingBottom: '2px', marginBottom: '2px' }}>{t('table.mac')}</div>
               {Object.entries(node.macTable).map(([mac, portId]) => (
                 <div key={mac} style={{ display: 'flex', gap: '8px', justifyContent: 'space-between', fontSize: '11px', fontFamily: 'monospace' }}>
                   <span style={{ color: 'var(--c-blue)' }}>{mac.slice(-5)}</span>
@@ -162,7 +164,7 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
           {( (node.joinedGroups && node.joinedGroups.length > 0) || (node.igmpSnoopingTable && Object.keys(node.igmpSnoopingTable).length > 0) ) && (
             <div style={{ background: 'rgba(251, 191, 36, 0.1)', border: '1px solid rgba(251, 191, 36, 0.2)', borderRadius: '6px', padding: '4px', display: 'flex', flexDirection: 'column', gap: '2px', backdropFilter: 'blur(4px)', minWidth: '80px' }}>
               <div style={{ fontSize: '11px', color: 'var(--c-yellow)', fontWeight: 700, textAlign: 'center', borderBottom: '1px solid rgba(251, 191, 36, 0.2)', paddingBottom: '2px', marginBottom: '2px' }}>
-                {['switch', 'l3switch'].includes(node.type) ? 'IGMP SNOOPING' : 'JOINED GROUPS'}
+                {['switch', 'l3switch'].includes(node.type) ? 'IGMP SNOOPING' : t('node.joinedGroups')}
               </div>
               {node.joinedGroups?.map(group => (
                 <div key={group} style={{ fontSize: '11px', color: 'var(--c-yellow)', textAlign: 'center', fontFamily: 'monospace' }}>{group}</div>
@@ -179,7 +181,7 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
           {/* TCP Sockets */}
           {['pc', 'server', 'router'].includes(node.type) && node.tcpConnections && Object.keys(node.tcpConnections).length > 0 && (
             <div style={{ background: 'rgba(236, 72, 153, 0.1)', border: '1px solid rgba(236, 72, 153, 0.2)', borderRadius: '6px', padding: '4px', display: 'flex', flexDirection: 'column', gap: '2px', backdropFilter: 'blur(4px)', minWidth: '80px' }}>
-              <div style={{ fontSize: '11px', color: 'var(--c-pink)', fontWeight: 700, textAlign: 'center', borderBottom: '1px solid rgba(236, 72, 153, 0.2)', paddingBottom: '2px', marginBottom: '2px' }}>TCP SOCKETS</div>
+              <div style={{ fontSize: '11px', color: 'var(--c-pink)', fontWeight: 700, textAlign: 'center', borderBottom: '1px solid rgba(236, 72, 153, 0.2)', paddingBottom: '2px', marginBottom: '2px' }}>{t('table.tcp')}</div>
               {Object.entries(node.tcpConnections).map(([key, conn]: [string, any]) => (
                 <div key={key} style={{ display: 'flex', gap: '8px', justifyContent: 'space-between', fontSize: '11px', fontFamily: 'monospace' }}>
                   <span style={{ color: 'var(--c-pink)' }}>:{conn.localPort}</span>
@@ -194,7 +196,7 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
         <div className="node-table-overlay" style={{ animation: 'fadeIn 0.2s ease-out' }}>
           {(node.type === 'pc' || node.type === 'router' || node.type === 'server' || node.type === 'dns') && (
             <div className="node-table-section">
-              <div className="node-table-header"><span>MY INTERFACES</span></div>
+              <div className="node-table-header"><span>{t('node.myInterfaces')}</span></div>
               {node.interfaces.map(iface => (
                 <div key={iface.id} className="node-table-row"><span className="node-table-key" style={{ color: 'var(--c-blue)' }}>{iface.ip || 'no-ip'}</span><span className="node-table-val" style={{ color: 'rgba(var(--ink), 0.4)' }}>{iface.mac}</span></div>
               ))}
@@ -202,7 +204,7 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
           )}
           {(node.type === 'pc' || node.type === 'router' || node.type === 'server' || node.type === 'dns') && node.arpTable && Object.keys(node.arpTable).length > 0 && (
             <div className="node-table-section">
-              <div className="node-table-header"><span>ARP TABLE (CACHE)</span><span>{Object.keys(node.arpTable).length}</span></div>
+              <div className="node-table-header"><span>{t('node.arpCache')}</span><span>{Object.keys(node.arpTable).length}</span></div>
               {Object.entries(node.arpTable).map(([ip, mac]) => (
                 <div key={ip} className="node-table-row"><span className="node-table-key" style={{ color: 'var(--c-green)' }}>{ip}</span><span className="node-table-val">{mac}</span></div>
               ))}
@@ -210,7 +212,7 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
           )}
           {node.type === 'switch' && node.macTable && Object.keys(node.macTable).length > 0 && (
             <div className="node-table-section">
-              <div className="node-table-header"><span>MAC ADDRESS TABLE</span><span>{Object.keys(node.macTable).length}</span></div>
+              <div className="node-table-header"><span>{t('node.macAddressTable')}</span><span>{Object.keys(node.macTable).length}</span></div>
               {Object.entries(node.macTable).map(([mac, portId]) => {
                 const iface = node.interfaces.find(i => i.id === portId);
                 return (<div key={mac} className="node-table-row"><span className="node-table-key">{mac}</span><span className="node-table-val">{iface?.name || portId}</span></div>);

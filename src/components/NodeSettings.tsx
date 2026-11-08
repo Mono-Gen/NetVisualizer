@@ -7,8 +7,10 @@ import { ServiceConfig } from './settings/ServiceConfig';
 import { DHCPConfig } from './settings/DHCPConfig';
 import { SwitchIGMPConfig } from './settings/SwitchIGMPConfig';
 import { X, Server, Activity, Trash2 } from 'lucide-react';
+import { useT } from '../i18n/useT';
 
 export const NodeSettings: React.FC = () => {
+  const t = useT();
   const { 
     nodes, 
     selectedNodeId, 
@@ -29,7 +31,7 @@ export const NodeSettings: React.FC = () => {
   // 接続中のケーブルも一緒に消える破壊的操作なので、ケーブルがあるときは確認する
   const handleDeleteNode = () => {
     const cableCount = links.filter(l => l.from === node.id || l.to === node.id).length;
-    if (cableCount > 0 && !window.confirm(`Delete ${node.label}? Its ${cableCount} connected cable(s) will also be removed.`)) return;
+    if (cableCount > 0 && !window.confirm(t('settings.confirmDelete', { name: node.label, n: cableCount }))) return;
     removeNode(node.id);
     setSelectedNodeId(null);
   };
@@ -51,7 +53,7 @@ export const NodeSettings: React.FC = () => {
             <Server size={20} color="var(--primary-blue)" />
           </div>
           <div>
-            <h2 className="heading-sm" style={{ margin: 0 }}>Node Settings</h2>
+            <h2 className="heading-sm" style={{ margin: 0 }}>{t('settings.title')}</h2>
             <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-dim)' }}>ID: {node.id}</p>
           </div>
         </div>
@@ -60,10 +62,10 @@ export const NodeSettings: React.FC = () => {
           <button
             onClick={handleDeleteNode}
             className="btn btn-glass btn-small"
-            title="Delete this device and its cables"
+            title={t('settings.deleteDeviceTitle')}
             style={{ color: 'var(--c-red)', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}
           >
-            <Trash2 size={14} /> Delete device
+            <Trash2 size={14} /> {t('settings.deleteDevice')}
           </button>
         )}
         <button onClick={() => setSelectedNodeId(null)} className="btn-icon">
@@ -74,7 +76,7 @@ export const NodeSettings: React.FC = () => {
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
         <div className="form-group">
-          <label className="form-label">Node Label</label>
+          <label className="form-label">{t('settings.nodeLabel')}</label>
           <input 
             className="input" 
             value={node.label} 
@@ -98,12 +100,12 @@ export const NodeSettings: React.FC = () => {
               <div style={{ padding: '16px', background: 'rgba(74, 222, 128, 0.05)', borderRadius: '12px', border: '1px solid rgba(74, 222, 128, 0.1)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                   <label className="form-label" style={{ fontSize: '11px', color: 'var(--c-green)', marginBottom: 0, display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}>
-                    <Activity size={14} /> ARP TABLE
+                    <Activity size={14} /> {t('table.arp')}
                   </label>
                   <button 
                     onClick={() => clearNodeArpTable(node.id)} 
                     className="btn-icon" 
-                    title="Clear ARP Table"
+                    title={t('table.clearArp')}
                     style={{ padding: '4px', height: 'auto', width: 'auto' }}
                   >
                     <Trash2 size={12} color="var(--c-green)" />
@@ -113,8 +115,8 @@ export const NodeSettings: React.FC = () => {
                   {Object.entries(node.arpTable || {}).length > 0 ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', opacity: 0.4, fontSize: '11px', paddingBottom: '4px', borderBottom: '1px solid rgba(var(--ink), 0.1)' }}>
-                        <span>IP ADDRESS</span>
-                        <span>MAC ADDRESS</span>
+                        <span>{t('table.ipAddress')}</span>
+                        <span>{t('table.macAddress')}</span>
                       </div>
                       {Object.entries(node.arpTable || {}).map(([ip, mac]) => (
                         <div key={ip} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
@@ -125,7 +127,7 @@ export const NodeSettings: React.FC = () => {
                     </div>
                   ) : (
                     <div style={{ textAlign: 'center', padding: '8px', color: 'var(--text-dim)', fontStyle: 'italic', opacity: 0.6 }}>
-                      Table is empty.
+                      {t('table.empty')}
                     </div>
                   )}
                 </div>
@@ -137,12 +139,12 @@ export const NodeSettings: React.FC = () => {
               <div style={{ padding: '16px', background: 'rgba(167, 139, 250, 0.05)', borderRadius: '12px', border: '1px solid rgba(167, 139, 250, 0.1)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                   <label className="form-label" style={{ fontSize: '11px', color: 'var(--c-violet)', marginBottom: 0, display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}>
-                    <Activity size={14} /> DNS CACHE
+                    <Activity size={14} /> {t('table.dnsCache')}
                   </label>
                   <button 
                     onClick={() => clearDnsCache(node.id)} 
                     className="btn-icon" 
-                    title="Clear DNS Cache"
+                    title={t('table.clearDns')}
                     style={{ padding: '4px', height: 'auto', width: 'auto' }}
                   >
                     <Trash2 size={12} color="var(--c-violet)" />
@@ -152,8 +154,8 @@ export const NodeSettings: React.FC = () => {
                   {Object.entries(node.dnsCache || {}).length > 0 ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', opacity: 0.4, fontSize: '11px', paddingBottom: '4px', borderBottom: '1px solid rgba(var(--ink), 0.1)' }}>
-                        <span>HOSTNAME</span>
-                        <span>IP ADDRESS</span>
+                        <span>{t('table.hostname')}</span>
+                        <span>{t('table.ipAddress')}</span>
                       </div>
                       {Object.entries(node.dnsCache || {}).map(([name, ip]) => (
                         <div key={name} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
@@ -164,7 +166,7 @@ export const NodeSettings: React.FC = () => {
                     </div>
                   ) : (
                     <div style={{ textAlign: 'center', padding: '8px', color: 'var(--text-dim)', fontStyle: 'italic', opacity: 0.6 }}>
-                      Cache is empty.
+                      {t('table.cacheEmpty')}
                     </div>
                   )}
                 </div>
@@ -176,16 +178,16 @@ export const NodeSettings: React.FC = () => {
               <div style={{ padding: '16px', background: 'rgba(236, 72, 153, 0.05)', borderRadius: '12px', border: '1px solid rgba(236, 72, 153, 0.1)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                   <label className="form-label" style={{ fontSize: '11px', color: 'var(--c-pink)', marginBottom: 0, display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}>
-                    <Activity size={14} /> TCP SOCKETS
+                    <Activity size={14} /> {t('table.tcp')}
                   </label>
                 </div>
                 <div style={{ fontSize: '11px' }}>
                   {activeTcpConns.length > 0 ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', opacity: 0.4, fontSize: '11px', paddingBottom: '4px', borderBottom: '1px solid rgba(var(--ink), 0.1)' }}>
-                        <span style={{flex: 1}}>LOCAL</span>
-                        <span style={{flex: 2}}>REMOTE (IP:PORT)</span>
-                        <span style={{flex: 1}}>STATE</span>
+                        <span style={{flex: 1}}>{t('table.local')}</span>
+                        <span style={{flex: 2}}>{t('table.remote')}</span>
+                        <span style={{flex: 1}}>{t('table.state')}</span>
                         <span style={{width: '20px'}}></span>
                       </div>
                       {activeTcpConns.map(([key, conn]) => (
@@ -203,7 +205,7 @@ export const NodeSettings: React.FC = () => {
                           <button 
                             onClick={() => clearTCPSocket(node.id, conn.remoteIP, conn.remotePort)} 
                             className="btn-icon" 
-                            title="Force Delete Socket"
+                            title={t('table.forceDeleteSocket')}
                             style={{ padding: '2px', height: 'auto', width: 'auto' }}
                           >
                             <Trash2 size={12} color="var(--c-pink)" />
@@ -213,7 +215,7 @@ export const NodeSettings: React.FC = () => {
                     </div>
                   ) : (
                     <div style={{ textAlign: 'center', padding: '8px', color: 'var(--text-dim)', fontStyle: 'italic', opacity: 0.6 }}>
-                      No active sockets.
+                      {t('table.noSockets')}
                     </div>
                   )}
                 </div>
@@ -225,12 +227,12 @@ export const NodeSettings: React.FC = () => {
               <div style={{ padding: '16px', background: 'rgba(59, 130, 246, 0.05)', borderRadius: '12px', border: '1px solid rgba(59, 130, 246, 0.1)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                   <label className="form-label" style={{ fontSize: '11px', color: 'var(--c-blue)', marginBottom: 0, display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}>
-                    <Activity size={14} /> MAC TABLE
+                    <Activity size={14} /> {t('table.mac')}
                   </label>
                   <button 
                     onClick={() => clearNodeMacTable(node.id)} 
                     className="btn-icon" 
-                    title="Clear MAC Table"
+                    title={t('table.clearMac')}
                     style={{ padding: '4px', height: 'auto', width: 'auto' }}
                   >
                     <Trash2 size={12} color="var(--c-blue)" />
@@ -240,8 +242,8 @@ export const NodeSettings: React.FC = () => {
                   {Object.entries(node.macTable || {}).length > 0 ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', opacity: 0.4, fontSize: '11px', paddingBottom: '4px', borderBottom: '1px solid rgba(var(--ink), 0.1)' }}>
-                        <span>MAC ADDRESS</span>
-                        <span>PORT / IFACE</span>
+                        <span>{t('table.macAddress')}</span>
+                        <span>{t('table.portIface')}</span>
                       </div>
                       {Object.entries(node.macTable || {}).map(([mac, portId]) => (
                         <div key={mac} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
@@ -252,7 +254,7 @@ export const NodeSettings: React.FC = () => {
                     </div>
                   ) : (
                     <div style={{ textAlign: 'center', padding: '8px', color: 'var(--text-dim)', fontStyle: 'italic', opacity: 0.6 }}>
-                      Table is empty.
+                      {t('table.empty')}
                     </div>
                   )}
                 </div>
@@ -264,14 +266,14 @@ export const NodeSettings: React.FC = () => {
               <div style={{ padding: '16px', background: 'rgba(251, 191, 36, 0.05)', borderRadius: '12px', border: '1px solid rgba(251, 191, 36, 0.1)', marginTop: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                   <label className="form-label" style={{ fontSize: '11px', color: 'var(--c-yellow)', marginBottom: 0, display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}>
-                    <Activity size={14} /> IGMP SNOOPING TABLE
+                    <Activity size={14} /> {t('table.igmp')}
                   </label>
                 </div>
 
                 {/* Active mrouter Port display */}
                 {node.mrouterPortId && (
                   <div style={{ fontSize: '11px', background: 'rgba(59, 130, 246, 0.1)', border: '1px dashed rgba(59, 130, 246, 0.3)', padding: '6px 10px', borderRadius: '6px', color: 'var(--c-blue)', display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontFamily: 'JetBrains Mono, monospace' }}>
-                    <span>Router Port (mrouter):</span>
+                    <span>{t('table.mrouter')}</span>
                     <span>{node.interfaces.find(i => i.id === node.mrouterPortId)?.name || node.mrouterPortId}
                       {node.mrouterPortExpiresAt && ` (${Math.max(0, Math.round((node.mrouterPortExpiresAt - Date.now()) / 1000))}s)`}
                     </span>
@@ -282,8 +284,8 @@ export const NodeSettings: React.FC = () => {
                   {Object.entries(node.igmpSnoopingTable || {}).length > 0 ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', opacity: 0.4, fontSize: '11px', paddingBottom: '4px', borderBottom: '1px solid rgba(var(--ink), 0.1)' }}>
-                        <span>MULTICAST GROUP</span>
-                        <span>PORT / IFACE (EXPIRES)</span>
+                        <span>{t('table.multicastGroup')}</span>
+                        <span>{t('table.portIfaceExpires')}</span>
                       </div>
                       {Object.entries(node.igmpSnoopingTable || {}).map(([group, ports]) => (
                         <div key={group} style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '4px 0', borderBottom: '1px dashed rgba(var(--ink), 0.03)' }}>
@@ -297,7 +299,7 @@ export const NodeSettings: React.FC = () => {
                                 <div key={pid} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }} className="label-mono">
                                   <span style={{ color: 'var(--text-main)' }}>{name}</span>
                                   <span style={{ color: timeLeft !== null && timeLeft < 15 ? 'var(--c-red)' : 'var(--text-dim)' }}>
-                                    {timeLeft !== null ? `${timeLeft}s left` : 'Static'}
+                                    {timeLeft !== null ? t('table.timeLeft', { n: timeLeft }) : t('table.static')}
                                   </span>
                                 </div>
                               );
@@ -308,7 +310,7 @@ export const NodeSettings: React.FC = () => {
                     </div>
                   ) : (
                     <div style={{ textAlign: 'center', padding: '8px', color: 'var(--text-dim)', fontStyle: 'italic', opacity: 0.6 }}>
-                      No active groups.
+                      {t('table.noGroups')}
                     </div>
                   )}
                 </div>

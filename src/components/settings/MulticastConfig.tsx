@@ -1,6 +1,7 @@
 import React from 'react';
 import type { NetNode } from '../../types/network';
 import { useNetworkStore } from '../../store/useNetworkStore';
+import { useT } from '../../i18n/useT';
 
 interface MulticastConfigProps {
   node: NetNode;
@@ -8,6 +9,7 @@ interface MulticastConfigProps {
 }
 
 export const MulticastConfig: React.FC<MulticastConfigProps> = ({ node, onUpdate }) => {
+  const t = useT();
   const { joinMulticastGroup, leaveMulticastGroup } = useNetworkStore();
 
   const addMulticastGroup = (groupIP: string) => {
@@ -21,12 +23,12 @@ export const MulticastConfig: React.FC<MulticastConfigProps> = ({ node, onUpdate
 
   return (
     <div style={{ padding: '12px', background: 'rgba(59, 130, 246, 0.05)', borderRadius: '8px', border: '1px solid rgba(59, 130, 246, 0.1)' }}>
-      <label className="form-label" style={{ fontSize: '11px', color: 'var(--primary-blue)' }}>Multicast Groups (IGMP)</label>
+      <label className="form-label" style={{ fontSize: '11px', color: 'var(--primary-blue)' }}>{t('multicast.title')}</label>
       <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
         <input 
           id="mcast-input"
           className="input" 
-          placeholder="e.g. 224.1.1.1"
+          placeholder={t('multicast.example')}
           style={{ fontSize: '11px', padding: '6px' }}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
@@ -42,7 +44,7 @@ export const MulticastConfig: React.FC<MulticastConfigProps> = ({ node, onUpdate
             addMulticastGroup(input.value);
             input.value = '';
           }}
-        >Join</button>
+        >{t('multicast.join')}</button>
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '12px' }}>
         {(node.joinedGroups || []).map(group => (
@@ -56,8 +58,8 @@ export const MulticastConfig: React.FC<MulticastConfigProps> = ({ node, onUpdate
       <div style={{ borderTop: '1px solid rgba(var(--ink), 0.05)', paddingTop: '12px', marginTop: '8px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--c-yellow)' }}>mDNS Responder</div>
-            <div style={{ fontSize: '11px', color: 'var(--text-dim)', opacity: 0.7 }}>Enable name discovery (224.0.0.251)</div>
+            <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--c-yellow)' }}>{t('multicast.mdns')}</div>
+            <div style={{ fontSize: '11px', color: 'var(--text-dim)', opacity: 0.7 }}>{t('multicast.mdnsDesc')}</div>
           </div>
           <button 
             onClick={() => {
@@ -77,7 +79,7 @@ export const MulticastConfig: React.FC<MulticastConfigProps> = ({ node, onUpdate
               transition: 'all 0.2s'
             }}
           >
-            {(node.joinedGroups || []).includes('224.0.0.251') ? 'ENABLED' : 'DISABLED'}
+            {(node.joinedGroups || []).includes('224.0.0.251') ? t('state.enabled') : t('state.disabled')}
           </button>
         </div>
       </div>

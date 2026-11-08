@@ -3,21 +3,23 @@ import { Play, Pause, SkipForward } from 'lucide-react';
 import { useNetworkStore } from '../../store/useNetworkStore';
 import { SIM_SPEEDS } from '../../logic/simClock';
 import { MAX_IN_FLIGHT_PACKETS } from '../../logic/simLimits';
+import { useT } from '../../i18n/useT';
 
 /**
  * シミュレーションの再生制御(一時停止・ステップ・速度)。SIMULATEモード専用。
  * Why: パケットは常に約1秒で届くため、初心者がARP→ICMPなどの順序を追い切れない。
  */
 export const PlaybackControls: React.FC = () => {
+  const t = useT();
   const { isPaused, simSpeed, packets, setPaused, setSimSpeed, stepSimulation } = useNetworkStore();
 
   // ステップは一時停止中かつ飛行中のパケットがあるときのみ有効
   const canStep = isPaused && packets.length > 0;
   const stepHint = !isPaused
-    ? '一時停止中のみ使えます (Available while paused)'
+    ? t('play.stepWhilePaused')
     : packets.length === 0
-      ? '進めるパケットがありません (No packets in flight)'
-      : '次のパケット到着まで進めます (Advance to next arrival)';
+      ? t('play.stepNoPackets')
+      : t('play.stepAdvance');
 
   const btnStyle: React.CSSProperties = {
     display: 'flex', alignItems: 'center', gap: '6px',
@@ -39,11 +41,11 @@ export const PlaybackControls: React.FC = () => {
         onClick={(e) => { e.stopPropagation(); setPaused(!isPaused); }}
         className={`btn ${isPaused ? 'btn-primary' : 'btn-glass'}`}
         style={btnStyle}
-        title={isPaused ? '再開 (Resume)' : '一時停止 (Pause)'}
-        aria-label={isPaused ? 'Resume simulation' : 'Pause simulation'}
+        title={isPaused ? t('play.resume') : t('play.pause')}
+        aria-label={isPaused ? t('play.resumeAria') : t('play.pauseAria')}
       >
         {isPaused ? <Play size={16} /> : <Pause size={16} />}
-        {isPaused ? 'Resume' : 'Pause'}
+        {isPaused ? t('play.resume') : t('play.pause')}
       </button>
 
       <button
@@ -52,22 +54,22 @@ export const PlaybackControls: React.FC = () => {
         className="btn btn-glass"
         style={{ ...btnStyle, opacity: canStep ? 1 : 0.4, cursor: canStep ? 'pointer' : 'not-allowed' }}
         title={stepHint}
-        aria-label="Step to next packet arrival"
+        aria-label={t('play.stepAria')}
       >
         <SkipForward size={16} />
-        Step
+        {t('play.step')}
       </button>
 
-      <span className="label-mono" style={{ fontSize: '12px', color: packets.length >= MAX_IN_FLIGHT_PACKETS ? 'var(--c-red)' : 'var(--text-dim)' }} title="Packets currently in flight (limit shown after the slash)">
-        In flight: {packets.length}/{MAX_IN_FLIGHT_PACKETS}
+      <span className="label-mono" style={{ fontSize: '12px', color: packets.length >= MAX_IN_FLIGHT_PACKETS ? 'var(--c-red)' : 'var(--text-dim)' }} title={t('play.inFlightTitle')}>
+        {t('play.inFlight', { n: packets.length, max: MAX_IN_FLIGHT_PACKETS })}
       </span>
 
       <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-dim)' }}>
-        Speed
+        {t('play.speed')}
         <select
           value={simSpeed}
           onChange={(e) => setSimSpeed(Number(e.target.value))}
-          aria-label="Simulation speed"
+          aria-label={t('play.speedAria')}
           style={{
             background: 'rgba(var(--shade), 0.3)', color: 'var(--text-main)', fontSize: '12px',
             border: '1px solid rgba(var(--ink), 0.15)', borderRadius: '6px', padding: '6px 8px'

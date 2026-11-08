@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { PORT_SIZE } from '../../logic/portLayout';
+import { useT } from '../../i18n/useT';
 
 interface PortHandleProps {
   /** ノード左上を原点とした円の中心座標 */
@@ -25,6 +26,7 @@ interface PortHandleProps {
 export const PortHandle: React.FC<PortHandleProps> = ({
   cx, cy, name, tooltip, used, isWireSource, isCandidate, isBlocked, interactive, onStart, onContextMenu
 }) => {
+  const t = useT();
   const ref = useRef<HTMLDivElement>(null);
 
   // framer-motion のパン検出は親要素のネイティブ pointerdown を使うため、
@@ -52,7 +54,7 @@ export const PortHandle: React.FC<PortHandleProps> = ({
       ref={ref}
       title={tooltip}
       onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); onContextMenu(e.clientX, e.clientY); }}
-      aria-label={`${name} ${used ? 'connected' : 'free'}`}
+      aria-label={`${name} ${used ? t('port.connected') : t('port.free')}`}
       style={{
         position: 'absolute',
         left: cx - PORT_SIZE / 2, top: cy - PORT_SIZE / 2,

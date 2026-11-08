@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { useNetworkStore } from '../store/useNetworkStore';
 import type { NetNode } from '../types/network';
 import { Play, Send, Unplug, Search } from 'lucide-react';
+import { useT } from '../i18n/useT';
 
 interface SidebarCommandPanelProps {
   node: NetNode;
 }
 
 export const SidebarCommandPanel: React.FC<SidebarCommandPanelProps> = ({ node }) => {
+  const t = useT();
   const { resolveAndPing, sendUDPMessage, startTCPHandshake, sendTCPData, closeTCPConnection, requestDHCP, sendmDNSQuery, joinMulticastGroup, leaveMulticastGroup } = useNetworkStore();
   const [targetIP, setTargetIP] = useState('');
   const [targetPort, setTargetPort] = useState('80');
@@ -16,7 +18,7 @@ export const SidebarCommandPanel: React.FC<SidebarCommandPanelProps> = ({ node }
   return (
     <div style={{ marginTop: '8px', padding: '12px', background: 'rgba(139, 92, 246, 0.1)', borderRadius: '12px', border: '1px solid rgba(139, 92, 246, 0.2)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
       <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--c-violet)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-        <Play size={12} /> COMMAND FOR {node.label.toUpperCase()}
+        <Play size={12} /> {t('cmd.commandFor', { name: node.label.toUpperCase() })}
       </span>
       
       {/* ICMP (Ping) / DNS */}
@@ -24,7 +26,7 @@ export const SidebarCommandPanel: React.FC<SidebarCommandPanelProps> = ({ node }
         <input 
           className="input"
           style={{ flex: 1, fontSize: '11px', padding: '6px 10px', height: '28px' }}
-          placeholder="IP or Hostname (Ping)"
+          placeholder={t('cmd.pingPlaceholder')}
           value={targetIP}
           onChange={(e) => setTargetIP(e.target.value)}
           onKeyDown={(e) => {
@@ -44,14 +46,14 @@ export const SidebarCommandPanel: React.FC<SidebarCommandPanelProps> = ({ node }
 
       {/* L4 Message Sender */}
       <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--c-violet)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-        <Send size={12} /> L4 MESSAGING
+        <Send size={12} /> {t('cmd.l4')}
       </span>
       
       <div style={{ display: 'flex', gap: '6px' }}>
         <input 
           className="input" 
           type="number"
-          placeholder="Target Port" 
+          placeholder={t('cmd.portPlaceholder')} 
           value={targetPort}
           onChange={e => setTargetPort(e.target.value)}
           style={{ flex: 1, fontSize: '11px', padding: '6px', height: '28px' }}
@@ -63,13 +65,13 @@ export const SidebarCommandPanel: React.FC<SidebarCommandPanelProps> = ({ node }
           }}
           style={{ flex: 2, height: '28px', justifyContent: 'center', borderColor: 'rgba(168, 85, 247, 0.5)', color: 'var(--c-purple)', fontSize: '11px' }}
         >
-          UDP Send
+          {t('cmd.udpSend')}
         </button>
       </div>
 
       <input 
         className="input" 
-        placeholder="Message Payload" 
+        placeholder={t('cmd.payloadPlaceholder')} 
         value={message}
         onChange={e => setMessage(e.target.value)}
         style={{ fontSize: '11px', padding: '6px', height: '28px' }}
@@ -83,7 +85,7 @@ export const SidebarCommandPanel: React.FC<SidebarCommandPanelProps> = ({ node }
           }}
           style={{ flex: 1, justifyContent: 'center', borderColor: 'rgba(59, 130, 246, 0.5)', color: 'var(--c-blue)', fontSize: '11px', padding: '0' }}
         >
-          TCP Connect
+          {t('cmd.tcpConnect')}
         </button>
         <button 
           className="btn btn-glass btn-small" 
@@ -92,7 +94,7 @@ export const SidebarCommandPanel: React.FC<SidebarCommandPanelProps> = ({ node }
           }}
           style={{ flex: 1, justifyContent: 'center', borderColor: 'rgba(74, 222, 128, 0.5)', color: 'var(--c-green)', fontSize: '11px', padding: '0' }}
         >
-          TCP Send
+          {t('cmd.tcpSend')}
         </button>
         <button 
           className="btn btn-glass btn-small" 
@@ -100,7 +102,7 @@ export const SidebarCommandPanel: React.FC<SidebarCommandPanelProps> = ({ node }
             if (targetIP && targetPort) closeTCPConnection(node.id, targetIP, parseInt(targetPort));
           }}
           style={{ width: '28px', justifyContent: 'center', borderColor: 'rgba(248, 113, 113, 0.5)', color: 'var(--c-red)', padding: '0' }}
-          title="Disconnect (FIN)"
+          title={t('cmd.disconnectTitle')}
         >
           <Unplug size={12} />
         </button>
@@ -110,7 +112,7 @@ export const SidebarCommandPanel: React.FC<SidebarCommandPanelProps> = ({ node }
 
       {/* Network Services / Multicast */}
       <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--c-violet)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-        <Search size={12} /> NETWORK SERVICES
+        <Search size={12} /> {t('cmd.services')}
       </span>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
         <div style={{ display: 'flex', gap: '6px' }}>
@@ -119,22 +121,22 @@ export const SidebarCommandPanel: React.FC<SidebarCommandPanelProps> = ({ node }
             className="btn btn-glass" 
             style={{ flex: 1, fontSize: '11px', height: '26px' }}
           >
-            DHCP Renew
+            {t('cmd.dhcpRenew')}
           </button>
           <button 
             onClick={() => sendmDNSQuery(node.id, targetIP || 'Web Server')} 
             className="btn btn-glass" 
             style={{ flex: 1, fontSize: '11px', height: '26px', borderColor: (node.joinedGroups || []).includes('224.0.0.251') ? 'rgba(251, 191, 36, 0.4)' : 'rgba(139, 92, 246, 0.2)' }}
-            title="Search for node names via Multicast DNS"
+            title={t('cmd.mdnsQueryTitle')}
           >
-            mDNS Query
+            {t('cmd.mdnsQuery')}
           </button>
         </div>
         
         {/* mDNS Toggle & Group List */}
         <div style={{ padding: '8px', background: 'rgba(251, 191, 36, 0.05)', borderRadius: '8px', border: '1px solid rgba(251, 191, 36, 0.1)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '11px', color: 'var(--c-yellow)', fontWeight: 700 }}>mDNS RESPONDER</span>
+            <span style={{ fontSize: '11px', color: 'var(--c-yellow)', fontWeight: 700 }}>{t('cmd.mdnsResponder')}</span>
             <button 
               onClick={() => (node.joinedGroups || []).includes('224.0.0.251') ? leaveMulticastGroup(node.id, '224.0.0.251') : joinMulticastGroup(node.id, '224.0.0.251')}
               style={{
@@ -148,7 +150,7 @@ export const SidebarCommandPanel: React.FC<SidebarCommandPanelProps> = ({ node }
                 cursor: 'pointer'
               }}
             >
-              {(node.joinedGroups || []).includes('224.0.0.251') ? 'ENABLED' : 'DISABLED'}
+              {(node.joinedGroups || []).includes('224.0.0.251') ? t('state.enabled') : t('state.disabled')}
             </button>
           </div>
           

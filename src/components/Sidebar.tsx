@@ -7,8 +7,13 @@ import { SidebarCommandPanel } from './SidebarCommandPanel';
 import { SampleMenu } from './SampleMenu';
 import { ThemeToggle } from './ThemeToggle';
 import { NODE_PALETTE, DND_NODE_TYPE, createNode } from '../logic/nodeFactory';
+import { useT, useTLogInfo } from '../i18n/useT';
+import type { DictKey } from '../i18n/en';
+import { LanguageToggle } from './LanguageToggle';
 
 export const Sidebar: React.FC = () => {
+  const t = useT();
+  const tInfo = useTLogInfo();
   const { 
     nodes, addNode, mode, setMode, 
     isInspectMode, setInspectMode, 
@@ -16,6 +21,12 @@ export const Sidebar: React.FC = () => {
   } = useNetworkStore();
 
   const nodeTypes = NODE_PALETTE;
+
+  // 全消去は取り返しがつかないため、機器がある場合は確認する
+  const handleClearAll = () => {
+    if (nodes.length > 0 && !window.confirm(t('sidebar.confirmClearAll'))) return;
+    clearCanvas();
+  };
 
   // クリックでも追加できる(キーボード/タッチ向け)。位置は空いているグリッドに自動配置
   const handleAddNode = (type: NodeType) => addNode(createNode(type, nodes));
@@ -27,7 +38,11 @@ export const Sidebar: React.FC = () => {
           <Settings size={20} color="white" />
         </div>
         <h1 className="heading-sm" style={{ margin: 0 }}>NetVisualizer</h1>
-        <div style={{ marginLeft: 'auto' }}><ThemeToggle /></div>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+        <LanguageToggle />
+        <ThemeToggle />
       </div>
 
       <div className="tabs" style={{ display: 'flex', background: 'rgba(var(--shade), 0.2)', padding: '4px', borderRadius: '10px' }}>
@@ -36,14 +51,14 @@ export const Sidebar: React.FC = () => {
           className={`tab ${mode === 'DESIGN' ? 'active' : ''}`}
           style={{ flex: 1, padding: '8px', borderRadius: '8px', border: 'none', cursor: 'pointer', transition: 'all 0.2s', background: mode === 'DESIGN' ? 'var(--primary-blue)' : 'transparent', color: mode === 'DESIGN' ? 'white' : 'var(--text-main)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '12px' }}
         >
-          <Plus size={14} /> Design
+          <Plus size={14} /> {t('sidebar.mode.design')}
         </button>
         <button 
           onClick={() => setMode('SIMULATE')} 
           className={`tab ${mode === 'SIMULATE' ? 'active' : ''}`}
           style={{ flex: 1, padding: '8px', borderRadius: '8px', border: 'none', cursor: 'pointer', transition: 'all 0.2s', background: mode === 'SIMULATE' ? 'var(--solid-green)' : 'transparent', color: mode === 'SIMULATE' ? 'white' : 'var(--text-main)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '12px' }}
         >
-          <Play size={14} /> Simulate
+          <Play size={14} /> {t('sidebar.mode.simulate')}
         </button>
       </div>
 
@@ -51,7 +66,7 @@ export const Sidebar: React.FC = () => {
         {mode === 'DESIGN' ? (
           <>
             <div>
-              <label className="form-label" style={{ fontSize: '11px', color: 'var(--text-dim)', marginBottom: '8px' }}>COMPONENTS</label>
+              <label className="form-label" style={{ fontSize: '11px', color: 'var(--text-dim)', marginBottom: '8px' }}>{t('sidebar.components')}</label>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                 {nodeTypes.map((nt) => (
                   <button 
@@ -59,12 +74,12 @@ export const Sidebar: React.FC = () => {
                     draggable
                     onDragStart={(e) => { e.dataTransfer.setData(DND_NODE_TYPE, nt.type); e.dataTransfer.effectAllowed = 'copy'; }}
                     onClick={() => handleAddNode(nt.type)}
-                    title={`Drag onto the canvas, or click to add (${nt.label})`}
+                    title={t('palette.hint', { name: t(`device.${nt.type}` as DictKey) })}
                     className="btn btn-glass"
                     style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', padding: '12px', height: 'auto', fontSize: '11px' }}
                   >
                     <NodeIcon type={nt.type} size={20} />
-                    {nt.label}
+                    {t(`device.${nt.type}` as DictKey)}
                   </button>
                 ))}
               </div>
@@ -74,7 +89,7 @@ export const Sidebar: React.FC = () => {
         ) : (
           <>
             <div>
-              <label className="form-label" style={{ fontSize: '11px', color: 'var(--text-dim)', marginBottom: '8px' }}>SIMULATION TOOLS</label>
+              <label className="form-label" style={{ fontSize: '11px', color: 'var(--text-dim)', marginBottom: '8px' }}>{t('sidebar.simTools')}</label>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
 
                   {/* Unified Command Center for selected PC/Server */}
@@ -85,7 +100,7 @@ export const Sidebar: React.FC = () => {
                     }
                     return (
                       <div style={{ marginTop: '8px', padding: '12px', background: 'rgba(var(--ink), 0.03)', borderRadius: '10px', fontSize: '11px', color: 'var(--text-dim)', textAlign: 'center', fontStyle: 'italic', border: '1px dashed rgba(var(--ink), 0.1)' }}>
-                        Select a PC or Server to start communication
+                        {t('sidebar.selectToStart')}
                       </div>
                     );
                   })()}
@@ -94,13 +109,13 @@ export const Sidebar: React.FC = () => {
             
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', minHeight: 0 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <label className="form-label" style={{ fontSize: '11px', color: 'var(--text-dim)', margin: 0 }}>PACKET LOGS</label>
+                <label className="form-label" style={{ fontSize: '11px', color: 'var(--text-dim)', margin: 0 }}>{t('sidebar.packetLogs')}</label>
                 <button 
                   onClick={clearPacketLogs} 
                   className="btn-text" 
                   style={{ color: 'var(--c-blue)', fontSize: '11px', fontWeight: 600, background: 'rgba(59, 130, 246, 0.1)', padding: '4px 10px', borderRadius: '6px', border: '1px solid rgba(59, 130, 246, 0.2)', cursor: 'pointer' }}
                 >
-                  Clear Logs
+                  {t('sidebar.clearLogs')}
                 </button>
               </div>
               <div className="log-container" style={{ flex: 1, overflowY: 'auto', background: 'rgba(var(--shade), 0.2)', borderRadius: '8px', padding: '8px', fontSize: '11px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -115,7 +130,7 @@ export const Sidebar: React.FC = () => {
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', opacity: 0.6 }}>
                         <span style={{ color: themeColor, fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
                           <span>
-                            {isError ? 'ERROR' : `${log.protocol} ${
+                            {isError ? t('log.error') : `${log.protocol} ${
                               log.protocol === 'TCP' ? (
                                 (log.flags?.syn && log.flags?.ack) ? '[SYN, ACK]' :
                                 log.flags?.syn ? '[SYN]' :
@@ -125,9 +140,9 @@ export const Sidebar: React.FC = () => {
                               ) : log.type
                             }`}
                           </span>
-                          {log.status === 'received' && <span style={{ fontSize: '11px', background: 'rgba(var(--ink), 0.2)', padding: '2px 4px', borderRadius: '4px', color: 'var(--text-main)' }}>RCVD</span>}
-                          {log.status === 'sent' && <span style={{ fontSize: '11px', background: 'rgba(var(--shade), 0.3)', padding: '2px 4px', borderRadius: '4px', color: 'var(--text-main)' }}>SENT</span>}
-                          {log.status === 'dropped' && <span style={{ fontSize: '11px', background: 'rgba(156,163,175,0.3)', padding: '2px 4px', borderRadius: '4px', color: 'var(--text-dim)' }}>DROP</span>}
+                          {log.status === 'received' && <span style={{ fontSize: '11px', background: 'rgba(var(--ink), 0.2)', padding: '2px 4px', borderRadius: '4px', color: 'var(--text-main)' }}>{t('log.rcvd')}</span>}
+                          {log.status === 'sent' && <span style={{ fontSize: '11px', background: 'rgba(var(--shade), 0.3)', padding: '2px 4px', borderRadius: '4px', color: 'var(--text-main)' }}>{t('log.sent')}</span>}
+                          {log.status === 'dropped' && <span style={{ fontSize: '11px', background: 'rgba(156,163,175,0.3)', padding: '2px 4px', borderRadius: '4px', color: 'var(--text-dim)' }}>{t('log.drop')}</span>}
                         </span>
                         <span>{log.time || new Date().toLocaleTimeString()}</span>
                       </div>
@@ -137,7 +152,7 @@ export const Sidebar: React.FC = () => {
                           : `${log.senderIP} → ${log.targetIP}`
                         }
                       </div>
-                      <div style={{ opacity: 0.8, fontSize: '11px', fontStyle: 'italic', color: isError ? 'var(--c-red)' : 'inherit' }}>{log.info}</div>
+                      <div style={{ opacity: 0.8, fontSize: '11px', fontStyle: 'italic', color: isError ? 'var(--c-red)' : 'inherit' }}>{tInfo(log.info)}</div>
                       {log.payload?.message && (
                         <div style={{ marginTop: '4px', padding: '4px', background: 'rgba(var(--shade), 0.3)', borderRadius: '4px', borderLeft: '2px solid var(--c-violet)', color: 'var(--text-main)' }}>
                           💬 "{log.payload.message}"
@@ -147,7 +162,7 @@ export const Sidebar: React.FC = () => {
                   );
                 })}
                 {packetLogs.length === 0 && (
-                  <div style={{ textAlign: 'center', color: 'var(--text-dim)', marginTop: '20px' }}>No activity logged</div>
+                  <div style={{ textAlign: 'center', color: 'var(--text-dim)', marginTop: '20px' }}>{t('sidebar.noActivity')}</div>
                 )}
               </div>
             </div>
@@ -161,8 +176,8 @@ export const Sidebar: React.FC = () => {
 
       {mode === 'DESIGN' && (
         <div style={{ borderTop: '1px solid rgba(var(--ink), 0.05)', paddingTop: '20px' }}>
-          <button onClick={clearCanvas} className="btn btn-glass" style={{ width: '100%', color: 'var(--c-red)' }}>
-            Clear All
+          <button onClick={handleClearAll} className="btn btn-glass" style={{ width: '100%', color: 'var(--c-red)' }}>
+            {t('sidebar.clearAll')}
           </button>
         </div>
       )}

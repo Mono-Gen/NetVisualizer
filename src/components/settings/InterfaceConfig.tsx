@@ -2,6 +2,7 @@ import React from 'react';
 import type { NetNode, NetInterface } from '../../types/network';
 import { useNetworkStore } from '../../store/useNetworkStore';
 import { PORT_LIMITS, canChangePortCount } from '../../logic/interfaceFactory';
+import { useT } from '../../i18n/useT';
 
 interface InterfaceConfigProps {
   node: NetNode;
@@ -10,6 +11,7 @@ interface InterfaceConfigProps {
 }
 
 export const InterfaceConfig: React.FC<InterfaceConfigProps> = ({ node, mode, onUpdate }) => {
+  const t = useT();
   const { links, addInterface, removeInterface } = useNetworkStore();
   const canHaveMultipleInterfaces = canChangePortCount(node.type);
   const limits = PORT_LIMITS[node.type];
@@ -29,21 +31,21 @@ export const InterfaceConfig: React.FC<InterfaceConfigProps> = ({ node, mode, on
 
   // 接続中のポートを消すとケーブルも抜ける。破壊的操作なので確認する。
   const handleRemove = (ifaceId: string, name: string) => {
-    if (isLinked(ifaceId) && !window.confirm(`${name} is connected. Removing it will also remove the cable. Continue?`)) return;
+    if (isLinked(ifaceId) && !window.confirm(t('iface.removeConfirm', { name }))) return;
     removeInterface(node.id, ifaceId);
   };
 
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-        <label className="form-label" style={{ margin: 0 }}>Network Interfaces</label>
+        <label className="form-label" style={{ margin: 0 }}>{t('iface.title')}</label>
         {canHaveMultipleInterfaces && mode === 'DESIGN' && (
           <div style={{ display: 'flex', gap: '6px' }}>
-          <button onClick={() => lastFreeIface && removeInterface(node.id, lastFreeIface.id)} disabled={!canRemoveFree} title={canRemoveFree ? `Remove ${lastFreeIface!.name} (unconnected)` : (node.interfaces.length <= limits.min ? `Minimum ${limits.min} ports` : 'All ports are connected. Remove a cable first, or use Remove on a port below.')} className="btn btn-glass btn-small" style={{ fontSize: '11px' }}>
-            − Remove Port
+          <button onClick={() => lastFreeIface && removeInterface(node.id, lastFreeIface.id)} disabled={!canRemoveFree} title={canRemoveFree ? t('iface.removeFreeTitle', { name: lastFreeIface!.name }) : (node.interfaces.length <= limits.min ? t('iface.minPorts', { n: limits.min }) : t('iface.allConnected'))} className="btn btn-glass btn-small" style={{ fontSize: '11px' }}>
+            {t('iface.removePort')}
           </button>
-          <button onClick={() => addInterface(node.id)} disabled={node.interfaces.length >= limits.max} title={node.interfaces.length >= limits.max ? `Maximum ${limits.max} ports` : 'Add a port'} className="btn btn-glass btn-small" style={{ fontSize: '11px' }}>
-            + Add Port ({node.interfaces.length}/{limits.max})
+          <button onClick={() => addInterface(node.id)} disabled={node.interfaces.length >= limits.max} title={node.interfaces.length >= limits.max ? t('iface.maxPorts', { n: limits.max }) : t('iface.addPortTitle')} className="btn btn-glass btn-small" style={{ fontSize: '11px' }}>
+            {t('iface.addPort', { n: node.interfaces.length, max: limits.max })}
           </button>
           </div>
         )}
@@ -59,7 +61,7 @@ export const InterfaceConfig: React.FC<InterfaceConfigProps> = ({ node, mode, on
                   onClick={() => handleRemove(iface.id, iface.name)}
                   style={{ background: 'none', border: 'none', color: 'rgba(248, 113, 113, 0.5)', cursor: 'pointer', fontSize: '11px' }}
                 >
-                  Remove
+                  {t('iface.remove')}
                 </button>
               )}
             </div>
@@ -68,7 +70,7 @@ export const InterfaceConfig: React.FC<InterfaceConfigProps> = ({ node, mode, on
               <>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                   <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '11px' }}>IP Address</label>
+                    <label className="form-label" style={{ fontSize: '11px' }}>{t('iface.ip')}</label>
                     <input 
                       className="input" 
                       style={{ fontSize: '11px', padding: '6px' }}
@@ -78,7 +80,7 @@ export const InterfaceConfig: React.FC<InterfaceConfigProps> = ({ node, mode, on
                     />
                   </div>
                   <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '11px' }}>Subnet Mask</label>
+                    <label className="form-label" style={{ fontSize: '11px' }}>{t('iface.subnet')}</label>
                     <input 
                       className="input" 
                       style={{ fontSize: '11px', padding: '6px' }}
@@ -91,7 +93,7 @@ export const InterfaceConfig: React.FC<InterfaceConfigProps> = ({ node, mode, on
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '4px' }}>
                   <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '11px' }}>Default Gateway</label>
+                    <label className="form-label" style={{ fontSize: '11px' }}>{t('iface.gateway')}</label>
                     <input 
                       className="input" 
                       style={{ fontSize: '11px', padding: '6px' }}
@@ -101,7 +103,7 @@ export const InterfaceConfig: React.FC<InterfaceConfigProps> = ({ node, mode, on
                     />
                   </div>
                   <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '11px' }}>DNS Server</label>
+                    <label className="form-label" style={{ fontSize: '11px' }}>{t('iface.dns')}</label>
                     <input 
                       className="input" 
                       style={{ fontSize: '11px', padding: '6px' }}
@@ -116,7 +118,7 @@ export const InterfaceConfig: React.FC<InterfaceConfigProps> = ({ node, mode, on
 
             {node.type !== 'hub' && (
               <div className="form-group" style={{ marginTop: '4px' }}>
-                <label className="form-label" style={{ fontSize: '11px' }}>MAC Address</label>
+                <label className="form-label" style={{ fontSize: '11px' }}>{t('iface.mac')}</label>
                 <input 
                   className="input" 
                   style={{ fontSize: '11px', padding: '6px' }}

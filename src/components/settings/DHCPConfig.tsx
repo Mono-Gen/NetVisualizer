@@ -1,6 +1,7 @@
 import React from 'react';
 import type { NetNode } from '../../types/network';
 import { Activity, Clock, Database } from 'lucide-react';
+import { useT } from '../../i18n/useT';
 
 interface DHCPConfigProps {
   node: NetNode;
@@ -8,6 +9,7 @@ interface DHCPConfigProps {
 }
 
 export const DHCPConfig: React.FC<DHCPConfigProps> = ({ node, onUpdate }) => {
+  const t = useT();
   if (!node.dhcpScope) return null;
 
   const updateScope = (updates: any) => {
@@ -22,12 +24,12 @@ export const DHCPConfig: React.FC<DHCPConfigProps> = ({ node, onUpdate }) => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div style={{ padding: '16px', background: 'rgba(236, 72, 153, 0.05)', borderRadius: '12px', border: '1px solid rgba(236, 72, 153, 0.1)' }}>
         <label className="form-label" style={{ color: 'var(--c-pink)', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}>
-          <Database size={16} /> DHCP POOL SETTINGS
+          <Database size={16} /> {t('dhcp.pool')}
         </label>
         
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '12px' }}>
           <div className="form-group">
-            <label className="form-label" style={{ fontSize: '11px' }}>START IP</label>
+            <label className="form-label" style={{ fontSize: '11px' }}>{t('dhcp.startIp')}</label>
             <input 
               className="input" 
               style={{ fontSize: '11px', padding: '6px 10px' }}
@@ -36,7 +38,7 @@ export const DHCPConfig: React.FC<DHCPConfigProps> = ({ node, onUpdate }) => {
             />
           </div>
           <div className="form-group">
-            <label className="form-label" style={{ fontSize: '11px' }}>END IP</label>
+            <label className="form-label" style={{ fontSize: '11px' }}>{t('dhcp.endIp')}</label>
             <input 
               className="input" 
               style={{ fontSize: '11px', padding: '6px 10px' }}
@@ -45,7 +47,7 @@ export const DHCPConfig: React.FC<DHCPConfigProps> = ({ node, onUpdate }) => {
             />
           </div>
           <div className="form-group">
-            <label className="form-label" style={{ fontSize: '11px' }}>GATEWAY</label>
+            <label className="form-label" style={{ fontSize: '11px' }}>{t('dhcp.gateway')}</label>
             <input 
               className="input" 
               style={{ fontSize: '11px', padding: '6px 10px' }}
@@ -54,7 +56,7 @@ export const DHCPConfig: React.FC<DHCPConfigProps> = ({ node, onUpdate }) => {
             />
           </div>
           <div className="form-group">
-            <label className="form-label" style={{ fontSize: '11px' }}>LEASE TIME (SEC)</label>
+            <label className="form-label" style={{ fontSize: '11px' }}>{t('dhcp.leaseTime')}</label>
             <input 
               type="number"
               className="input" 
@@ -68,16 +70,16 @@ export const DHCPConfig: React.FC<DHCPConfigProps> = ({ node, onUpdate }) => {
 
       <div style={{ padding: '16px', background: 'rgba(236, 72, 153, 0.05)', borderRadius: '12px', border: '1px solid rgba(236, 72, 153, 0.1)' }}>
         <label className="form-label" style={{ fontSize: '11px', color: 'var(--c-pink)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}>
-          <Activity size={14} /> ACTIVE LEASE TABLE
+          <Activity size={14} /> {t('dhcp.leaseTable')}
         </label>
         
         <div style={{ fontSize: '11px' }}>
           {leases.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', opacity: 0.4, fontSize: '11px', paddingBottom: '4px', borderBottom: '1px solid rgba(var(--ink), 0.1)' }}>
-                <span style={{ flex: 1 }}>IP ADDRESS</span>
-                <span style={{ flex: 1.5 }}>MAC ADDRESS</span>
-                <span style={{ flex: 1, textAlign: 'right' }}>EXPIRES IN</span>
+                <span style={{ flex: 1 }}>{t('table.ipAddress')}</span>
+                <span style={{ flex: 1.5 }}>{t('table.macAddress')}</span>
+                <span style={{ flex: 1, textAlign: 'right' }}>{t('dhcp.expiresIn')}</span>
               </div>
               {leases.map(([mac, lease]) => {
                 const remaining = Math.max(0, Math.round((lease.expiresAt - Date.now()) / 1000));
@@ -94,7 +96,7 @@ export const DHCPConfig: React.FC<DHCPConfigProps> = ({ node, onUpdate }) => {
             </div>
           ) : (
             <div style={{ textAlign: 'center', padding: '8px', color: 'var(--text-dim)', fontStyle: 'italic', opacity: 0.6 }}>
-              No active leases.
+              {t('dhcp.noLeases')}
             </div>
           )}
         </div>

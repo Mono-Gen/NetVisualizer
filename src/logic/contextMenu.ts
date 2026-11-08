@@ -2,6 +2,8 @@ import type { NetNode, NetLink, NodeType } from '../types/network';
 import { NODE_PALETTE } from './nodeFactory';
 import { PORT_LIMITS, canChangePortCount } from './interfaceFactory';
 import { isPortUsed } from './portLayout';
+import type { DictKey } from '../i18n/en';
+import type { Params } from '../i18n/translate';
 
 /**
  * 右クリックメニューの項目組み立て(純粋関数)。
@@ -42,20 +44,22 @@ export interface MenuState {
 const linkIdOfPort = (links: NetLink[], nodeId: string, ifaceId: string) =>
   links.find(l => (l.from === nodeId && l.fromInterfaceId === ifaceId) || (l.to === nodeId && l.toInterfaceId === ifaceId))?.id;
 
-export const buildContextMenuItems = (target: ContextTarget, state: MenuState, act: MenuActions): MenuItem[] => {
+export type Translator = (key: DictKey, params?: Params) => string;
+
+export const buildContextMenuItems = (target: ContextTarget, state: MenuState, act: MenuActions, t: Translator): MenuItem[] => {
   const { mode, nodes, links } = state;
   const items: MenuItem[] = [];
 
   if (target.kind === 'canvas') {
     if (mode !== 'DESIGN') return [];
-    items.push({ kind: 'header', key: 'h', label: 'Add device here' });
-    NODE_PALETTE.forEach(p => items.push({ kind: 'item', key: `add-${p.type}`, label: p.label, run: () => act.addNode(p.type, { x: target.x, y: target.y }) }));
+    items.push({ kind: 'header', key: 'h', label: t('ctx.addHere') });
+    NODE_PALETTE.forEach(p => items.push({ kind: 'item', key: `add-${p.type}`, label: t(`device.${p.type}` as DictKey), run: () => act.addNode(p.type, { x: target.x, y: target.y }) }));
     return items;
   }
 
   if (target.kind === 'link') {
     if (mode !== 'DESIGN') return [];
-    return [{ kind: 'item', key: 'del-link', label: 'Delete cable', danger: true, run: () => act.removeLink(target.linkId) }];
+    return [{ kind: 'item', key: 'del-link', label: t('ctx.deleteCable'), danger: true, run: () => act.removeLink(target.linkId) }];
   }
 
   const node = nodes.find(n => n.id === target.nodeId);
@@ -68,16 +72,16 @@ export const buildContextMenuItems = (target: ContextTarget, state: MenuState, a
     const linkId = linkIdOfPort(links, node.id, iface.id);
     items.push({ kind: 'header', key: 'h', label: `${node.label} · ${iface.name}` });
     items.push({
-      kind: 'item', key: 'disconnect', label: 'Disconnect cable', danger: true,
-      disabled: !linkId, hint: linkId ? undefined : 'This port has no cable',
+      kind: 'item', key: 'disconnect', label: t('ctx.disconnect'), danger: true,
+      disabled: !linkId, hint: linkId ? undefined : t('ctx.noCable'),
       run: () => { if (linkId) act.removeLink(linkId); }
     });
     const canRemove = canChangePortCount(node.type) && node.interfaces.length > PORT_LIMITS[node.type].min;
     items.push({
-      kind: 'item', key: 'rm-port', label: 'Remove port', danger: true, disabled: !canRemove,
-      hint: canRemove ? undefined : `Minimum ${PORT_LIMITS[node.type].min} port(s)`,
+      kind: 'item', key: 'rm-port', label: t('ctx.removePort'), danger: true, disabled: !canRemove,
+      hint: canRemove ? undefined : t('ctx.minPorts', { n: PORT_LIMITS[node.type].min }),
       run: () => {
-        if (isPortUsed(links, node.id, iface.id) && !act.confirm(`${iface.name} is connected. Removing it will also remove the cable. Continue?`)) return;
+        if (isPortUsed(links, node.id, iface.id) && !act.confirm(t('iface.removeConfirm', { name: iface.name }))) return;
         act.removeInterface(node.id, iface.id);
       }
     });
@@ -87,21 +91,21 @@ export const buildContextMenuItems = (target: ContextTarget, state: MenuState, a
   // node
   items.push({ kind: 'header', key: 'h', label: node.label });
   if (mode === 'DESIGN') {
-    items.push({ kind: 'item', key: 'settings', label: 'Open settings', run: () => act.selectNode(node.id) });
+    items.push({ kind: 'item', key: 'settings', label: t('ctx.openSettings'), run: () => act.selectNode(node.id) });
     if (canChangePortCount(node.type)) {
       const max = PORT_LIMITS[node.type].max;
       items.push({
-        kind: 'item', key: 'add-port', label: 'Add port', disabled: node.interfaces.length >= max,
-        hint: node.interfaces.length >= max ? `Maximum ${max} ports` : undefined,
+        kind: 'item', key: 'add-port', label: t('ctx.addPort'), disabled: node.interfaces.length >= max,
+        hint: node.interfaces.length >= max ? t('iface.maxPorts', { n: max }) : undefined,
         run: () => act.addInterface(node.id)
       });
     }
     items.push({ kind: 'separator', key: 's' });
     items.push({
-      kind: 'item', key: 'del-node', label: 'Delete device', danger: true,
+      kind: 'item', key: 'del-node', label: t('settings.deleteDevice'), danger: true,
       run: () => {
         const cables = links.filter(l => l.from === node.id || l.to === node.id).length;
-        if (cables > 0 && !act.confirm(`Delete ${node.label}? Its ${cables} connected cable(s) will also be removed.`)) return;
+        if (cables > 0 && !act.confirm(t('settings.confirmDelete', { name: node.label, n: cables }))) return;
         act.removeNode(node.id);
       }
     });
@@ -110,13 +114,13 @@ export const buildContextMenuItems = (target: ContextTarget, state: MenuState, a
 
   // SIMULATE: 学習テーブルのクリア(観察のやり直し用)
   if (['pc', 'router', 'server', 'dns', 'dhcp', 'l3switch'].includes(node.type)) {
-    items.push({ kind: 'item', key: 'clr-arp', label: 'Clear ARP table', run: () => act.clearArp(node.id) });
+    items.push({ kind: 'item', key: 'clr-arp', label: t('table.clearArp'), run: () => act.clearArp(node.id) });
   }
   if (['switch', 'l3switch'].includes(node.type)) {
-    items.push({ kind: 'item', key: 'clr-mac', label: 'Clear MAC table', run: () => act.clearMac(node.id) });
+    items.push({ kind: 'item', key: 'clr-mac', label: t('table.clearMac'), run: () => act.clearMac(node.id) });
   }
   if (['pc', 'server', 'router'].includes(node.type)) {
-    items.push({ kind: 'item', key: 'clr-dns', label: 'Clear DNS cache', run: () => act.clearDns(node.id) });
+    items.push({ kind: 'item', key: 'clr-dns', label: t('table.clearDns'), run: () => act.clearDns(node.id) });
   }
   return items.length > 1 ? items : [];
 };

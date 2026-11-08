@@ -2,12 +2,14 @@ import React from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { useNetworkStore } from '../../store/useNetworkStore';
 import { MAX_IN_FLIGHT_PACKETS } from '../../logic/simLimits';
+import { useT } from '../../i18n/useT';
 
 /**
  * ブロードキャストストームの警告。
  * Why: 初心者が「何が起きたのか」「どうすれば止まるのか」を画面上で理解できるよう、原因と対処を示す。
  */
 export const StormBanner: React.FC = () => {
+  const t = useT();
   const { stormActive, stormDropped, packets, clearPackets } = useNetworkStore();
   if (!stormActive) return null;
 
@@ -23,15 +25,13 @@ export const StormBanner: React.FC = () => {
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, fontSize: '13px', marginBottom: '4px' }}>
-        <AlertTriangle size={16} /> Broadcast storm
+        <AlertTriangle size={16} /> {t('storm.title')}
       </div>
       <div>
-        Switches are passing the same broadcast to each other around a loop, so the number of packets keeps growing
-        ({packets.length} in flight, limit {MAX_IN_FLIGHT_PACKETS}; {stormDropped} discarded to keep the app responsive).
-        Pause to look at the switches' MAC tables flip between ports. To stop it, remove one cable of the loop (Design mode), or:
+        {t('storm.body', { n: packets.length, max: MAX_IN_FLIGHT_PACKETS, dropped: stormDropped })}
       </div>
       <button onClick={clearPackets} className="btn btn-glass btn-small" style={{ marginTop: '8px', fontSize: '12px' }}>
-        Clear all packets
+        {t('storm.clear')}
       </button>
     </div>
   );

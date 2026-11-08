@@ -1,5 +1,6 @@
 import React from 'react';
 import { ZoomIn, ZoomOut, Maximize } from 'lucide-react';
+import { useT } from '../../i18n/useT';
 
 interface CanvasControlsProps {
   mode: 'DESIGN' | 'SIMULATE';
@@ -16,6 +17,7 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
   setZoom,
   isPaused,
 }) => {
+  const t = useT();
   return (
     <>
       <div style={{ position: 'absolute', bottom: '20px', left: '20px', display: 'flex', gap: '8px', zIndex: 100 }}>
@@ -40,13 +42,13 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
       }}>
         <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: mode === 'DESIGN' ? 'var(--c-yellow)' : 'var(--c-green-strong)', boxShadow: `0 0 10px ${mode === 'DESIGN' ? 'var(--c-yellow)' : 'var(--c-green-strong)'}` }} />
         {mode === 'DESIGN' ? (
-          'DESIGN MODE: DRAG PARTS IN · DRAG PORT TO PORT TO CONNECT'
+          t('banner.design')
         ) : (
-          isInspectMode ? 'INSPECT MODE: CLICK TO VIEW TABLES' : 'SIMULATION MODE: CLICK NODES TO START PACKETS'
+          isInspectMode ? t('banner.inspect') : t('banner.simulate')
         )}
         {mode === 'SIMULATE' && isPaused && (
           <span style={{ marginLeft: '8px', padding: '2px 8px', borderRadius: '4px', background: 'rgba(251, 191, 36, 0.25)', color: 'var(--c-yellow)', border: '1px solid rgba(251, 191, 36, 0.5)' }}>
-            ⏸ PAUSED
+            {t('banner.paused')}
           </span>
         )}
       </div>

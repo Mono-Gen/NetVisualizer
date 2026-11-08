@@ -7,6 +7,9 @@ import { CanvasControls } from './canvas/CanvasControls';
 import { PlaybackControls } from './canvas/PlaybackControls';
 import { WelcomeGuide } from './canvas/WelcomeGuide';
 import { ContextMenu } from './canvas/ContextMenu';
+import { useT, useTMsg } from '../i18n/useT';
+import { msg } from '../i18n/msg';
+import type { Msg } from '../i18n/translate';
 import { StormBanner } from './canvas/StormBanner';
 import { buildContextMenuItems, type ContextTarget } from '../logic/contextMenu';
 import { DND_NODE_TYPE, createNode } from '../logic/nodeFactory';
@@ -21,6 +24,8 @@ export const NetworkCanvas: React.FC = () => {
     setZoom, addLink, sendPacket, removeNode, removeLink 
   } = useNetworkStore();
 
+  const t = useT();
+  const tMsg = useTMsg();
   const containerRef = useRef<HTMLDivElement>(null);
 
   // サイドバーからのドロップでノードを追加する(DESIGNモードのみ)。
@@ -37,7 +42,7 @@ export const NetworkCanvas: React.FC = () => {
   const [simTargetId, setSimTargetId] = useState<string | null>(null);
   // ポートからのドラッグ配線: 配線元と現在のポインタ位置(キャンバス座標)
   const [wiring, setWiring] = useState<{ source: PortRef; x: number; y: number } | null>(null);
-  const [wireMessage, setWireMessage] = useState<string | null>(null);
+  const [wireMessage, setWireMessage] = useState<Msg | null>(null);
   // 右クリックメニュー: 表示位置(コンテナ内の画面px)と対象
   const [menu, setMenu] = useState<{ x: number; y: number; target: ContextTarget } | null>(null);
   const closeMenu = useCallback(() => setMenu(null), []);
@@ -73,8 +78,8 @@ export const NetworkCanvas: React.FC = () => {
     const node = nodes.find(n => n.id === nodeId);
     if (!node) return;
     if (isPortUsed(links, nodeId, ifaceId)) {
-      const name = node.interfaces.find(i => i.id === ifaceId)?.name ?? 'This port';
-      setWireMessage(`${node.label} ${name} is already connected. Remove the cable first (Eraser mode), then reconnect.`);
+      const name = node.interfaces.find(i => i.id === ifaceId)?.name ?? '?';
+      setWireMessage(msg('wire.alreadyConnected', { node: node.label, port: name }));
       return;
     }
     setWireMessage(null);
@@ -264,13 +269,13 @@ export const NetworkCanvas: React.FC = () => {
             clearMac: clearNodeMacTable,
             clearDns: clearDnsCache,
             confirm: (message) => window.confirm(message)
-          })}
+          }, t)}
         />
       )}
 
       {wireMessage && (
         <div role="status" style={{ position: 'absolute', top: '84px', left: '50%', transform: 'translateX(-50%)', zIndex: 120, maxWidth: '80%', padding: '10px 16px', borderRadius: '8px', fontSize: '12px', fontWeight: 600, color: '#fecaca', background: 'rgba(127, 29, 29, 0.9)', border: '1px solid rgba(248, 113, 113, 0.6)' }}>
-          ⚠ {wireMessage}
+          ⚠ {tMsg(wireMessage)}
         </div>
       )}
 

@@ -1,5 +1,6 @@
 import React from 'react';
 import type { NetNode, ListeningPort } from '../../types/network';
+import { useT } from '../../i18n/useT';
 
 interface ServiceConfigProps {
   node: NetNode;
@@ -8,6 +9,7 @@ interface ServiceConfigProps {
 }
 
 export const ServiceConfig: React.FC<ServiceConfigProps> = ({ node, mode, onUpdate }) => {
+  const t = useT();
   const addPort = (port: number, protocol: 'TCP' | 'UDP') => {
     if (!port || node.listeningPorts?.some(p => p.port === port && p.protocol === protocol)) return;
     const newPorts: ListeningPort[] = [...(node.listeningPorts || []), { port, protocol }];
@@ -21,14 +23,14 @@ export const ServiceConfig: React.FC<ServiceConfigProps> = ({ node, mode, onUpda
 
   return (
     <div style={{ padding: '12px', background: 'rgba(245, 158, 11, 0.05)', borderRadius: '8px', border: '1px solid rgba(245, 158, 11, 0.1)' }}>
-      <label className="form-label" style={{ fontSize: '11px', color: 'var(--primary-orange)' }}>Listening Services (Ports)</label>
+      <label className="form-label" style={{ fontSize: '11px', color: 'var(--primary-orange)' }}>{t('service.title')}</label>
       {mode === 'DESIGN' && (
         <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
           <input 
             id="port-input"
             className="input" 
             type="number"
-            placeholder="Port"
+            placeholder={t('service.port')}
             style={{ fontSize: '11px', padding: '6px', flex: 1 }}
           />
           <select id="proto-select" className="input" style={{ fontSize: '11px', padding: '6px', width: '70px' }}>
@@ -42,7 +44,7 @@ export const ServiceConfig: React.FC<ServiceConfigProps> = ({ node, mode, onUpda
               const proto = (document.getElementById('proto-select') as HTMLSelectElement).value as 'TCP' | 'UDP';
               if (port) addPort(port, proto);
             }}
-          >Add</button>
+          >{t('service.add')}</button>
         </div>
       )}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
@@ -55,7 +57,7 @@ export const ServiceConfig: React.FC<ServiceConfigProps> = ({ node, mode, onUpda
           </span>
         ))}
         {(!node.listeningPorts || node.listeningPorts.length === 0) && (
-          <span style={{ fontSize: '11px', color: 'rgba(var(--ink), 0.2)' }}>No services listening</span>
+          <span style={{ fontSize: '11px', color: 'rgba(var(--ink), 0.2)' }}>{t('service.none')}</span>
         )}
       </div>
     </div>
