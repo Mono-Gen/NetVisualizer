@@ -2,6 +2,7 @@ import React from 'react';
 import type { NetNode, NetInterface } from '../../types/network';
 import { useNetworkStore } from '../../store/useNetworkStore';
 import { PORT_LIMITS, canChangePortCount } from '../../logic/interfaceFactory';
+import { DEFAULT_METRIC } from '../../logic/networkUtils';
 import { useT } from '../../i18n/useT';
 
 interface InterfaceConfigProps {
@@ -16,6 +17,8 @@ export const InterfaceConfig: React.FC<InterfaceConfigProps> = ({ node, mode, on
   const canHaveMultipleInterfaces = canChangePortCount(node.type);
   const limits = PORT_LIMITS[node.type];
   const isL3Node = ['pc', 'router', 'server', 'dns', 'l3switch'].includes(node.type);
+  // NICが2つ以上のL3ノードでは、送信に使うNICを選ぶ規則(メトリックなど)が意味を持つ
+  const isMultiNic = isL3Node && node.interfaces.length > 1;
 
   const handleInterfaceChange = (ifaceId: string, updates: Partial<NetInterface>) => {
     const updatedInterfaces = node.interfaces.map(i => i.id === ifaceId ? { ...i, ...updates } : i);
@@ -51,6 +54,19 @@ export const InterfaceConfig: React.FC<InterfaceConfigProps> = ({ node, mode, on
         )}
       </div>
       
+      {isMultiNic && (
+        <details style={{ marginBottom: '10px', fontSize: '11px', color: 'var(--text-dim)' }}>
+          <summary style={{ cursor: 'pointer', fontWeight: 700, color: 'var(--text-main)' }}>{t('iface.ruleTitle')}</summary>
+          <ol style={{ margin: '6px 0 0', paddingLeft: '18px', lineHeight: 1.6 }}>
+            <li>{t('iface.rule1')}</li>
+            <li>{t('iface.rule2')}</li>
+            <li>{t('iface.rule3')}</li>
+            <li>{t('iface.rule4')}</li>
+          </ol>
+          <div style={{ marginTop: '6px', lineHeight: 1.5 }}>{t('iface.ruleNote')}</div>
+        </details>
+      )}
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {node.interfaces.map((iface) => (
           <div key={iface.id} style={{ padding: '12px', background: 'rgba(var(--ink), 0.02)', borderRadius: '8px', border: '1px solid rgba(var(--ink), 0.05)' }}>
@@ -113,6 +129,26 @@ export const InterfaceConfig: React.FC<InterfaceConfigProps> = ({ node, mode, on
                     />
                   </div>
                 </div>
+
+                {isMultiNic && (
+                  <div className="form-group" style={{ marginTop: '4px' }}>
+                    <label className="form-label" style={{ fontSize: '11px' }} htmlFor={`metric-${iface.id}`}>{t('iface.metric')}</label>
+                    <input
+                      id={`metric-${iface.id}`}
+                      className="input"
+                      type="number"
+                      min={0}
+                      max={9999}
+                      style={{ fontSize: '11px', padding: '6px' }}
+                      value={iface.metric ?? DEFAULT_METRIC}
+                      onChange={(e) => {
+                        const n = parseInt(e.target.value, 10);
+                        handleInterfaceChange(iface.id, { metric: Number.isFinite(n) ? Math.min(9999, Math.max(0, n)) : undefined });
+                      }}
+                      disabled={mode === 'SIMULATE'}
+                    />
+                  </div>
+                )}
               </>
             )}
 

@@ -121,6 +121,7 @@ Use **Load a sample** at the bottom of the sidebar (available in both modes) to 
 | 1. Basic LAN | Ping `10.0.0.2` from PC 1 and watch ARP, then ICMP |
 | 2. Two Networks via Router | Ping `192.168.2.10` from PC 1 and watch the gateway ARP |
 | 3. IGMP Snooping | Join `239.1.1.1` on Receiver 1, then send UDP to `239.1.1.1` from the Sender |
+| 5. PC with Two NICs | Ping `192.168.1.20` and `192.168.2.20` from PC 1 and watch which NIC each packet leaves from (see the **Route** lines in the log) |
 | 4. Switch Loop (Broadcast Storm) | Ping `10.0.0.2` from PC 1 and watch the packet count explode; pause to see the MAC tables flip, then remove two of the three cables |
 
 > Loading replaces the current topology (a confirmation appears if the canvas is not empty).
@@ -144,6 +145,23 @@ Colors are used consistently so you can tell at a glance what is happening:
 If switches are connected in a loop (for example, two switches joined by more than one cable), a broadcast is copied around the loop again and again and the number of packets in flight grows explosively. A real network can be brought down this way.
 
 NetVisualizer lets this happen so you can see it. The **Packets on the wire** counter in the playback controls shows the packet count. To keep the app responsive, at most 300 packets can be in flight; the excess is discarded and a **Broadcast storm** warning appears. Pause to inspect the switches' MAC tables (the same MAC keeps moving between ports). To stop it, remove cables until the loop is gone (Design mode), or press **Clear all packets** in the warning.
+
+### 2.7 PCs and Servers with Several NICs
+
+A PC or server can have up to **4 NICs** (network interface cards). Select the device and press **+ Add Port** in the settings panel, then give each NIC its own IP address and subnet mask. Try the sample "5. PC with Two NICs".
+
+**How the sending NIC is chosen** — when a device with several NICs sends something to a destination (Ping, UDP, TCP), it picks the NIC like this:
+
+1. Among the NICs whose network **contains the destination**, the one with the **longest prefix** (for example, /24 beats /16).
+2. If tied, the NIC with the lower **Metric** (set per NIC in the settings panel; default 100, lower is preferred).
+3. If still tied, the NIC that is **listed first**. It is never random: the same setup always gives the same result.
+4. If no NIC's network contains the destination, a NIC with a valid **default gateway** is used (lower Metric first, then listed first).
+
+The log shows the decision as a **Route** line, for example: `Route: 192.168.2.20 via eth1 - connected network /24, metric 100`. To see the tie-breaking in action, put two NICs on the same network and change one NIC's Metric.
+
+> This is a simplified model of Windows and Linux. Real systems also use policy routing and automatic metrics, which are not simulated.
+
+DHCP, mDNS and multicast do not have a destination, so they use the NIC selected in **Send via** in the command panel (default: the NIC with the lowest Metric that has an IP address).
 
 ### 3.0 Playback Controls (Pause / Step / Speed)
 

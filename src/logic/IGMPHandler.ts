@@ -10,19 +10,21 @@ export class IGMPHandler {
     if (['pc', 'server'].includes(receiverNode.type)) {
       if (packet.type === 'query') {
         const joinedGroups = receiverNode.joinedGroups || [];
+        // レポートは、クエリを受け取ったNICから返す
+        const rx = receiverNode.interfaces.find(i => i.id === incomingInterfaceId) || receiverNode.interfaces[0];
         joinedGroups.forEach(group => {
           update.addPackets?.push({
             from: receiverNode.id,
             to: 'BROADCAST',
-            senderIP: receiverNode.interfaces[0].ip,
+            senderIP: rx.ip,
             targetIP: group,
-            senderMAC: receiverNode.interfaces[0].mac,
+            senderMAC: rx.mac,
             targetMAC: multicastIPToMAC(group),
             protocol: 'IGMP',
             type: 'report',
             status: 'pending',
-            fromInterfaceId: receiverNode.interfaces[0].id,
-            originatingInterfaceId: receiverNode.interfaces[0].id,
+            fromInterfaceId: rx.id,
+            originatingInterfaceId: rx.id,
             id: `p_igmp_report_${Date.now()}_${group}`,
             progress: 0
           });

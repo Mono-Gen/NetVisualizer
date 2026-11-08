@@ -39,6 +39,9 @@ export const SidebarCommandPanel: React.FC<SidebarCommandPanelProps> = ({ node }
   const [targetPort, setTargetPort] = useState('80');
   const [message, setMessage] = useState('Hello, Server!');
   const [servicesOpen, setServicesOpen] = useState(initialServicesOpen);
+  // 送信NIC: ''=自動(代表NIC)。Ping/UDP/TCPは宛先から経路の規則で決まるので対象外
+  const [nicId, setNicId] = useState('');
+  const chosenNic = nicId && node.interfaces.some(i => i.id === nicId) ? nicId : undefined;
 
   // 利用者が開閉したときだけ保存する(初期状態は保存しない。画面の高さが変わったときに再判定できるように)
   const toggleServices = () => {
@@ -162,16 +165,33 @@ export const SidebarCommandPanel: React.FC<SidebarCommandPanelProps> = ({ node }
           <Search size={12} /> {t('cmd.services')}
         </summary>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '8px' }}>
+        {node.interfaces.length > 1 && (
+          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text-dim)' }}>
+            {t('cmd.viaNic')}
+            <select
+              value={nicId}
+              onChange={(e) => setNicId(e.target.value)}
+              aria-label={t('cmd.viaNic')}
+              title={t('cmd.viaNicHint')}
+              style={{ flex: 1, minWidth: 0, background: 'rgba(var(--shade), 0.3)', color: 'var(--text-main)', fontSize: '11px', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '4px 6px' }}
+            >
+              <option value="" style={{ color: 'var(--text-main)', background: 'var(--node-bg)' }}>{t('cmd.viaNicAuto')}</option>
+              {node.interfaces.map(i => (
+                <option key={i.id} value={i.id} style={{ color: 'var(--text-main)', background: 'var(--node-bg)' }}>{i.name}{i.ip ? ` (${i.ip})` : ''}</option>
+              ))}
+            </select>
+          </label>
+        )}
         <div style={{ display: 'flex', gap: '6px' }}>
           <button
-            onClick={() => requestDHCP(node.id)}
+            onClick={() => requestDHCP(node.id, chosenNic)}
             className="btn btn-glass"
             style={{ flex: 1, minWidth: 0, fontSize: '11px', minHeight: '28px', padding: '4px 6px', whiteSpace: 'normal', lineHeight: 1.2, borderColor: 'var(--proto-dhcp)', color: 'var(--proto-dhcp-text)' }}
           >
             {t('cmd.dhcpRenew')}
           </button>
           <button
-            onClick={() => sendmDNSQuery(node.id, targetIP || 'Web Server')}
+            onClick={() => sendmDNSQuery(node.id, targetIP || 'Web Server', chosenNic)}
             className="btn btn-glass"
             style={{ flex: 1, minWidth: 0, fontSize: '11px', minHeight: '28px', padding: '4px 6px', whiteSpace: 'normal', lineHeight: 1.2, borderColor: 'var(--proto-mdns)', color: 'var(--proto-mdns-text)' }}
             title={t('cmd.mdnsQueryTitle')}
@@ -185,7 +205,7 @@ export const SidebarCommandPanel: React.FC<SidebarCommandPanelProps> = ({ node }
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '11px', color: 'var(--proto-mdns-text)', fontWeight: 700 }}>{t('cmd.mdnsResponder')}</span>
             <button
-              onClick={() => (node.joinedGroups || []).includes('224.0.0.251') ? leaveMulticastGroup(node.id, '224.0.0.251') : joinMulticastGroup(node.id, '224.0.0.251')}
+              onClick={() => (node.joinedGroups || []).includes('224.0.0.251') ? leaveMulticastGroup(node.id, '224.0.0.251', chosenNic) : joinMulticastGroup(node.id, '224.0.0.251', chosenNic)}
               style={{
                 padding: '2px 8px',
                 borderRadius: '12px',

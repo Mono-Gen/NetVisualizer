@@ -10,6 +10,8 @@ export interface NetInterface {
   subnet: string;
   gateway?: string;
   dns?: string;
+  /** 経路の優先度。小さいほど優先(未設定は既定値 100) */
+  metric?: number;
 }
 
 export interface ListeningPort {

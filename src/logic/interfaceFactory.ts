@@ -8,8 +8,8 @@ import { generateId } from './networkUtils';
 
 /** ノード種別ごとのポート数の範囲。min===max はポート数を変更できない種別 */
 export const PORT_LIMITS: Record<NodeType, { min: number; max: number }> = {
-  pc: { min: 1, max: 1 },
-  server: { min: 1, max: 1 },
+  pc: { min: 1, max: 4 },
+  server: { min: 1, max: 4 },
   dns: { min: 1, max: 1 },
   dhcp: { min: 1, max: 1 },
   switch: { min: 2, max: 24 },

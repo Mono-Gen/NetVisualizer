@@ -1,5 +1,5 @@
 import type { NetNode, NetPacket, NetInterface } from '../types/network';
-import { isInSameSubnet, isGatewayValid } from './networkUtils';
+import { isInSameSubnet, isGatewayValid, lookupRoute } from './networkUtils';
 import type { ICMPErrorType } from './ICMPHandler';
 import { isMulticastMAC } from './MulticastEngine';
 
@@ -66,34 +66,16 @@ export const processL3 = (
       };
     }
 
-    // Routing Logic: Find egress interface based on subnet
-    // In a real router, this would be a Routing Table lookup.
-    // For now, we check if the target is in any of our connected subnets.
-    const egressIface = currentNode.interfaces.find(iface => isInSameSubnet(iface.ip, packet.targetIP, iface.subnet));
-    
-    if (egressIface) {
-      return { 
-        action: 'forward', 
-        nextHopIP: packet.targetIP, 
-        egressInterfaceId: egressIface.id 
-      };
-    } else {
-      // Default Gateway check on router (for hierarchical routing)
-      const gwIface = currentNode.interfaces.find(iface => iface.gateway && isGatewayValid(iface.ip, iface.gateway, iface.subnet));
-      if (gwIface) {
-        return { 
-          action: 'forward', 
-          nextHopIP: gwIface.gateway, 
-          egressInterfaceId: gwIface.id 
-        };
-      }
-      
-      return { 
-        action: 'drop', 
-        errorType: 'Host Unreachable',
-        log: { status: 'error', info: `Routing Error: No route to ${packet.targetIP} (Destination Host Unreachable)` }
-      };
+    // 経路の検索は、ホストの出口NIC選択と同じ規則(最長プレフィックス一致 → メトリック → 先頭)を使う
+    const route = lookupRoute(currentNode, packet.targetIP);
+    if (route) {
+      return { action: 'forward', nextHopIP: route.nextHopIP, egressInterfaceId: route.iface.id };
     }
+    return {
+      action: 'drop',
+      errorType: 'Host Unreachable',
+      log: { status: 'error', info: `Routing Error: No route to ${packet.targetIP} (Destination Host Unreachable)` }
+    };
   }
 
   // 3. For PC/Server/DHCP-client: accept if targetMAC is broadcast, multicast, or addressed to this node

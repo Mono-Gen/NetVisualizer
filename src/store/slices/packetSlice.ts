@@ -3,7 +3,7 @@ import { NetworkEngine } from '../../engine/NetworkEngine';
 import { TCPHandler } from '../../logic/TCPHandler';
 import { IGMPHandler } from '../../logic/IGMPHandler';
 import { DHCPHandler } from '../../logic/DHCPHandler';
-import { findEgressInterface } from '../../logic/networkUtils';
+import { findEgressInterface, lookupRoute, primaryInterface } from '../../logic/networkUtils';
 import { multicastIPToMAC } from '../../logic/MulticastEngine';
 import { progressUntilNextArrival } from '../../logic/simClock';
 import { appendWithCap, isStormCleared, MAX_LOG_ENTRIES } from '../../logic/simLimits';
@@ -17,6 +17,26 @@ const stormUpdate = (state: any, dropped: number) => {
   if (dropped === 0) return {};
   return { stormActive: true, stormDropped: (state.stormDropped || 0) + dropped };
 };
+
+/**
+ * 複数NICのノードが送信するとき、どのNICから出るか(と、その理由)をログに残す。
+ * Why: 出口NICの選択規則(最長一致→メトリック→先頭)を、利用者が結果から確かめられるようにするため。
+ * NICが1つのときは自明なので出さない。
+ */
+const logRoute = (get: any, node: NetNode, targetIP: string) => {
+  if (node.interfaces.length < 2) return;
+  const route = lookupRoute(node, targetIP);
+  if (!route) return;
+  const common = { time: new Date().toLocaleTimeString(), protocol: 'IP', type: 'route', status: 'sent', senderIP: route.iface.ip, targetIP };
+  const log = route.kind === 'connected'
+    ? { ...common, info: `Route: ${targetIP} via ${route.iface.name} - connected network /${route.prefixLen}, metric ${route.metric}` }
+    : { ...common, info: `Route: ${targetIP} via ${route.iface.name} - default gateway ${route.nextHopIP}, metric ${route.metric}` };
+  get().applyEngineUpdate({ addLogs: [log] });
+};
+
+/** 利用者が選んだNICがあればそれ、無ければ代表NIC(メトリック最小→先頭) */
+const pickInterface = (node: NetNode, ifaceId?: string) =>
+  (ifaceId && node.interfaces.find(i => i.id === ifaceId)) || primaryInterface(node);
 
 export const createPacketSlice = (set: any, get: any) => ({
   packets: [],
@@ -82,6 +102,7 @@ export const createPacketSlice = (set: any, get: any) => ({
     const isIP = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(sanitizedInput);
 
     if (isIP) {
+      logRoute(get, node, sanitizedInput);
       const egressIface = findEgressInterface(node, sanitizedInput);
       sendPacket({
         from: nodeId,
@@ -99,6 +120,7 @@ export const createPacketSlice = (set: any, get: any) => ({
     const hostname = sanitizedInput;
     if (node.dnsCache?.[hostname]) {
       const targetIP = node.dnsCache[hostname];
+      logRoute(get, node, targetIP);
       const egressIface = findEgressInterface(node, targetIP);
       sendPacket({
         from: nodeId,
@@ -131,7 +153,8 @@ export const createPacketSlice = (set: any, get: any) => ({
       }
     }));
 
-    const sourceIface = ifaceWithDNS || node.interfaces[0];
+    // DNSサーバーへ出るNIC(経路の規則で決める)。DNSサーバーが設定されたNICが無ければ先頭
+    const sourceIface = ifaceWithDNS ? findEgressInterface(node, dnsServerIP) : node.interfaces[0];
 
     // Send ONLY the DNS Query. Do NOT send ICMP yet.
     sendPacket({
@@ -170,6 +193,7 @@ export const createPacketSlice = (set: any, get: any) => ({
         const waitingNode = nodes.find((n: NetNode) => n.id === waitingNodeId);
         if (waitingNode) {
           // Trigger the ping to the CORRECT resolved IP (送信元は宛先に応じた出口IFを選ぶ)
+          logRoute(get, waitingNode, resolvedIP);
           const egressIface = findEgressInterface(waitingNode, resolvedIP);
           sendPacket({
             from: waitingNodeId,
@@ -423,6 +447,7 @@ export const createPacketSlice = (set: any, get: any) => ({
       return;
     }
 
+    logRoute(get, fromNode, toIP.trim());
     const { packet, updatedConnections } = TCPHandler.initiateConnection(fromNode, toIP, port, Math.floor(1024 + Math.random() * 60000));
     get().updateNode(fromId, { tcpConnections: updatedConnections });
     get().sendPacket(packet);
@@ -435,7 +460,7 @@ export const createPacketSlice = (set: any, get: any) => ({
     get().sendPacket(packet);
   },
 
-  joinMulticastGroup: (nodeId: string, groupIP: string) => {
+  joinMulticastGroup: (nodeId: string, groupIP: string, ifaceId?: string) => {
     const { nodes } = get();
     const node = nodes.find((n: NetNode) => n.id === nodeId);
     if (!node || (node.joinedGroups || []).includes(groupIP)) return;
@@ -446,7 +471,7 @@ export const createPacketSlice = (set: any, get: any) => ({
     set({ nodes: updatedNodes });
 
     // Send IGMP Report
-    const iface = node.interfaces[0];
+    const iface = pickInterface(node, ifaceId);
     const packet = {
       from: nodeId,
       to: '',
@@ -466,7 +491,7 @@ export const createPacketSlice = (set: any, get: any) => ({
     get().sendPacket(packet);
   },
 
-  leaveMulticastGroup: (nodeId: string, groupIP: string) => {
+  leaveMulticastGroup: (nodeId: string, groupIP: string, ifaceId?: string) => {
     const { nodes } = get();
     const node = nodes.find((n: NetNode) => n.id === nodeId);
     if (!node) return;
@@ -477,7 +502,7 @@ export const createPacketSlice = (set: any, get: any) => ({
     set({ nodes: updatedNodes });
 
     // Send IGMP Leave (pedagogical)
-    const iface = node.interfaces[0];
+    const iface = pickInterface(node, ifaceId);
     const packet = {
       from: nodeId,
       to: '',
@@ -512,6 +537,7 @@ export const createPacketSlice = (set: any, get: any) => ({
 
     // Simple ephemeral port for source
     const srcPort = Math.floor(1024 + Math.random() * 60000);
+    logRoute(get, fromNode, toIP);
     const egressIface = findEgressInterface(fromNode, toIP);
     const packet = {
       from: fromNode.id,
@@ -533,13 +559,13 @@ export const createPacketSlice = (set: any, get: any) => ({
     get().sendPacket(packet);
   },
 
-  requestDHCP: (fromId: string) => {
+  requestDHCP: (fromId: string, ifaceId?: string) => {
     const { nodes } = get();
     const fromNode = nodes.find((n: NetNode) => n.id === fromId);
     if (!fromNode) return;
     
     // Use the first interface that lacks an IP or starts with 169.254 as the requesting interface
-    const iface = fromNode.interfaces.find(i => i.ip === '' || i.ip.startsWith('169.254.')) || fromNode.interfaces[0];
+    const iface = (ifaceId && fromNode.interfaces.find(i => i.id === ifaceId)) || fromNode.interfaces.find(i => i.ip === '' || i.ip.startsWith('169.254.')) || fromNode.interfaces[0];
 
     // DHCP Discover: Source IP 0.0.0.0, Dest IP 255.255.255.255
     // Source Port 68, Dest Port 67
@@ -578,7 +604,7 @@ export const createPacketSlice = (set: any, get: any) => ({
     get().sendPacket(packet);
   },
 
-  sendmDNSQuery: (fromId: string, hostname: string = 'Web Server') => {
+  sendmDNSQuery: (fromId: string, hostname: string = 'Web Server', ifaceId?: string) => {
     const { nodes } = get();
     const fromNode = nodes.find((n: any) => n.id === fromId);
     if (!fromNode) return;
@@ -608,7 +634,7 @@ export const createPacketSlice = (set: any, get: any) => ({
       }] 
     });
 
-    const iface = fromNode.interfaces[0];
+    const iface = pickInterface(fromNode, ifaceId);
     const packet = {
       from: fromNode.id,
       to: 'BROADCAST',

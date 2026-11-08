@@ -136,4 +136,29 @@ const switchLoop: SampleTopology = {
   }
 };
 
-export const SAMPLE_TOPOLOGIES: SampleTopology[] = [basicLan, routed, igmp, switchLoop];
+const multiNic: SampleTopology = {
+  id: 'multi-nic',
+  name: '5. PC with Two NICs',
+  description: 'PC 1 has two NICs on two different networks. Ping 192.168.1.20 and 192.168.2.20 and watch which NIC each packet leaves from. Then give both NICs the same network and change the Metric.',
+  build: () => {
+    MAC_SEQ.reset();
+    const sw1 = makeNode('sw1', 'switch', 'Switch 1', 140, 120, makeSwitchPorts('sw1', 8));
+    const sw2 = makeNode('sw2', 'switch', 'Switch 2', 620, 120, makeSwitchPorts('sw2', 8));
+    // 2つのNIC。eth0 は 192.168.1.0/24、eth1 は 192.168.2.0/24
+    const pc1 = makeNode('pc1', 'pc', 'PC 1', 380, 380, [
+      makeIface('pc1', 0, '192.168.1.10', LAN),
+      makeIface('pc1', 1, '192.168.2.10', LAN)
+    ]);
+    const pc2 = makeNode('pc2', 'pc', 'PC 2', 140, 380, [makeIface('pc2', 0, '192.168.1.20', LAN)]);
+    const pc3 = makeNode('pc3', 'pc', 'PC 3', 620, 380, [makeIface('pc3', 0, '192.168.2.20', LAN)]);
+    return {
+      nodes: [sw1, sw2, pc1, pc2, pc3],
+      links: [
+        link('l1', pc1, 0, sw1, 0), link('l2', pc1, 1, sw2, 0),
+        link('l3', pc2, 0, sw1, 1), link('l4', pc3, 0, sw2, 1)
+      ]
+    };
+  }
+};
+
+export const SAMPLE_TOPOLOGIES: SampleTopology[] = [basicLan, routed, igmp, switchLoop, multiNic];

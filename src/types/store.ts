@@ -53,11 +53,11 @@ export type PacketSlice = {
   closeTCPConnection: (fromId: string, toIP: string, port: number) => void;
   clearTCPSocket: (nodeId: string, remoteIP: string, remotePort: number) => void;
   sendUDPMessage: (fromId: string, toIP: string, port: number, message: string) => void;
-  requestDHCP: (fromId: string) => void;
-  sendmDNSQuery: (fromId: string, hostname?: string) => void;
-  joinMulticastGroup: (nodeId: string, groupIP: string) => void;
+  requestDHCP: (fromId: string, ifaceId?: string) => void;
+  sendmDNSQuery: (fromId: string, hostname?: string, ifaceId?: string) => void;
+  joinMulticastGroup: (nodeId: string, groupIP: string, ifaceId?: string) => void;
   sendIGMPQuery: (nodeId: string) => void;
-  leaveMulticastGroup: (nodeId: string, groupIP: string) => void;
+  leaveMulticastGroup: (nodeId: string, groupIP: string, ifaceId?: string) => void;
   resolveAndPing: (nodeId: string, hostname: string) => void;
 };
 

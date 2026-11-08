@@ -1,5 +1,5 @@
 import type { NetNode, NetPacket, EngineUpdate } from '../types/network';
-import { findEgressInterface } from './networkUtils';
+import { findEgressInterface, rxInterface } from './networkUtils';
 
 export class DHCPHandler {
   
@@ -54,7 +54,7 @@ export class DHCPHandler {
         info: `DHCP DISCOVER received. Offering ${offeredIp}.`
       });
 
-      const matchingIface = server.interfaces[0];
+      const matchingIface = rxInterface(server, packet);
       const offerPacket: NetPacket = {
         from: server.id,
         to: 'BROADCAST',
@@ -119,7 +119,7 @@ export class DHCPHandler {
         info: `DHCP REQUEST for ${requestedIp} accepted. Sending ACK.`
       });
 
-      const matchingIface = server.interfaces[0];
+      const matchingIface = rxInterface(server, packet);
       const ackPacket: NetPacket = {
         from: server.id,
         to: 'BROADCAST',
@@ -161,7 +161,7 @@ export class DHCPHandler {
 
     // 3. Receive OFFER -> Send REQUEST (only if this OFFER is for me)
     if (packet.payload?.type === 'DHCP_OFFER') {
-      const myMAC = client.interfaces[0].mac;
+      const myMAC = rxInterface(client, packet).mac;
       // RFC 2131 §4.4.1: Client must ignore OFFERs not addressed to its MAC
       if (packet.targetMAC !== myMAC && packet.targetMAC !== 'FF:FF:FF:FF:FF:FF') {
         return update; // Silently ignore: not for this client
@@ -175,7 +175,7 @@ export class DHCPHandler {
         info: `DHCP OFFER received: ${offeredIp}. Sending REQUEST.`
       });
 
-      const iface = client.interfaces[0];
+      const iface = rxInterface(client, packet);
       const reqPacket: NetPacket = {
         from: client.id,
         to: 'BROADCAST',
@@ -193,6 +193,8 @@ export class DHCPHandler {
         },
         status: 'pending',
         ttl: 1,
+        // 送信元IPが 0.0.0.0 なので、IPからは送信NICを特定できない。受信したNICを明示する(複数NIC対応)
+        originatingInterfaceId: iface.id,
         id: `p_dhcp_req_${Date.now()}`,
         progress: 0
       };
@@ -208,7 +210,7 @@ export class DHCPHandler {
 
     // 4. Receive ACK -> Apply Configuration (only if ACK is addressed to me)
     if (packet.payload?.type === 'DHCP_ACK') {
-      const myMAC = client.interfaces[0].mac;
+      const myMAC = rxInterface(client, packet).mac;
       // RFC 2131 §4.4.1: Client must ignore ACKs not addressed to its MAC
       if (packet.targetMAC !== myMAC && packet.targetMAC !== 'FF:FF:FF:FF:FF:FF') {
         return update; // Silently ignore: not for this client
@@ -216,8 +218,9 @@ export class DHCPHandler {
 
       const assignedIp = packet.payload.assignedIp;
       const updatedInterfaces = [...client.interfaces];
-      updatedInterfaces[0] = {
-        ...updatedInterfaces[0],
+      const rxIndex = Math.max(0, updatedInterfaces.findIndex(i => i.id === rxInterface(client, packet).id));
+      updatedInterfaces[rxIndex] = {
+        ...updatedInterfaces[rxIndex],
         ip: assignedIp,
         subnet: packet.payload.subnet,
         gateway: packet.payload.gateway,

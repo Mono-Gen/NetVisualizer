@@ -219,6 +219,18 @@ export const en = {
   "cmd.portHint": "for UDP / TCP",
   "cmd.udp.desc": "No connection, no delivery check.",
   "cmd.tcp.desc": "Connects first, confirms delivery.",
+  "iface.metric": "Metric (lower is preferred)",
+  "iface.ruleTitle": "How the sending NIC is chosen",
+  "iface.rule1": "Among NICs whose network contains the destination, the one with the longest prefix (e.g. /24 beats /16).",
+  "iface.rule2": "If tied: the lower Metric.",
+  "iface.rule3": "If still tied: the NIC listed first (never random).",
+  "iface.rule4": "If no network contains the destination: a NIC with a valid default gateway (lower Metric first, then listed first).",
+  "iface.ruleNote": "This is a simplified model of Windows and Linux. Real systems also use policy routing and automatic metrics, which are not simulated.",
+  "cmd.viaNic": "Send via",
+  "cmd.viaNicAuto": "Auto",
+  "cmd.viaNicHint": "Used by DHCP, mDNS and multicast. Ping, UDP and TCP choose the NIC from the destination.",
+  "sample.multi-nic.name": "5. PC with Two NICs",
+  "sample.multi-nic.desc": "PC 1 has two NICs on two different networks. Ping 192.168.1.20 and 192.168.2.20 and watch which NIC each packet leaves from (see the Route lines in the log). Then give both NICs the same network and change the Metric.",
 };
 
 export type DictKey = keyof typeof en;

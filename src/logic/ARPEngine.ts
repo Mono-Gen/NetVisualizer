@@ -31,9 +31,11 @@ export class ARPEngine {
 
     // 1. Handle ARP Request -> Generate Reply
     if (packet.type === 'request') {
+      // 応答は、問われたIPを持つNICが、要求を受け取ったNICと同じときだけ返す。
+      // (別のNICのIPを問われても、要求が来た経路とは別のリンクへ応答が出てしまうため)
       const matchingIface = receiverNode.interfaces.find(i => i.ip === packet.targetIP);
-      
-      if (matchingIface) {
+
+      if (matchingIface && matchingIface.id === rxIface.id) {
         update.addLogs?.push({
           ...packet,
           status: 'received',
