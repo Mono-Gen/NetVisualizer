@@ -261,6 +261,19 @@ export const en = {
   "fw.addr.invalid": "Enter any, an address like 192.168.1.10, or a network like 192.168.1.0/24.",
   "fw.port.needsProto": "A port can only be set for TCP or UDP. Choose the protocol first, or clear the port.",
   "fw.port.invalid": "The port must be a whole number from 1 to 65535.",
+  "nat.title": "NAT",
+  "nat.desc": "Lets many inside devices share the outside port's one address. Traffic leaving through the outside port gets that address and a new port number; replies are matched in the table and sent back. Traffic from outside that is not a reply is dropped.",
+  "nat.enable": "Enable NAT",
+  "nat.outside": "Outside port (toward the internet)",
+  "nat.choose": "Choose a port...",
+  "nat.noOutside": "Choose the outside port. Until then, NAT does nothing.",
+  "nat.outsideNoIp": "The outside port has no IP address yet, so NAT does nothing. Set an address in the interface settings.",
+  "nat.table": "TRANSLATION TABLE",
+  "nat.empty": "No translations yet. Send traffic from an inside device to the outside.",
+  "nat.clear": "Clear the translation table",
+  "nat.remote": "to",
+  "sample.nat.name": "7. NAT Lets Inside PCs Go Out",
+  "sample.nat.desc": "Two PCs (192.168.1.0/24) reach a server on the outside network (203.0.113.0/24) through a router with NAT. The server has no route back to 192.168.1.0/24, yet replies arrive, because it only sees the router's outside address. Ping 203.0.113.10 from both PCs and read the translation table on the router. Then turn NAT off and ping again.",
 };
 
 export type DictKey = keyof typeof en;

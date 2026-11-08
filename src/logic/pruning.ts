@@ -1,4 +1,5 @@
 import type { NetNode, NetLink, NetPacket } from '../types/network';
+import { dropEntriesOfInsideIPs } from './nat';
 
 /**
  * 機器・ケーブル・ポートを削除したあとの後片付け(純粋関数)。
@@ -29,6 +30,8 @@ export const forgetPortState = (node: NetNode, ifaceId: string): NetNode => {
     });
     next.igmpSnoopingExpires = expires;
   }
+  // ケーブルの抜き差し(リンクの切断)では、NATの変換を全て忘れる(再接続後に古い対応が残らないように)
+  if (node.natTable && node.natTable.length > 0) next.natTable = [];
   if (node.mrouterPortId === ifaceId) {
     next.mrouterPortId = undefined;
     next.mrouterPortExpiresAt = undefined;
@@ -41,6 +44,7 @@ export const forgetDevice = (node: NetNode, removed: NetNode): NetNode => {
   const macs = new Set(removed.interfaces.map(i => i.mac.toUpperCase()).filter(Boolean));
   if (macs.size === 0) return node;
   const next: NetNode = { ...node };
+  if (node.natTable) next.natTable = dropEntriesOfInsideIPs(node.natTable, new Set(removed.interfaces.map(i => i.ip).filter(Boolean)));
   if (node.arpTable) {
     next.arpTable = Object.fromEntries(Object.entries(node.arpTable).filter(([, mac]) => !macs.has(String(mac).toUpperCase())));
   }

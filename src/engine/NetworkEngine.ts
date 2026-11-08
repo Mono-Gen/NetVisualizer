@@ -11,6 +11,9 @@ import { generateId } from '../logic/networkUtils';
 import { isMulticastIP, multicastIPToMAC } from '../logic/MulticastEngine';
 import { isInSameSubnet } from '../logic/networkUtils';
 import { L2_TTL_DEFAULT } from '../logic/simLimits';
+import { natOutsideInterface, translateInbound, translateOutbound, shouldDropUntranslated } from '../logic/nat';
+
+let nextIcmpId = 1;
 
 /**
  * Central Network Engine to handle packet processing and state generation
@@ -103,6 +106,21 @@ export class NetworkEngine {
     if (l2Result.action === 'process' || l2Result.action === 'flood') {
       let protoUpdate: EngineUpdate = {};
       
+      // NAT(戻り): 外側ポートに届いた、変換表にある応答は、内側のアドレスへ戻してから通常の転送へ進める。
+      // 表に無い外からの通信は破棄する(「外から中へは入れない」)。
+      const natOutside = natOutsideInterface(receiverNode);
+      if (natOutside && packet.toInterfaceId === natOutside.id) {
+        const restored = translateInbound(receiverNode, packet);
+        if (restored) {
+          const port = (p: NetPacket) => (p.protocol === 'ICMP' ? p.icmpId : p.destinationPort);
+          update.addLogs?.push({ ...packet, status: 'sent', info: `NAT: reply to ${packet.targetIP}:${port(packet) ?? 0} sent back to ${restored.targetIP}:${port(restored) ?? 0}` });
+          packet = restored;
+        } else if (shouldDropUntranslated(receiverNode, packet, packet.toInterfaceId)) {
+          update.addLogs?.push({ ...packet, status: 'error', info: `NAT: dropped ${packet.protocol} from ${packet.senderIP} to ${packet.targetIP}: no matching translation (not a reply to an inside host)` });
+          return update;
+        }
+      }
+
       // A. Check L3 (Routing/Filtering)
       const l3Result = processL3(receiverNode, packet);
       
@@ -120,7 +138,7 @@ export class NetworkEngine {
       } else if (l3Result.action === 'forward' && l3Result.egressInterfaceId) {
         // Forwarding Logic
         const egressIface = receiverNode.interfaces.find(i => i.id === l3Result.egressInterfaceId);
-        const routedPacket = { 
+        let routedPacket: NetPacket = { 
           ...packet, 
           from: receiverNode.id, 
           targetMAC: '', 
@@ -129,6 +147,19 @@ export class NetworkEngine {
           ttl: (packet.ttl || 64) - 1,
           status: 'pending' as const
         };
+        // NAT(行き): 内側のポートで受けて、外側ポートから出すとき、送信元を書き換えて変換表に記録する
+        const natOut = natOutsideInterface(receiverNode);
+        if (natOut && l3Result.egressInterfaceId === natOut.id && packet.toInterfaceId !== natOut.id) {
+          const tr = translateOutbound(receiverNode, routedPacket);
+          if (tr) {
+            if (tr.created) {
+              const port = (p: NetPacket) => (p.protocol === 'ICMP' ? p.icmpId : p.sourcePort);
+              update.addLogs?.push({ ...packet, status: 'sent', info: `NAT: ${packet.senderIP}:${port(packet) ?? 0} is now ${tr.packet.senderIP}:${port(tr.packet) ?? 0}` });
+            }
+            routedPacket = tr.packet;
+            update.nodes![receiverNode.id] = { ...(update.nodes![receiverNode.id] || {}), natTable: tr.table };
+          }
+        }
         const res = this.prepareTransmission(receiverNode, routedPacket, allNodes, allLinks);
         protoUpdate = res;
       } else {
@@ -189,6 +220,12 @@ export class NetworkEngine {
       senderMAC: packetData.senderMAC || sourceIface.mac,
       status: packetData.status || 'pending' 
     };
+
+    // ICMP echo の識別子: 送信元が振る通し番号(応答はこれを引き継ぐ)。NATが、どの要求への応答かを見分けるのに使う
+    if (packet.protocol === 'ICMP' && packet.type === 'echo-request' && packet.icmpId === undefined) {
+      packet.icmpId = nextIcmpId;
+      nextIcmpId = nextIcmpId >= 65535 ? 1 : nextIcmpId + 1;
+    }
 
     const isBroadcast = packet.targetMAC === 'FF:FF:FF:FF:FF:FF' || packet.targetIP === '255.255.255.255';
     if (isMulticastIP(packet.targetIP) && !packet.targetMAC) packet.targetMAC = multicastIPToMAC(packet.targetIP);

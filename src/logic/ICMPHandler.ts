@@ -26,6 +26,7 @@ export class ICMPHandler {
           targetMAC: '',
           protocol: 'ICMP',
           type: 'echo-reply',
+          ...(packet.icmpId !== undefined ? { icmpId: packet.icmpId } : {}),
           status: 'pending',
           ttl: 64,
           originatingInterfaceId: matchingIface.id,

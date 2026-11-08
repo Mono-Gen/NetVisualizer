@@ -54,6 +54,8 @@ export const createNodeSlice = (set: any, get: any) => ({
     return {
       nodes: state.nodes.map((n: NetNode) => n.id !== nodeId ? n : {
         ...forgetPortState(n, ifaceId),
+        // 外側ポートを消したら、NATの外側の指定も外す(別のポートへ付け替えるまで働かない)
+        ...(n.nat?.outsideInterfaceId === ifaceId ? { nat: { ...n.nat, outsideInterfaceId: '' } } : {}),
         interfaces: n.interfaces.filter(i => i.id !== ifaceId)
       }),
       links: state.links.filter((l: NetLink) =>

@@ -176,4 +176,35 @@ const firewall: SampleTopology = {
   }
 };
 
-export const SAMPLE_TOPOLOGIES: SampleTopology[] = [basicLan, routed, igmp, switchLoop, multiNic, firewall];
+const natSample: SampleTopology = {
+  id: 'nat',
+  name: '7. NAT Lets Inside PCs Go Out',
+  description: 'Two inside PCs reach an outside server through a router with NAT. The server has no route back to the inside network; turn NAT off to see the difference.',
+  build: () => {
+    MAC_SEQ.reset();
+    const sw1 = makeNode('sw1', 'switch', 'Switch 1', 140, 120, makeSwitchPorts('sw1', 8));
+    const sw2 = makeNode('sw2', 'switch', 'Switch 2', 620, 120, makeSwitchPorts('sw2', 8));
+    const rt = makeNode('rt1', 'router', 'Router 1', 380, 120, [
+      makeIface('rt1', 0, '192.168.1.1', LAN),
+      makeIface('rt1', 1, '203.0.113.1', LAN),
+      makeIface('rt1', 2, '', '255.255.0.0'),
+      makeIface('rt1', 3, '', '255.255.0.0')
+    ]);
+    rt.nat = { enabled: true, outsideInterfaceId: 'rt1_if1' };
+    const pc1 = makeNode('pc1', 'pc', 'PC 1', 60, 340, [makeIface('pc1', 0, '192.168.1.10', LAN, '192.168.1.1')]);
+    const pc2 = makeNode('pc2', 'pc', 'PC 2', 220, 340, [makeIface('pc2', 0, '192.168.1.20', LAN, '192.168.1.1')]);
+    // 外側のサーバーにはゲートウェイを設定しない: NATが無いと、内側(192.168.1.0/24)へ応答を返せない
+    // TCP 80 で待ち受ける(TCP接続の観察用)
+    const srv = makeNode('srv1', 'server', 'Server 1', 620, 340, [makeIface('srv1', 0, '203.0.113.10', LAN)],
+      { listeningPorts: [{ port: 80, protocol: 'TCP' }], services: [{ port: 80, protocol: 'TCP' }] });
+    return {
+      nodes: [sw1, sw2, rt, pc1, pc2, srv],
+      links: [
+        link('l1', pc1, 0, sw1, 0), link('l2', pc2, 0, sw1, 1), link('l3', sw1, 2, rt, 0),
+        link('l4', rt, 1, sw2, 1), link('l5', srv, 0, sw2, 0)
+      ]
+    };
+  }
+};
+
+export const SAMPLE_TOPOLOGIES: SampleTopology[] = [basicLan, routed, igmp, switchLoop, multiNic, firewall, natSample];

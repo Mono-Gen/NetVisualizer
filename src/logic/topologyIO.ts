@@ -36,7 +36,7 @@ const configOf = (n: NetNode): NetNode => {
   };
   const copy = <K extends keyof NetNode>(k: K) => { if (n[k] !== undefined) (out as any)[k] = n[k]; };
   (['managementIP', 'managementSubnet', 'igmpSnoopingEnabled', 'igmpSnoopingAgingTime', 'igmpQuerierEnabled',
-    'igmpQuerierInterval', 'joinedGroups', 'dnsRecords', 'listeningPorts', 'services', 'firewall'] as (keyof NetNode)[]).forEach(copy);
+    'igmpQuerierInterval', 'joinedGroups', 'dnsRecords', 'listeningPorts', 'services', 'firewall', 'nat'] as (keyof NetNode)[]).forEach(copy);
   if (n.dhcpScope) out.dhcpScope = { ...n.dhcpScope, leases: {} };
   return out;
 };
@@ -106,6 +106,12 @@ export const parseTopology = (text: string): ParseResult => {
     }
     if (Array.isArray(raw.services)) {
       node.services = raw.services.filter(isObj).filter(p => num(p.port) && str(p.protocol)).map(p => ({ port: p.port as number, protocol: p.protocol as string }));
+    }
+    if (isObj(raw.nat) && typeof raw.nat.enabled === 'boolean' && str(raw.nat.outsideInterfaceId)) {
+      // 外側ポートが、このノードに実在するときだけ取り込む(無ければ未指定として扱う)
+      const natRaw = raw.nat;
+      const outsideId = interfaces.some(i => i.id === natRaw.outsideInterfaceId) ? natRaw.outsideInterfaceId as string : '';
+      node.nat = { enabled: natRaw.enabled as boolean, outsideInterfaceId: outsideId };
     }
     if (isObj(raw.firewall)) {
       // 不正なルールだけを捨てる(全体の読込は失敗させない)

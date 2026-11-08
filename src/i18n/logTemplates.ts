@@ -22,6 +22,11 @@ export const LOG_TEMPLATES: ReadonlyArray<readonly [string, string]> = [
   ['Firewall: {proto} {src} -> {dst} denied by rule {n}', 'ファイアウォール: {proto} {src} → {dst} をルール{n}で拒否しました'],
   ['Firewall: {proto} {src} -> {dst} denied by the default policy', 'ファイアウォール: {proto} {src} → {dst} を既定の動作(拒否)で破棄しました'],
 
+  // NAT
+  ['NAT: {inside} is now {outside}', 'NAT: {inside} を {outside} に変換しました'],
+  ['NAT: reply to {outside} sent back to {inside}', 'NAT: {outside} あての応答を {inside} へ戻しました'],
+  ['NAT: dropped {proto} from {src} to {dst}: no matching translation (not a reply to an inside host)', 'NAT: {src} から {dst} への {proto} を破棄しました: 対応する変換がありません (内側のホストへの応答ではありません)'],
+
   // L2 / L3
   ['L2 Flood: {proto}', 'L2フラッド: {proto}'],
   ['L2 Loop Detected: Packet dropped by {label} (L2 TTL expired)', 'L2ループ検出: {label} でパケットを破棄しました (L2 TTL 超過)'],

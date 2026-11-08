@@ -3,6 +3,7 @@ import { useNetworkStore } from '../store/useNetworkStore';
 import { InterfaceConfig } from './settings/InterfaceConfig';
 import { DNSConfig } from './settings/DNSConfig';
 import { FirewallConfig } from './settings/FirewallConfig';
+import { NatConfig } from './settings/NatConfig';
 import { MulticastConfig } from './settings/MulticastConfig';
 import { ServiceConfig } from './settings/ServiceConfig';
 import { DHCPConfig } from './settings/DHCPConfig';
@@ -326,6 +327,10 @@ export const NodeSettings: React.FC = () => {
 
         {node.type === 'router' && (
           <FirewallConfig node={node} onUpdate={updateNode} />
+        )}
+
+        {node.type === 'router' && (
+          <NatConfig node={node} mode={mode} onUpdate={updateNode} />
         )}
 
         {['pc', 'server'].includes(node.type) && (

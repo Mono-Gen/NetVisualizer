@@ -35,6 +35,21 @@ export interface FirewallConfig {
   defaultAction: 'allow' | 'deny'; // どのルールにも一致しないときの動作
 }
 
+/** NAT変換表の1件(内側のIP:ポート ↔ 外側に割り当てたポート)。ICMPのポートは識別子 */
+export interface NatEntry {
+  protocol: 'ICMP' | 'TCP' | 'UDP';
+  insideIP: string;
+  insidePort: number;
+  outsidePort: number;
+  remoteIP: string;
+  remotePort: number;
+}
+
+export interface NatConfig {
+  enabled: boolean;
+  outsideInterfaceId: string; // 外側ポート。それ以外のポートはすべて内側
+}
+
 export interface NetNode {
   id: string;
   type: NodeType;
@@ -65,6 +80,8 @@ export interface NetNode {
     ack: number;
   }>;
   firewall?: FirewallConfig;
+  nat?: NatConfig;
+  natTable?: NatEntry[]; // 学習状態(保存しない)。新しいものが先頭
   dnsTable?: Record<string, string>;
   dnsRecords?: Record<string, string>; // DNS server records (hostname -> IP)
   dnsCache?: Record<string, string>;
@@ -109,6 +126,7 @@ export interface NetPacket {
   l2ttl?: number;
   timestamp?: number;
   sourcePort?: number;
+  icmpId?: number; // ICMP echo の識別子(NATが、どの内側の要求への応答かを見分けるのに使う)
   destinationPort?: number;
   seq?: number;
   ackNum?: number;

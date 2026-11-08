@@ -334,6 +334,33 @@ A router can block some traffic with a **firewall**. Select a router and open th
 
 Try the sample "6. Firewall Blocks Ping".
 
+### 4.4 NAT (Router)
+
+**NAT** lets many devices on an inside network share **one address** on the outside. Your home router does this: every device at home reaches the internet with the router's single public address.
+
+#### How to Configure
+
+Select a router → open the **NAT** panel → choose the **Outside port** (the port toward the internet) → tick **Enable NAT**. Every other port is treated as **inside**. The outside port needs an IP address.
+
+#### What Happens
+
+1. A device on the inside sends a packet to the outside (for example `192.168.1.10:50001` → server `203.0.113.10:80`).
+2. The router replaces the **source address and port** with its own outside address and a **new port** (`203.0.113.1:40000`) and writes the pair into the **TRANSLATION TABLE**. For ping, the ICMP identifier is used in place of the port.
+3. The server replies to `203.0.113.1:40000`. The router finds that entry, puts the original inside address and port back, and forwards the reply.
+
+```
+PC 1 192.168.1.10:50001 ─► Router ─► 203.0.113.1:40000 ─► Server 203.0.113.10:80
+PC 1 192.168.1.10:50001 ◄─ Router ◄─ 203.0.113.1:40000 ◄─ Server
+```
+
+- Two PCs can use the same inside port at the same time, because each gets a different outside port.
+- Traffic arriving at the outside address that is **not a reply** (no matching table entry) is **dropped**, and the log says so. This is why devices behind NAT cannot be reached directly from the outside. (A ping to the router's own outside address is still answered by the router.)
+- The table keeps up to **64** entries; the oldest are removed first. The trash button clears it. Unplugging a cable on the router, or deleting an inside device, also removes the related entries. The table is not saved.
+- Firewall rules are checked with the **inside address** (before the address is changed on the way out, and after it is restored on the way back).
+- Not covered: port forwarding, translation of ICMP error messages, and expiry of idle entries.
+
+Try the sample "7. NAT Lets Inside PCs Go Out": the server has no route back to `192.168.1.0/24`, yet the replies arrive. Turn NAT off and ping again to see the difference.
+
 ---
 
 ## Chapter 5 — Multicast and IGMP

@@ -22,6 +22,7 @@
 - **Consistent Protocol Colors**: One soft color per protocol across packets, logs, tables and a built-in legend.
 - **Playback Controls**: Pause, step to the next packet arrival, and slow down or speed up (0.25x–4x) to follow each protocol exchange.
 - **Router Firewall**: Allow or deny traffic by protocol, address and port, with an optional implicit deny. Denied packets are dropped silently, as on real equipment.
+- **Router NAT**: Share one outside address among many inside devices (NAPT). Watch the translation table, and see why unsolicited traffic from outside is dropped.
 - **ICMP (Ping)**: Visualize reachability checks and observe ARP requests for next-hop resolution.
 - **L4 Messaging (TCP/UDP)**:
   - **TCP**: Experience the 3-way handshake (SYN, SYN-ACK, ACK) and connection lifecycle.
