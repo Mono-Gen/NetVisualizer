@@ -19,6 +19,8 @@ export type NodeSlice = {
   updateNode: (id: string, updates: Partial<NetNode>) => void;
   updateNodePosition: (id: string, x: number, y: number) => void;
   removeNode: (id: string) => void;
+  addInterface: (nodeId: string) => void;
+  removeInterface: (nodeId: string, ifaceId: string) => void;
   addLink: (link: NetLink) => void;
   removeLink: (id: string) => void;
   

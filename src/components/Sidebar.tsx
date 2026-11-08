@@ -5,6 +5,7 @@ import type { NetNode, NodeType, NetInterface } from '../types/network';
 import { Plus, Play, Settings, Trash2, Link as LinkIcon, Activity } from 'lucide-react';
 import { SidebarCommandPanel } from './SidebarCommandPanel';
 import { SampleMenu } from './SampleMenu';
+import { DEFAULT_PORT_COUNT, createInterface, collectMacs } from '../logic/interfaceFactory';
 
 export const Sidebar: React.FC = () => {
   const { 
@@ -25,24 +26,12 @@ export const Sidebar: React.FC = () => {
   ];
 
   const handleAddNode = (type: NodeType, label: string) => {
-    // Determine number of interfaces based on type
-    let interfaceCount = 1;
-    if (type === 'switch' || type === 'hub' || type === 'l3switch') interfaceCount = 8;
-    else if (type === 'router') interfaceCount = 4;
-
-    const interfaces: NetInterface[] = Array.from({ length: interfaceCount }).map((_, i) => ({
-      id: Math.random().toString(36).substr(2, 9),
-      name: `eth${i}`,
-      // DHCP servers require a static IP; other nodes default to APIPA (169.254.x.x)
-      ip: (type === 'hub' || type === 'switch')
-        ? ''
-        : (type === 'dhcp')
-          ? '192.168.1.254'
-          : (i === 0 ? `169.254.${Math.floor(Math.random() * 254) + 1}.${Math.floor(Math.random() * 254) + 1}` : ''),
-      mac: (type === 'hub') ? '' : `00:00:00:00:${Math.floor(Math.random()*256).toString(16).padStart(2, '0')}:${Math.floor(Math.random()*256).toString(16).padStart(2, '0')}`.toUpperCase(),
-      subnet: (type === 'hub' || type === 'switch') ? '' : (type === 'dhcp' ? '255.255.255.0' : '255.255.0.0'),
-      gateway: ''
-    }));
+    // ポート数・名前・MAC・既定IPは共通ファクトリーで決める(全ノードのMACと重複しない)
+    const usedMacs = collectMacs(nodes);
+    const interfaces: NetInterface[] = [];
+    for (let i = 0; i < DEFAULT_PORT_COUNT[type]; i++) {
+      interfaces.push(createInterface(type, interfaces, usedMacs));
+    }
 
     const newNode: NetNode = {
       id: `n_${Math.random().toString(36).substr(2, 9)}`,
