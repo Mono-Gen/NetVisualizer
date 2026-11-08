@@ -13,13 +13,13 @@ export const PlaybackControls: React.FC = () => {
   const t = useT();
   const { isPaused, simSpeed, packets, setPaused, setSimSpeed, stepSimulation } = useNetworkStore();
 
-  // ステップは一時停止中かつ飛行中のパケットがあるときのみ有効
-  const canStep = isPaused && packets.length > 0;
-  const stepHint = !isPaused
-    ? t('play.stepWhilePaused')
-    : packets.length === 0
-      ? t('play.stepNoPackets')
-      : t('play.stepAdvance');
+  // ステップはパケットがあれば押せる(実行中なら自動で一時停止して1つ進める)
+  const canStep = packets.length > 0;
+  const stepHint = packets.length === 0
+    ? t('play.stepNoPackets')
+    : isPaused
+      ? t('play.stepAdvance')
+      : t('play.stepWhilePaused');
 
   const btnStyle: React.CSSProperties = {
     display: 'flex', alignItems: 'center', gap: '6px',

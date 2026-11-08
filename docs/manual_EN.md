@@ -135,14 +135,14 @@ Press `▶ Simulate` and click the node you want to use as the source.
 
 If switches are connected in a loop (for example, two switches joined by more than one cable), a broadcast is copied around the loop again and again and the number of packets in flight grows explosively. A real network can be brought down this way.
 
-NetVisualizer lets this happen so you can see it. The **In flight** counter in the playback controls shows the packet count. To keep the app responsive, at most 300 packets can be in flight; the excess is discarded and a **Broadcast storm** warning appears. Pause to inspect the switches' MAC tables (the same MAC keeps moving between ports). To stop it, remove cables until the loop is gone (Design mode), or press **Clear all packets** in the warning.
+NetVisualizer lets this happen so you can see it. The **Packets on the wire** counter in the playback controls shows the packet count. To keep the app responsive, at most 300 packets can be in flight; the excess is discarded and a **Broadcast storm** warning appears. Pause to inspect the switches' MAC tables (the same MAC keeps moving between ports). To stop it, remove cables until the loop is gone (Design mode), or press **Clear all packets** in the warning.
 
 ### 3.0 Playback Controls (Pause / Step / Speed)
 
 The controls at the bottom center of the canvas let you slow down and inspect packet flow.
 
 - **Pause / Resume**: freezes packet movement. Timers such as IGMP snooping aging and DHCP leases are also held while paused, so table entries do not expire.
-- **Step**: while paused, advances to the next packet arrival (for example ARP Request → ARP Reply → ICMP Echo Request).
+- **Step**: advances to the next packet arrival (for example ARP Request → ARP Reply → ICMP Echo Request). If the simulation is running, it pauses first. It is disabled only when no packet is on the wire; to follow a ping from its very first packet, press Pause before you send it.
 - **Speed**: 0.25x to 4x.
 
 Switching to Design Mode resumes the simulation automatically.

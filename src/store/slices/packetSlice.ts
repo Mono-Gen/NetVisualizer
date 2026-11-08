@@ -251,13 +251,13 @@ export const createPacketSlice = (set: any, get: any) => ({
     get().runHousekeeping();
   },
 
-  // 一時停止中のみ有効: 次にパケットが到着するところまで進める(定期処理は進めない)
+  // 次にパケットが到着するところまで進める(定期処理は進めない)。実行中なら自動で一時停止する
   stepSimulation: () => {
-    const state = get();
-    if (!state.isPaused) return;
-    const delta = progressUntilNextArrival(state.packets);
+    const delta = progressUntilNextArrival(get().packets);
     if (delta === null) return;
-    state.advanceSimulation(delta);
+    // 実行中に押された場合は、まず一時停止する(ステップは「止めて1つ進める」操作)
+    if (!get().isPaused) get().setPaused(true);
+    get().advanceSimulation(delta);
   },
 
   // パケットを delta(0〜1)だけ進め、到着したものを処理する
