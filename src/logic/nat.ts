@@ -1,6 +1,7 @@
 import type { NetNode, NetPacket, NatEntry } from '../types/network';
 import type { NetInterface } from '../types/network';
 import { lookupRoute } from './networkUtils';
+import { isMulticastIP } from './MulticastEngine';
 
 /**
  * ルーターのNAT(NAPT / IPマスカレード)の純粋関数。
@@ -17,8 +18,12 @@ const NAT_PORT_END = 65535;
 
 type NatProto = NatEntry['protocol'];
 
-/** パケットを、NATが扱う種別へ寄せる(DNS/DHCP/mDNSはUDP)。扱えないものは null */
+/**
+ * パケットを、NATが扱う種別へ寄せる(DNSはUDP)。扱えないものは null。
+ * NATが扱うのはユニキャストだけ: マルチキャスト・ブロードキャスト宛ては、書き換えも破棄もしない。
+ */
 export const natProtocolOf = (p: NetPacket): NatProto | null => {
+  if (!p.targetIP || isMulticastIP(p.targetIP) || p.targetIP === '255.255.255.255') return null;
   switch (p.protocol) {
     case 'ICMP': return p.type === 'echo-request' || p.type === 'echo-reply' ? 'ICMP' : null; // エラーの書き換えは対象外
     case 'TCP': return 'TCP';
