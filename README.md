@@ -16,6 +16,7 @@
 - **Sample Topologies**: Load ready-made networks (basic LAN, routed networks, IGMP Snooping) from the sidebar and start experimenting right away.
 
 ### 🔬 Real-time Protocol Simulation
+- **Consistent Protocol Colors**: One soft color per protocol across packets, logs, tables and a built-in legend.
 - **Playback Controls**: Pause, step to the next packet arrival, and slow down or speed up (0.25x–4x) to follow each protocol exchange.
 - **ICMP (Ping)**: Visualize reachability checks and observe ARP requests for next-hop resolution.
 - **L4 Messaging (TCP/UDP)**:

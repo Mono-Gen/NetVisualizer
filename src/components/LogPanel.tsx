@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { useNetworkStore } from '../store/useNetworkStore';
 import { useT, useTLogInfo } from '../i18n/useT';
+import { protoFill, protoKeyOf, protoText } from '../logic/protocolColors';
 import { LOG_PROTOCOL_FILTERS, protocolLabel, routeLabel, statusGlyph, type LogEntry } from '../logic/logFormat';
 
 /**
@@ -30,8 +31,9 @@ const write = (key: string, value: string) => {
   try { localStorage.setItem(key, value); } catch { /* 保存できなくても動作する */ }
 };
 
+// 赤はエラー専用。それ以外の状態は記号と文字で区別し、色はプロトコルのために使う
 const statusColor = (status?: string) =>
-  status === 'error' ? 'var(--c-red)' : status === 'dropped' ? 'var(--c-slate)' : status === 'sent' ? 'var(--c-blue)' : status === 'received' ? 'var(--c-green)' : 'var(--text-dim)';
+  status === 'error' ? 'var(--c-red)' : status === 'dropped' ? 'var(--c-slate)' : 'var(--text-dim)';
 
 export const LogPanel: React.FC = () => {
   const t = useT();
@@ -140,6 +142,7 @@ export const LogPanel: React.FC = () => {
             )}
             {visible.map(log => {
               const color = statusColor(log.status);
+              const key = protoKeyOf(log);
               const info = tInfo(log.info || '');
               const extra = log.payload?.message ? ` 💬 "${log.payload.message}"` : '';
               const expanded = expandedId === log.id;
@@ -157,13 +160,13 @@ export const LogPanel: React.FC = () => {
                   className="label-mono"
                   style={{
                     display: 'grid', gridTemplateColumns: COLUMNS, gap: '8px', alignItems: expanded ? 'start' : 'center',
-                    padding: '3px 12px', cursor: 'pointer', borderLeft: `3px solid ${color}`,
+                    padding: '3px 12px', cursor: 'pointer', borderLeft: `3px solid ${protoFill(key)}`,
                     background: expanded ? 'rgba(var(--ink), 0.06)' : 'transparent', fontSize: '11px'
                   }}
                 >
                   <span role="cell" style={{ ...cell, color: 'var(--text-dim)' }}>{log.time || ''}</span>
                   <span role="cell" style={{ ...cell, color, fontWeight: 700 }}>{statusGlyph(log.status)} {statusText}</span>
-                  <span role="cell" style={{ ...cell, color }}>{protocolLabel(log)}</span>
+                  <span role="cell" style={{ ...cell, color: protoText(key), fontWeight: 700 }}>{protocolLabel(log)}</span>
                   <span role="cell" style={{ ...cell, color: 'var(--text-main)' }}>{routeLabel(log)}</span>
                   <span role="cell" style={expanded ? { whiteSpace: 'normal', wordBreak: 'break-word', color: 'var(--text-main)' } : { ...cell, color: 'var(--text-main)' }}>{info}{extra}</span>
                 </div>

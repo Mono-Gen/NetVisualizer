@@ -196,6 +196,9 @@ export const en = {
   "logPanel.colProtocol": "PROTOCOL",
   "logPanel.colRoute": "FROM → TO",
   "logPanel.colDetails": "DETAILS",
+  "legend.title": "Packet colors",
+  "legend.show": "Show the color legend",
+  "legend.hide": "Hide the color legend",
 };
 
 export type DictKey = keyof typeof en;

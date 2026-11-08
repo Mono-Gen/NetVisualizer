@@ -31,7 +31,7 @@ export const DNSConfig: React.FC<DNSConfigProps> = ({ node, onUpdate }) => {
 
   return (
     <div style={{ marginTop: '16px', padding: '16px', background: 'rgba(var(--ink), 0.03)', borderRadius: '12px', border: '1px solid rgba(var(--ink), 0.05)' }}>
-      <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', color: 'var(--c-yellow)' }}>
+      <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', color: 'var(--proto-dns-text)' }}>
         <Book size={16} /> {t('dns.records')}
       </label>
 
@@ -39,7 +39,7 @@ export const DNSConfig: React.FC<DNSConfigProps> = ({ node, onUpdate }) => {
         {Object.entries(records).map(([name, ip]) => (
           <div key={name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(var(--shade), 0.2)', padding: '8px 12px', borderRadius: '8px' }}>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--c-yellow)' }}>{name}</span>
+              <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--proto-dns-text)' }}>{name}</span>
               <span style={{ fontSize: '11px', color: 'var(--text-dim)', fontFamily: 'monospace' }}>{ip}</span>
             </div>
             <button onClick={() => removeRecord(name)} className="btn-icon" style={{ padding: '4px', color: 'rgba(248, 113, 113, 0.6)' }}>
@@ -70,7 +70,7 @@ export const DNSConfig: React.FC<DNSConfigProps> = ({ node, onUpdate }) => {
             value={newIP}
             onChange={(e) => setNewIP(e.target.value)}
           />
-          <button onClick={addRecord} className="btn btn-primary" style={{ padding: '0 12px', background: 'var(--c-yellow)' }}>
+          <button onClick={addRecord} className="btn btn-primary" style={{ padding: '0 12px', background: 'var(--proto-dns-text)' }}>
             <Plus size={16} />
           </button>
         </div>

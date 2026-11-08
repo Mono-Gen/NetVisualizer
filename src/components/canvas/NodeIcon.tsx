@@ -9,16 +9,8 @@ interface NodeIconProps {
 }
 
 export const NodeIcon: React.FC<NodeIconProps> = ({ type, size = 32, color }) => {
-  const defaultColor = color || (
-    type === 'pc' ? 'var(--c-blue)' :
-    type === 'router' ? 'var(--c-red)' :
-    type === 'server' ? 'var(--c-green)' :
-    type === 'switch' ? 'var(--c-purple)' :
-    type === 'l3switch' ? 'var(--c-sky)' :
-    type === 'hub' ? 'var(--c-slate)' :
-    type === 'dns' ? 'var(--c-yellow)' : 
-    type === 'dhcp' ? 'var(--c-pink)' : 'var(--text-main)'
-  );
+  // 機器の種類は形(アイコン)で区別する。色はプロトコルと状態のために取っておく
+  const defaultColor = color || 'var(--text-main)';
 
   switch (type) {
     case 'pc': return <Monitor size={size} style={{ color: defaultColor }} />;

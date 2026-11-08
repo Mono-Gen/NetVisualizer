@@ -22,8 +22,8 @@ export const DHCPConfig: React.FC<DHCPConfigProps> = ({ node, onUpdate }) => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      <div style={{ padding: '16px', background: 'rgba(236, 72, 153, 0.05)', borderRadius: '12px', border: '1px solid rgba(236, 72, 153, 0.1)' }}>
-        <label className="form-label" style={{ color: 'var(--c-pink)', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}>
+      <div style={{ padding: '16px', background: 'color-mix(in srgb, var(--proto-dhcp) 5%, transparent)', borderRadius: '12px', border: '1px solid color-mix(in srgb, var(--proto-dhcp) 10%, transparent)' }}>
+        <label className="form-label" style={{ color: 'var(--proto-dhcp-text)', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}>
           <Database size={16} /> {t('dhcp.pool')}
         </label>
         
@@ -68,8 +68,8 @@ export const DHCPConfig: React.FC<DHCPConfigProps> = ({ node, onUpdate }) => {
         </div>
       </div>
 
-      <div style={{ padding: '16px', background: 'rgba(236, 72, 153, 0.05)', borderRadius: '12px', border: '1px solid rgba(236, 72, 153, 0.1)' }}>
-        <label className="form-label" style={{ fontSize: '11px', color: 'var(--c-pink)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}>
+      <div style={{ padding: '16px', background: 'color-mix(in srgb, var(--proto-dhcp) 5%, transparent)', borderRadius: '12px', border: '1px solid color-mix(in srgb, var(--proto-dhcp) 10%, transparent)' }}>
+        <label className="form-label" style={{ fontSize: '11px', color: 'var(--proto-dhcp-text)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}>
           <Activity size={14} /> {t('dhcp.leaseTable')}
         </label>
         
@@ -85,7 +85,7 @@ export const DHCPConfig: React.FC<DHCPConfigProps> = ({ node, onUpdate }) => {
                 const remaining = Math.max(0, Math.round((lease.expiresAt - Date.now()) / 1000));
                 return (
                   <div key={mac} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', alignItems: 'center' }}>
-                    <span className="label-mono" style={{ color: 'var(--c-pink)', flex: 1 }}>{lease.ip}</span>
+                    <span className="label-mono" style={{ color: 'var(--proto-dhcp-text)', flex: 1 }}>{lease.ip}</span>
                     <span className="label-mono" style={{ color: 'var(--text-dim)', flex: 1.5 }}>{mac}</span>
                     <span style={{ flex: 1, textAlign: 'right', color: remaining < 60 ? 'var(--c-red)' : 'var(--text-dim)', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '4px' }}>
                       <Clock size={10} /> {remaining}s

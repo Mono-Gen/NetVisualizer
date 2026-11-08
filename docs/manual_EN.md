@@ -131,6 +131,14 @@ Use **Load a sample** at the bottom of the sidebar (available in both modes) to 
 
 Press `▶ Simulate` and click the node you want to use as the source.
 
+### 3.0b Reading the Colors
+
+Colors are used consistently so you can tell at a glance what is happening:
+
+- **One color per protocol** — ARP, ICMP, TCP, UDP, DNS, DHCP, mDNS and IGMP each have their own soft color. The same color is used for the packet dots, the protocol column of the packet log, and the matching tables (ARP table, DNS cache, TCP sockets, IGMP snooping). The **Packet colors** legend at the bottom right of the canvas shows the key; every packet also carries a text label, so color is never the only clue.
+- **Red means error** — it is used only for errors. Other states are shown with marks and words (↑ SENT, ↓ RCVD, ⊘ DROP).
+- **Devices are monochrome** — you tell a PC from a switch by its shape, so color stays free for protocols and states.
+
 ### 3.0a Broadcast Storms
 
 If switches are connected in a loop (for example, two switches joined by more than one cable), a broadcast is copied around the loop again and again and the number of packets in flight grows explosively. A real network can be brought down this way.

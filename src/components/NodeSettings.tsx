@@ -97,9 +97,9 @@ export const NodeSettings: React.FC = () => {
             
             {/* 1. L3 ARP Table */}
             {['pc', 'router', 'server', 'dns', 'l3switch', 'dhcp'].includes(node.type) && (
-              <div style={{ padding: '16px', background: 'rgba(74, 222, 128, 0.05)', borderRadius: '12px', border: '1px solid rgba(74, 222, 128, 0.1)' }}>
+              <div style={{ padding: '16px', background: 'color-mix(in srgb, var(--proto-arp) 5%, transparent)', borderRadius: '12px', border: '1px solid color-mix(in srgb, var(--proto-arp) 10%, transparent)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <label className="form-label" style={{ fontSize: '11px', color: 'var(--c-green)', marginBottom: 0, display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}>
+                  <label className="form-label" style={{ fontSize: '11px', color: 'var(--proto-arp-text)', marginBottom: 0, display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}>
                     <Activity size={14} /> {t('table.arp')}
                   </label>
                   <button 
@@ -108,7 +108,7 @@ export const NodeSettings: React.FC = () => {
                     title={t('table.clearArp')}
                     style={{ padding: '4px', height: 'auto', width: 'auto' }}
                   >
-                    <Trash2 size={12} color="var(--c-green)" />
+                    <Trash2 size={12} color="var(--proto-arp-text)" />
                   </button>
                 </div>
                 <div style={{ fontSize: '11px' }}>
@@ -120,7 +120,7 @@ export const NodeSettings: React.FC = () => {
                       </div>
                       {Object.entries(node.arpTable || {}).map(([ip, mac]) => (
                         <div key={ip} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
-                          <span className="label-mono" style={{ color: 'var(--c-green)' }}>{ip}</span>
+                          <span className="label-mono" style={{ color: 'var(--proto-arp-text)' }}>{ip}</span>
                           <span className="label-mono" style={{ color: 'var(--text-dim)' }}>{mac}</span>
                         </div>
                       ))}
@@ -136,9 +136,9 @@ export const NodeSettings: React.FC = () => {
 
             {/* 2. DNS Cache - Show for PCs/Servers */}
             {['pc', 'server', 'router'].includes(node.type) && (
-              <div style={{ padding: '16px', background: 'rgba(167, 139, 250, 0.05)', borderRadius: '12px', border: '1px solid rgba(167, 139, 250, 0.1)' }}>
+              <div style={{ padding: '16px', background: 'color-mix(in srgb, var(--proto-dns) 5%, transparent)', borderRadius: '12px', border: '1px solid color-mix(in srgb, var(--proto-dns) 10%, transparent)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <label className="form-label" style={{ fontSize: '11px', color: 'var(--c-violet)', marginBottom: 0, display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}>
+                  <label className="form-label" style={{ fontSize: '11px', color: 'var(--proto-dns-text)', marginBottom: 0, display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}>
                     <Activity size={14} /> {t('table.dnsCache')}
                   </label>
                   <button 
@@ -147,7 +147,7 @@ export const NodeSettings: React.FC = () => {
                     title={t('table.clearDns')}
                     style={{ padding: '4px', height: 'auto', width: 'auto' }}
                   >
-                    <Trash2 size={12} color="var(--c-violet)" />
+                    <Trash2 size={12} color="var(--proto-dns-text)" />
                   </button>
                 </div>
                 <div style={{ fontSize: '11px' }}>
@@ -159,7 +159,7 @@ export const NodeSettings: React.FC = () => {
                       </div>
                       {Object.entries(node.dnsCache || {}).map(([name, ip]) => (
                         <div key={name} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
-                          <span className="label-mono" style={{ color: 'var(--c-violet)' }}>{name}</span>
+                          <span className="label-mono" style={{ color: 'var(--proto-dns-text)' }}>{name}</span>
                           <span className="label-mono" style={{ color: 'var(--text-dim)' }}>{ip}</span>
                         </div>
                       ))}
@@ -175,9 +175,9 @@ export const NodeSettings: React.FC = () => {
 
             {/* 3. TCP Sockets Table */}
             {['pc', 'server'].includes(node.type) && (
-              <div style={{ padding: '16px', background: 'rgba(236, 72, 153, 0.05)', borderRadius: '12px', border: '1px solid rgba(236, 72, 153, 0.1)' }}>
+              <div style={{ padding: '16px', background: 'color-mix(in srgb, var(--proto-tcp) 5%, transparent)', borderRadius: '12px', border: '1px solid color-mix(in srgb, var(--proto-tcp) 10%, transparent)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <label className="form-label" style={{ fontSize: '11px', color: 'var(--c-pink)', marginBottom: 0, display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}>
+                  <label className="form-label" style={{ fontSize: '11px', color: 'var(--proto-tcp-text)', marginBottom: 0, display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}>
                     <Activity size={14} /> {t('table.tcp')}
                   </label>
                 </div>
@@ -192,7 +192,7 @@ export const NodeSettings: React.FC = () => {
                       </div>
                       {activeTcpConns.map(([key, conn]) => (
                         <div key={key} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', alignItems: 'center' }}>
-                          <span className="label-mono" style={{ color: 'var(--c-pink)', flex: 1 }}>{conn.localPort}</span>
+                          <span className="label-mono" style={{ color: 'var(--proto-tcp-text)', flex: 1 }}>{conn.localPort}</span>
                           <span className="label-mono" style={{ color: 'var(--text-dim)', flex: 2 }}>{conn.remoteIP}:{conn.remotePort}</span>
                           <span className="label-mono" style={{ 
                             color: conn.state === 'ESTABLISHED' ? 'var(--c-green)' : 
@@ -208,7 +208,7 @@ export const NodeSettings: React.FC = () => {
                             title={t('table.forceDeleteSocket')}
                             style={{ padding: '2px', height: 'auto', width: 'auto' }}
                           >
-                            <Trash2 size={12} color="var(--c-pink)" />
+                            <Trash2 size={12} color="var(--proto-tcp-text)" />
                           </button>
                         </div>
                       ))}
@@ -224,9 +224,9 @@ export const NodeSettings: React.FC = () => {
 
             {/* 3. L2 MAC Table */}
             {(node.type === 'switch' || node.type === 'l3switch' || (node.macTable && Object.keys(node.macTable).length > 0)) && (
-              <div style={{ padding: '16px', background: 'rgba(59, 130, 246, 0.05)', borderRadius: '12px', border: '1px solid rgba(59, 130, 246, 0.1)' }}>
+              <div style={{ padding: '16px', background: 'color-mix(in srgb, var(--proto-other) 5%, transparent)', borderRadius: '12px', border: '1px solid color-mix(in srgb, var(--proto-other) 10%, transparent)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <label className="form-label" style={{ fontSize: '11px', color: 'var(--c-blue)', marginBottom: 0, display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}>
+                  <label className="form-label" style={{ fontSize: '11px', color: 'var(--proto-other-text)', marginBottom: 0, display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}>
                     <Activity size={14} /> {t('table.mac')}
                   </label>
                   <button 
@@ -235,7 +235,7 @@ export const NodeSettings: React.FC = () => {
                     title={t('table.clearMac')}
                     style={{ padding: '4px', height: 'auto', width: 'auto' }}
                   >
-                    <Trash2 size={12} color="var(--c-blue)" />
+                    <Trash2 size={12} color="var(--proto-other-text)" />
                   </button>
                 </div>
                 <div style={{ fontSize: '11px' }}>
@@ -247,7 +247,7 @@ export const NodeSettings: React.FC = () => {
                       </div>
                       {Object.entries(node.macTable || {}).map(([mac, portId]) => (
                         <div key={mac} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
-                          <span className="label-mono" style={{ color: 'var(--c-blue)' }}>{mac}</span>
+                          <span className="label-mono" style={{ color: 'var(--proto-other-text)' }}>{mac}</span>
                           <span className="label-mono" style={{ color: 'var(--text-dim)' }}>{node.interfaces.find(i => i.id === portId)?.name || 'Port'}</span>
                         </div>
                       ))}
@@ -263,16 +263,16 @@ export const NodeSettings: React.FC = () => {
 
             {/* 4. IGMP Snooping Table (For Switches) */}
             {(node.type === 'switch' || node.type === 'l3switch') && (
-              <div style={{ padding: '16px', background: 'rgba(251, 191, 36, 0.05)', borderRadius: '12px', border: '1px solid rgba(251, 191, 36, 0.1)', marginTop: '12px' }}>
+              <div style={{ padding: '16px', background: 'color-mix(in srgb, var(--proto-igmp) 5%, transparent)', borderRadius: '12px', border: '1px solid color-mix(in srgb, var(--proto-igmp) 10%, transparent)', marginTop: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <label className="form-label" style={{ fontSize: '11px', color: 'var(--c-yellow)', marginBottom: 0, display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}>
+                  <label className="form-label" style={{ fontSize: '11px', color: 'var(--proto-igmp-text)', marginBottom: 0, display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}>
                     <Activity size={14} /> {t('table.igmp')}
                   </label>
                 </div>
 
                 {/* Active mrouter Port display */}
                 {node.mrouterPortId && (
-                  <div style={{ fontSize: '11px', background: 'rgba(59, 130, 246, 0.1)', border: '1px dashed rgba(59, 130, 246, 0.3)', padding: '6px 10px', borderRadius: '6px', color: 'var(--c-blue)', display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontFamily: 'JetBrains Mono, monospace' }}>
+                  <div style={{ fontSize: '11px', background: 'color-mix(in srgb, var(--proto-igmp) 10%, transparent)', border: '1px dashed color-mix(in srgb, var(--proto-igmp) 40%, transparent)', padding: '6px 10px', borderRadius: '6px', color: 'var(--proto-igmp-text)', display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontFamily: 'JetBrains Mono, monospace' }}>
                     <span>{t('table.mrouter')}</span>
                     <span>{node.interfaces.find(i => i.id === node.mrouterPortId)?.name || node.mrouterPortId}
                       {node.mrouterPortExpiresAt && ` (${Math.max(0, Math.round((node.mrouterPortExpiresAt - Date.now()) / 1000))}s)`}
@@ -289,8 +289,8 @@ export const NodeSettings: React.FC = () => {
                       </div>
                       {Object.entries(node.igmpSnoopingTable || {}).map(([group, ports]) => (
                         <div key={group} style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '4px 0', borderBottom: '1px dashed rgba(var(--ink), 0.03)' }}>
-                          <span className="label-mono" style={{ color: 'var(--c-yellow)', fontWeight: 700 }}>{group}</span>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', paddingLeft: '8px', borderLeft: '2px solid rgba(251, 191, 36, 0.3)' }}>
+                          <span className="label-mono" style={{ color: 'var(--proto-igmp-text)', fontWeight: 700 }}>{group}</span>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', paddingLeft: '8px', borderLeft: '2px solid color-mix(in srgb, var(--proto-igmp) 30%, transparent)' }}>
                             {(ports as string[]).map(pid => {
                               const name = node.interfaces.find(i => i.id === pid)?.name || pid;
                               const expireTime = node.igmpSnoopingExpires?.[group]?.[pid];

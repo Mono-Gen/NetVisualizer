@@ -11,6 +11,7 @@ import { useT, useTMsg } from '../i18n/useT';
 import { msg } from '../i18n/msg';
 import type { Msg } from '../i18n/translate';
 import { StormBanner } from './canvas/StormBanner';
+import { ProtocolLegend } from './canvas/ProtocolLegend';
 import { buildContextMenuItems, type ContextTarget } from '../logic/contextMenu';
 import { DND_NODE_TYPE, createNode } from '../logic/nodeFactory';
 import type { NodeType } from '../types/network';
@@ -248,6 +249,7 @@ export const NetworkCanvas: React.FC = () => {
 
       {mode === 'SIMULATE' && <PlaybackControls />}
       {mode === 'SIMULATE' && <StormBanner />}
+      {mode === 'SIMULATE' && <ProtocolLegend />}
 
       {nodes.length === 0 && mode === 'DESIGN' && <WelcomeGuide />}
 

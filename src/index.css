@@ -48,6 +48,26 @@
   --solid-green: #15803d;
   /* 強調色(黄など)の背景の上に載せる文字色 */
   --on-accent: #000000;
+  /* プロトコルの色: 塗り(--proto-x)はやわらかいパステル、文字(--proto-x-text)は背景に対して読める濃さ */
+  --proto-arp: #ffb36b;
+  --proto-arp-text: #ffb36b;
+  --proto-icmp: #7db6ff;
+  --proto-icmp-text: #7db6ff;
+  --proto-tcp: #62d8a8;
+  --proto-tcp-text: #62d8a8;
+  --proto-udp: #a9a4ff;
+  --proto-udp-text: #a9a4ff;
+  --proto-dns: #c9e265;
+  --proto-dns-text: #c9e265;
+  --proto-dhcp: #ff9fd0;
+  --proto-dhcp-text: #ff9fd0;
+  --proto-mdns: #5cd6e6;
+  --proto-mdns-text: #5cd6e6;
+  --proto-igmp: #d79bff;
+  --proto-igmp-text: #d79bff;
+  --proto-other: #aab4c5;
+  --proto-other-text: #aab4c5;
+  --on-proto: #0f172a;
 }
 
 /* ライト: OS設定に従う(Auto)。手動で dark を選んだ場合は除外する */
@@ -84,6 +104,25 @@
   --c-sky: #0369a1;
   --solid-green: #15803d;
   --on-accent: #ffffff;
+  /* プロトコルの色(ライト) */
+  --proto-arp: #f59a3a;
+  --proto-arp-text: #a04f00;
+  --proto-icmp: #4a90f0;
+  --proto-icmp-text: #1d4ed8;
+  --proto-tcp: #2fbf8a;
+  --proto-tcp-text: #0a7552;
+  --proto-udp: #7f78f2;
+  --proto-udp-text: #4338ca;
+  --proto-dns: #a3c93a;
+  --proto-dns-text: #567008;
+  --proto-dhcp: #ef6fb0;
+  --proto-dhcp-text: #b0125a;
+  --proto-mdns: #1fb5cc;
+  --proto-mdns-text: #0a6e80;
+  --proto-igmp: #b866f0;
+  --proto-igmp-text: #7e22ce;
+  --proto-other: #8a96a8;
+  --proto-other-text: #475569;
   }
 }
 
@@ -120,6 +159,25 @@
   --c-sky: #0369a1;
   --solid-green: #15803d;
   --on-accent: #ffffff;
+  /* プロトコルの色(ライト) */
+  --proto-arp: #f59a3a;
+  --proto-arp-text: #a04f00;
+  --proto-icmp: #4a90f0;
+  --proto-icmp-text: #1d4ed8;
+  --proto-tcp: #2fbf8a;
+  --proto-tcp-text: #0a7552;
+  --proto-udp: #7f78f2;
+  --proto-udp-text: #4338ca;
+  --proto-dns: #a3c93a;
+  --proto-dns-text: #567008;
+  --proto-dhcp: #ef6fb0;
+  --proto-dhcp-text: #b0125a;
+  --proto-mdns: #1fb5cc;
+  --proto-mdns-text: #0a6e80;
+  --proto-igmp: #b866f0;
+  --proto-igmp-text: #7e22ce;
+  --proto-other: #8a96a8;
+  --proto-other-text: #475569;
 }
 
 body {

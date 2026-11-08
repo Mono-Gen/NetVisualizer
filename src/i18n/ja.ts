@@ -195,4 +195,7 @@ export const ja: Record<DictKey, string> = {
   "logPanel.colProtocol": "プロトコル",
   "logPanel.colRoute": "送信元 → 宛先",
   "logPanel.colDetails": "内容",
+  "legend.title": "パケットの色",
+  "legend.show": "色の凡例を表示",
+  "legend.hide": "色の凡例を隠す",
 };

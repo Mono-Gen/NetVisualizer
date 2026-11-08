@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import type { NetNode, NetPacket } from '../../types/network';
 import { getPortPosition } from '../../logic/portLayout';
+import { protoFill, protoKeyOf, protoText } from '../../logic/protocolColors';
 
 interface PacketRendererProps {
   packet: NetPacket;
@@ -22,13 +23,9 @@ export const PacketRenderer: React.FC<PacketRendererProps> = ({
   const x = start.x + (end.x - start.x) * packet.progress;
   const y = start.y + (end.y - start.y) * packet.progress;
   
-  // Protocol Colors
-  let color = '#3b82f6'; // Default ICMP
-  if (packet.protocol === 'ARP') color = '#f59e0b';
-  if (packet.protocol === 'TCP') color = '#10b981';
-  if (packet.protocol === 'UDP') color = '#8b5cf6';
-  if (packet.protocol === 'IGMP') color = '#ec4899';
-  if (packet.protocol === 'UDP' && (packet.destinationPort === 53 || packet.sourcePort === 53)) color = '#f59e0b'; // DNS
+  // 色はプロトコルごとに1色(protocolColors が唯一の定義)。色だけに頼らず、必ずラベルも出す
+  const key = protoKeyOf(packet);
+  const fill = protoFill(key);
 
   // Label text
   let labelText = packet.protocol;
@@ -42,20 +39,19 @@ export const PacketRenderer: React.FC<PacketRendererProps> = ({
 
   return (
     <g key={packet.id}>
-      <motion.circle 
-        cx={x} cy={y} r={5} 
-        fill={color} 
-        initial={{ scale: 0 }} 
-        animate={{ scale: 1 }} 
-        style={{ filter: `drop-shadow(0 0 8px ${color})` }} 
+      <motion.circle
+        cx={x} cy={y} r={6}
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        // 淡い色でも背景に埋もれないよう、暗い輪郭を付ける。やわらかい光(グロー)も付ける
+        style={{ fill, stroke: 'rgba(var(--shade), 0.55)', strokeWidth: 1.5, filter: `drop-shadow(0 0 6px ${fill})` }}
       />
-      <text 
-        x={x} y={y - 10} 
-        fill={color} 
-        fontSize="10" 
-        textAnchor="middle" 
+      <text
+        x={x} y={y - 12}
+        fontSize="11"
+        textAnchor="middle"
         className="label-mono"
-        style={{ textShadow: '0 0 4px rgba(0,0,0,0.5)', fontWeight: 800 }}
+        style={{ fill: protoText(key), stroke: 'rgba(var(--panel-rgb), 0.9)', strokeWidth: 3, paintOrder: 'stroke', fontWeight: 800 }}
       >
         {labelText}
       </text>

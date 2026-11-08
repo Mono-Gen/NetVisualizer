@@ -85,21 +85,21 @@ export const SwitchIGMPConfig: React.FC<SwitchIGMPConfigProps> = ({ node }) => {
       {/* 1. Device Mode Header & Warning */}
       <div style={{ padding: '12px', background: 'rgba(var(--ink), 0.03)', borderRadius: '12px', border: '1px solid rgba(var(--ink), 0.05)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-          <Cpu size={16} color={isUnmanaged ? 'var(--c-amber)' : 'var(--c-blue-strong)'} />
+          <Cpu size={16} color={isUnmanaged ? 'var(--proto-igmp-text)' : 'var(--c-blue-strong)'} />
           <span style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.05em' }}>
             {isUnmanaged ? t('igmp.unmanaged') : t('igmp.managed')}
           </span>
         </div>
         
         {isUnmanaged ? (
-          <div style={{ display: 'flex', gap: '8px', color: 'var(--c-amber)', fontSize: '11px', lineHeight: '1.4' }}>
+          <div style={{ display: 'flex', gap: '8px', color: 'var(--proto-igmp-text)', fontSize: '11px', lineHeight: '1.4' }}>
             <AlertCircle size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
             <div>
               {t('igmp.unmanagedNote')}
             </div>
           </div>
         ) : (
-          <div style={{ display: 'flex', gap: '8px', color: 'var(--c-teal)', fontSize: '11px', lineHeight: '1.4' }}>
+          <div style={{ display: 'flex', gap: '8px', color: 'var(--proto-igmp-text)', fontSize: '11px', lineHeight: '1.4' }}>
             <Layers size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
             <div>
               {t('igmp.managedNote')}
