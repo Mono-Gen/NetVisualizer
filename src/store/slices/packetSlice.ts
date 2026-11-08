@@ -6,6 +6,7 @@ import { DHCPHandler } from '../../logic/DHCPHandler';
 import { findEgressInterface, lookupRoute, primaryInterface } from '../../logic/networkUtils';
 import { multicastIPToMAC } from '../../logic/MulticastEngine';
 import { progressUntilNextArrival } from '../../logic/simClock';
+import { HARD_TIMEOUT_SECONDS, trackIdle, type PendingDns, type PendingPing } from '../../logic/pendingChecks';
 import { appendWithCap, isStormCleared, MAX_LOG_ENTRIES } from '../../logic/simLimits';
 
 /**
@@ -45,7 +46,7 @@ export const createPacketSlice = (set: any, get: any) => ({
   stormDropped: 0,
 
   // 飛行中のパケットを全て消す(ストームの停止用)
-  clearPackets: () => set({ packets: [], pendingPackets: [], stormActive: false, stormDropped: 0 }),
+  clearPackets: () => set({ packets: [], pendingPackets: [], pendingPings: [], dnsPendingPings: {}, idleSince: null, stormActive: false, stormDropped: 0 }),
 
   sendPacket: (packetData: any) => {
     const { nodes, links } = get();
@@ -71,6 +72,13 @@ export const createPacketSlice = (set: any, get: any) => ({
       return;
     }
 
+    // 利用者が送ったpingは、応答(またはエラー)が来るまで「応答待ち」として記録する
+    if (packetData.protocol === 'ICMP' && packetData.type === 'echo-request') {
+      set((state: any) => ({
+        pendingPings: [...state.pendingPings, { id: `ping_${Math.random()}`, nodeId: packetData.from, targetIP: packetData.targetIP, senderIP: packetData.senderIP, deadline: state.simTime + HARD_TIMEOUT_SECONDS }]
+      }));
+    }
+
     const result = NetworkEngine.prepareTransmission(sourceNode, packetData, nodes, links);
     
     set((state: any) => {
@@ -90,7 +98,12 @@ export const createPacketSlice = (set: any, get: any) => ({
     });
   },
 
-  dnsPendingPings: {} as Record<string, string[]>,
+  // DNSの解決待ち: ホスト名(小文字) → 待っている機器と期限
+  dnsPendingPings: {} as Record<string, PendingDns[]>,
+  // 応答待ちのping、シミュレーション時間(秒)、ネットワークが空になった時刻
+  pendingPings: [] as PendingPing[],
+  simTime: 0,
+  idleSince: null as number | null,
 
   resolveAndPing: (nodeId: string, input: string) => {
     const { nodes, sendPacket } = get();
@@ -149,7 +162,7 @@ export const createPacketSlice = (set: any, get: any) => ({
     set((state: any) => ({
       dnsPendingPings: {
         ...state.dnsPendingPings,
-        [hostname.toLowerCase()]: [...(state.dnsPendingPings[hostname.toLowerCase()] || []), nodeId]
+        [hostname.toLowerCase()]: [...(state.dnsPendingPings[hostname.toLowerCase()] || []), { nodeId, deadline: state.simTime + HARD_TIMEOUT_SECONDS }]
       }
     }));
 
@@ -182,12 +195,21 @@ export const createPacketSlice = (set: any, get: any) => ({
     const update = NetworkEngine.handleArrival(receiverNode, packet, nodes, links, pendingPackets);
     get().applyEngineUpdate(update);
 
+    // pingの応答、またはエラー(到達不能・TTL切れ)が来たら、「応答待ち」から外す
+    if (packet.protocol === 'ICMP') {
+      if (packet.type === 'echo-reply') {
+        set((state: any) => ({ pendingPings: state.pendingPings.filter((p: PendingPing) => !(p.nodeId === receiverNode.id && p.targetIP === packet.senderIP)) }));
+      } else if (packet.type === 'destination-unreachable' || packet.type === 'time-exceeded') {
+        set((state: any) => ({ pendingPings: state.pendingPings.filter((p: PendingPing) => p.nodeId !== receiverNode.id) }));
+      }
+    }
+
     // If this was a DNS response for this node, check pending pings
     // If this was a DNS response, check ALL nodes that were waiting for this hostname
     if (packet.protocol === 'DNS' && packet.type === 'reply' && packet.payload?.ip) {
       const hostname = (packet.payload.hostname || '').toLowerCase();
       const resolvedIP = packet.payload.ip;
-      const nodesWaiting = dnsPendingPings[hostname] || [];
+      const nodesWaiting: string[] = (dnsPendingPings[hostname] || []).map((w: PendingDns) => w.nodeId);
       
       nodesWaiting.forEach((waitingNodeId: string) => {
         const waitingNode = nodes.find((n: NetNode) => n.id === waitingNodeId);
@@ -286,8 +308,9 @@ export const createPacketSlice = (set: any, get: any) => ({
 
   // パケットを delta(0〜1)だけ進め、到着したものを処理する
   advanceSimulation: (delta: number) => {
+    set((state: any) => ({ simTime: state.simTime + delta }));
     const { packets, handlePacketArrival } = get();
-    if (packets.length === 0) return;
+    if (packets.length === 0) { get().expireStalePending(); return; }
 
     const arrivedPackets: NetPacket[] = [];
     const updatedPackets = packets.map((packet: NetPacket) => {
@@ -304,6 +327,47 @@ export const createPacketSlice = (set: any, get: any) => ({
     // 飛行数が十分減ったらストーム警告を解除する
     if (get().stormActive && isStormCleared(updatedPackets.length)) set({ stormActive: false, stormDropped: 0 });
     arrivedPackets.forEach(p => handlePacketArrival(p));
+    get().expireStalePending();
+  },
+
+  // 応答待ち(ping・DNS)のうち、もう応答が来そうにないものをタイムアウトにして、ログで知らせる
+  expireStalePending: () => {
+    const s = get();
+    const hasPending = s.pendingPings.length > 0 || Object.values(s.dnsPendingPings as Record<string, PendingDns[]>).some(list => list.length > 0);
+    const idle = trackIdle(s.simTime, s.idleSince, s.packets.length, hasPending);
+    if (idle.idleSince !== s.idleSince) set({ idleSince: idle.idleSince });
+    if (!hasPending) return;
+
+    const expiredPings = s.pendingPings.filter((p: PendingPing) => idle.idleExpired || s.simTime >= p.deadline);
+    const expiredDns: { hostname: string; nodeId: string }[] = [];
+    const remainingDns: Record<string, PendingDns[]> = {};
+    Object.entries(s.dnsPendingPings as Record<string, PendingDns[]>).forEach(([hostname, list]) => {
+      const keep: PendingDns[] = [];
+      list.forEach(w => {
+        if (idle.idleExpired || s.simTime >= w.deadline) expiredDns.push({ hostname, nodeId: w.nodeId });
+        else keep.push(w);
+      });
+      if (keep.length > 0) remainingDns[hostname] = keep;
+    });
+    if (expiredPings.length === 0 && expiredDns.length === 0) return;
+
+    const now = new Date().toLocaleTimeString();
+    const logs: any[] = [
+      ...expiredPings.map((p: PendingPing) => ({
+        time: now, protocol: 'ICMP', type: 'echo-request', status: 'error', senderIP: p.senderIP, targetIP: p.targetIP,
+        info: `Request timed out: no reply from ${p.targetIP}. Check the IP address, subnet mask, gateway and cables.`
+      })),
+      ...expiredDns.map(w => ({
+        time: now, protocol: 'DNS', type: 'request', status: 'error', senderIP: '', targetIP: '',
+        info: `DNS query for "${w.hostname}" timed out: no response from the DNS server. Check the DNS server address and the cables.`
+      }))
+    ];
+    set((state: any) => ({
+      pendingPings: state.pendingPings.filter((p: PendingPing) => !expiredPings.includes(p)),
+      dnsPendingPings: remainingDns,
+      idleSince: null
+    }));
+    get().applyEngineUpdate({ addLogs: logs });
   },
 
   // 壁時計基準の定期処理(ペンディングGC・エイジング・Querier送信・DHCPリース掃除)

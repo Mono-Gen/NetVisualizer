@@ -20,7 +20,11 @@ export const useNetworkStore = create<NetworkState>((set, get) => ({
     links: [], 
     packets: [], 
     packetLogs: [], 
-    pendingPackets: [] 
+    pendingPackets: [],
+    dnsPendingPings: {},
+    pendingPings: [],
+    simTime: 0,
+    idleSince: null
   }),
 
   // トポロジーを丸ごと差し替える(サンプル読込用)。実行時の状態も全て初期化する。
@@ -31,6 +35,9 @@ export const useNetworkStore = create<NetworkState>((set, get) => ({
     packetLogs: [],
     pendingPackets: [],
     dnsPendingPings: {},
+    pendingPings: [],
+    simTime: 0,
+    idleSince: null,
     stormActive: false,
     stormDropped: 0,
     selectedNodeId: null,

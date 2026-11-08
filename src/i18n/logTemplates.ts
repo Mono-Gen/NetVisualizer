@@ -10,6 +10,10 @@ import type { Lang } from './translate';
  * - プロトコル名・状態名(ARP, DHCP, ESTABLISHED, FIN-ACK など)は訳さない。
  */
 export const LOG_TEMPLATES: ReadonlyArray<readonly [string, string]> = [
+  // 応答待ちのタイムアウト
+  ['Request timed out: no reply from {ip}. Check the IP address, subnet mask, gateway and cables.', '要求がタイムアウトしました: {ip} から応答がありません。IPアドレス、サブネットマスク、ゲートウェイ、ケーブルを確認してください。'],
+  ['DNS query for "{name}" timed out: no response from the DNS server. Check the DNS server address and the cables.', 'DNS問い合わせ "{name}" がタイムアウトしました: DNSサーバーから応答がありません。DNSサーバーのアドレスとケーブルを確認してください。'],
+
   // 経路(複数NICのノードが、どのNICから送るか)
   ['Route: {dest} via {port} - connected network /{prefix}, metric {metric}', '経路: {dest} は {port} から送信 (直接つながったネットワーク /{prefix}、メトリック {metric})'],
   ['Route: {dest} via {port} - default gateway {gw}, metric {metric}', '経路: {dest} は {port} から送信 (デフォルトゲートウェイ {gw}、メトリック {metric})'],

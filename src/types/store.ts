@@ -36,7 +36,12 @@ export type NodeSlice = {
 export type PacketSlice = {
   packets: NetPacket[];
   pendingPackets: NetPacket[];
-  dnsPendingPings: Record<string, string[]>;
+  dnsPendingPings: Record<string, { nodeId: string; deadline: number }[]>;
+  pendingPings: { id: string; nodeId: string; targetIP: string; senderIP: string; deadline: number }[];
+  /** シミュレーション時間(秒)。一時停止中は進まず、速度に比例して進む */
+  simTime: number;
+  idleSince: number | null;
+  expireStalePending: () => void;
   /** ブロードキャストストーム(パケット上限到達)の検知状態と、上限で破棄した累計数 */
   stormActive: boolean;
   stormDropped: number;
