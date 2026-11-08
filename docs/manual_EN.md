@@ -162,8 +162,8 @@ Switching to Design Mode resumes the simulation automatically.
 #### Steps
 
 1. Click the source node to select it.
-2. In the left pane under "COMMAND FOR [Node Name]", enter the **destination IP address** (e.g., `192.168.2.20`).
-3. Press the `Ping` button.
+2. In the left pane under "COMMAND FOR [Node Name]", enter the **destination** (an IP address such as `192.168.2.20`, or a hostname) in the DESTINATION box.
+3. Press the `Ping` button. (Buttons that cannot be used yet are dimmed, and a note under them tells you why.)
 
 #### What to Observe
 
@@ -187,8 +187,9 @@ Used for video streaming, DNS queries, VoIP, and gaming.
 #### Steps
 
 1. Select the source node.
-2. In the left pane under "L4 MESSAGING", enter a port number (e.g., `8080`) and a message.
-3. Press `UDP Send`.
+2. In the DESTINATION box, enter the destination **IP address** and the **port** (e.g., `8080`).
+3. Enter a message in the **Message** box (shared by UDP and TCP).
+4. Press `UDP Send` in the UDP section.
 
 #### What to Observe
 
@@ -205,8 +206,9 @@ Used by web browsers (HTTP), email (SMTP), and most application-layer protocols.
 #### Steps
 
 1. Select the source node.
-2. Enter the destination port (e.g., `80`).
-3. Press `TCP Connect` to initiate the handshake.
+2. In the DESTINATION box, enter the destination IP address and the port (e.g., `80`).
+3. In the TCP section, press **① Connect** to start the handshake. The state next to the title changes: ○ Not connected → ◐ Connecting… → ● Connected.
+4. Once connected, **② Send** and **③ Close** become available; ① Connect is dimmed. After closing, the state returns to Not connected.
 
 #### The Connection Flow
 
