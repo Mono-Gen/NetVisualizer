@@ -39,11 +39,6 @@ export const Sidebar: React.FC = () => {
         <h1 className="heading-sm" style={{ margin: 0 }}>NetVisualizer</h1>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-        <LanguageToggle />
-        <ThemeToggle />
-      </div>
-
       <div className="tabs" style={{ display: 'flex', background: 'rgba(var(--shade), 0.2)', padding: '4px', borderRadius: '10px' }}>
         <button 
           onClick={() => setMode('DESIGN')} 
@@ -120,6 +115,11 @@ export const Sidebar: React.FC = () => {
           </button>
         </div>
       )}
+      {/* 言語とテーマは、一度決めたらほとんど触らない設定なので、サイドバー下端にまとめる */}
+      <div style={{ borderTop: '1px solid rgba(var(--ink), 0.08)', paddingTop: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+        <LanguageToggle />
+        <ThemeToggle />
+      </div>
     </div>
   );
 };

@@ -47,11 +47,11 @@ With this tool, you can:
 
 ### 1.2 Theme (Light / Dark)
 
-Use the three buttons at the top of the sidebar to choose **Auto** (follow your operating system setting), **Light**, or **Dark**. Your choice is remembered on this device.
+Use the three buttons at the bottom of the sidebar to choose **Auto** (follow your operating system setting), **Light**, or **Dark**. Your choice is remembered on this device.
 
 ### 1.3 Language (English / Japanese)
 
-Use the **日本語 / EN** buttons at the top of the sidebar to switch the screen language. The first time, the language follows your browser setting; after that, your choice is remembered on this device. Protocol names (ARP, ICMP, DHCP, …) are not translated.
+Use the **日本語 / EN** buttons at the bottom of the sidebar to switch the screen language. The first time, the language follows your browser setting; after that, your choice is remembered on this device. Protocol names (ARP, ICMP, DHCP, …) are not translated.
 
 ---
 
