@@ -1,21 +1,22 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNetworkStore } from '../store/useNetworkStore';
 import { NodeRenderer } from './canvas/NodeRenderer';
 import { LinkRenderer } from './canvas/LinkRenderer';
 import { PacketRenderer } from './canvas/PacketRenderer';
 import { CanvasControls } from './canvas/CanvasControls';
-import { InterfaceSelector } from './canvas/InterfaceSelector';
 import { PlaybackControls } from './canvas/PlaybackControls';
 import { WelcomeGuide } from './canvas/WelcomeGuide';
+import { ContextMenu } from './canvas/ContextMenu';
+import { buildContextMenuItems, type ContextTarget } from '../logic/contextMenu';
 import { DND_NODE_TYPE, createNode } from '../logic/nodeFactory';
 import type { NodeType } from '../types/network';
 import { PORT_SIZE, findNearestPort, getPortPosition, isPortUsed, validateConnection, type PortRef } from '../logic/portLayout';
 
 export const NetworkCanvas: React.FC = () => {
   const { 
-    nodes, links, packets, mode, isLinkMode, isDeleteMode, linkingSourceId, 
+    nodes, links, packets, mode, 
     selectedNodeId, selectedLinkId, setSelectedLinkId, simSourceId, zoom, isInspectMode, isPaused,
-    updateNodePosition, addNode, setLinkingSourceId, setSelectedNodeId, setSimSourceId, 
+    updateNodePosition, addNode, addInterface, removeInterface, clearNodeArpTable, clearNodeMacTable, clearDnsCache, setSelectedNodeId, setSimSourceId, 
     setZoom, addLink, sendPacket, removeNode, removeLink 
   } = useNetworkStore();
 
@@ -32,19 +33,39 @@ export const NetworkCanvas: React.FC = () => {
     const y = Math.max(0, (e.clientY - rect.top) / zoom - 32);
     addNode(createNode(type, nodes, { x, y }));
   };
-  const [portMenu, setPortMenu] = useState<{ nodeId: string, isSource: boolean } | null>(null);
-  const [pendingFromInterfaceId, setPendingFromInterfaceId] = useState<string | null>(null);
   const [simTargetId, setSimTargetId] = useState<string | null>(null);
   // ポートからのドラッグ配線: 配線元と現在のポインタ位置(キャンバス座標)
   const [wiring, setWiring] = useState<{ source: PortRef; x: number; y: number } | null>(null);
   const [wireMessage, setWireMessage] = useState<string | null>(null);
+  // 右クリックメニュー: 表示位置(コンテナ内の画面px)と対象
+  const [menu, setMenu] = useState<{ x: number; y: number; target: ContextTarget } | null>(null);
+  const closeMenu = useCallback(() => setMenu(null), []);
+
+  // 画面座標 → キャンバス座標(ズーム補正)
+  const toCanvasPoint = (clientX: number, clientY: number) => {
+    const rect = containerRef.current!.getBoundingClientRect();
+    return { x: (clientX - rect.left) / zoom, y: (clientY - rect.top) / zoom };
+  };
+
+  const openMenu = (target: ContextTarget, clientX: number, clientY: number) => {
+    const rect = containerRef.current!.getBoundingClientRect();
+    // リンクを右クリックしたときは、削除対象が分かるよう選択状態にする
+    if (target.kind === 'link') setSelectedLinkId(target.linkId);
+    setMenu({ x: clientX - rect.left, y: clientY - rect.top, target });
+  };
+
+  const handleCanvasContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const p = toCanvasPoint(e.clientX, e.clientY);
+    openMenu({ kind: 'canvas', x: Math.max(0, p.x - 32), y: Math.max(0, p.y - 32) }, e.clientX, e.clientY);
+  };
 
   const usedPortIds = useMemo(() => {
     const ids = new Set<string>();
     links.forEach(l => { ids.add(l.fromInterfaceId); ids.add(l.toInterfaceId); });
     return ids;
   }, [links]);
-  const canWire = mode === 'DESIGN' && !isDeleteMode && !isLinkMode;
+  const canWire = mode === 'DESIGN';
   const canSelectLinks = canWire;
 
   const handlePortStart = (nodeId: string, ifaceId: string) => {
@@ -136,57 +157,42 @@ export const NetworkCanvas: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [mode, selectedNodeId, selectedLinkId, removeNode, removeLink, setSelectedNodeId, setSelectedLinkId]);
 
-  const selectPort = (nodeId: string, interfaceId: string, isSource: boolean) => {
-    if (isSource) {
-      setLinkingSourceId(nodeId);
-      setPendingFromInterfaceId(interfaceId);
-    } else if (linkingSourceId) {
-      addLink({ 
-        id: `l_${Math.random().toString(36).substr(2, 9)}`, 
-        from: linkingSourceId, 
-        to: nodeId,
-        fromInterfaceId: pendingFromInterfaceId!,
-        toInterfaceId: interfaceId
-      });
-      setLinkingSourceId(null);
-      setPendingFromInterfaceId(null);
-    }
-    setPortMenu(null);
-  };
+  // キーボードからメニューを開く(ContextMenuキー / Shift+F10)。選択中のケーブル→デバイスの順に対象にする
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10')) || mode !== 'DESIGN') return;
+      const active = document.activeElement;
+      if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement || active instanceof HTMLSelectElement) return;
+      const link = links.find(l => l.id === selectedLinkId);
+      const node = nodes.find(n => n.id === selectedNodeId);
+      let point: { x: number; y: number } | null = null;
+      let target: ContextTarget | null = null;
+      if (link) {
+        const a = nodes.find(n => n.id === link.from), b = nodes.find(n => n.id === link.to);
+        if (a && b) {
+          const p1 = getPortPosition(a, link.fromInterfaceId), p2 = getPortPosition(b, link.toInterfaceId);
+          point = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
+          target = { kind: 'link', linkId: link.id };
+        }
+      } else if (node) {
+        point = { x: node.x + 32, y: node.y + 32 };
+        target = { kind: 'node', nodeId: node.id };
+      }
+      if (!point || !target) return;
+      e.preventDefault();
+      setMenu({ x: point.x * zoom, y: point.y * zoom, target });
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [mode, nodes, links, selectedNodeId, selectedLinkId, zoom]);
 
   const handleNodeClick = (id: string) => {
     const node = nodes.find(n => n.id === id);
     if (!node) return;
 
+    // DESIGNモード: クリックで選択(設定パネルを開く)。接続・削除はポートのドラッグ/選択+Deleteで行う
     if (mode === 'DESIGN') {
-      if (isDeleteMode) {
-        removeNode(id);
-      } else if (isLinkMode) {
-        // Function to check if a port is already occupied
-        const isPortOccupied = (nId: string, iId: string) => 
-          links.some(l => (l.from === nId && l.fromInterfaceId === iId) || (l.to === nId && l.toInterfaceId === iId));
-
-        if (!linkingSourceId) {
-          if (node.interfaces.length === 1) {
-            if (!isPortOccupied(id, node.interfaces[0].id)) {
-              setLinkingSourceId(id);
-              setPendingFromInterfaceId(node.interfaces[0].id);
-            }
-          } else {
-            setPortMenu({ nodeId: id, isSource: true });
-          }
-        } else if (linkingSourceId !== id) {
-          if (node.interfaces.length === 1) {
-            if (!isPortOccupied(id, node.interfaces[0].id)) {
-              selectPort(id, node.interfaces[0].id, false);
-            }
-          } else {
-            setPortMenu({ nodeId: id, isSource: false });
-          }
-        }
-      } else {
-        setSelectedNodeId(id);
-      }
+      setSelectedNodeId(id);
       return;
     }
 
@@ -216,6 +222,7 @@ export const NetworkCanvas: React.FC = () => {
       ref={containerRef}
       onDragOver={(e) => { if (mode === 'DESIGN' && e.dataTransfer.types.includes(DND_NODE_TYPE)) { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; } }}
       onDrop={handleDrop}
+      onContextMenu={handleCanvasContextMenu}
       onPointerDown={(e) => {
         if (e.target === e.currentTarget) {
           setSelectedNodeId(null);
@@ -225,23 +232,9 @@ export const NetworkCanvas: React.FC = () => {
       }}
       style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}
     >
-      {portMenu && (
-        <InterfaceSelector 
-          nodeId={portMenu.nodeId} 
-          nodes={nodes} 
-          links={links} 
-          isSource={portMenu.isSource} 
-          onSelect={selectPort} 
-          onClose={() => setPortMenu(null)} 
-        />
-      )}
-
       <CanvasControls 
         mode={mode} 
-        isDeleteMode={isDeleteMode} 
-        isLinkMode={isLinkMode} 
-        isInspectMode={isInspectMode} 
-        linkingSourceId={linkingSourceId}
+        isInspectMode={isInspectMode}
         zoom={zoom}
         setZoom={setZoom}
         isPaused={isPaused}
@@ -250,6 +243,28 @@ export const NetworkCanvas: React.FC = () => {
       {mode === 'SIMULATE' && <PlaybackControls />}
 
       {nodes.length === 0 && mode === 'DESIGN' && <WelcomeGuide />}
+
+      {menu && (
+        <ContextMenu
+          x={menu.x}
+          y={menu.y}
+          boundsWidth={containerRef.current?.clientWidth ?? 800}
+          boundsHeight={containerRef.current?.clientHeight ?? 600}
+          onClose={closeMenu}
+          items={buildContextMenuItems(menu.target, { mode, nodes, links }, {
+            addNode: (type, pos) => addNode(createNode(type, nodes, pos)),
+            selectNode: setSelectedNodeId,
+            addInterface,
+            removeInterface,
+            removeNode: (id) => { removeNode(id); setSelectedNodeId(null); },
+            removeLink: (id) => { removeLink(id); setSelectedLinkId(null); },
+            clearArp: clearNodeArpTable,
+            clearMac: clearNodeMacTable,
+            clearDns: clearDnsCache,
+            confirm: (message) => window.confirm(message)
+          })}
+        />
+      )}
 
       {wireMessage && (
         <div role="status" style={{ position: 'absolute', top: '84px', left: '50%', transform: 'translateX(-50%)', zIndex: 120, maxWidth: '80%', padding: '10px 16px', borderRadius: '8px', fontSize: '12px', fontWeight: 600, color: '#fecaca', background: 'rgba(127, 29, 29, 0.9)', border: '1px solid rgba(248, 113, 113, 0.6)' }}>
@@ -261,7 +276,7 @@ export const NetworkCanvas: React.FC = () => {
         {/* svg自体はクリックを素通りさせ、リンクの当たり判定だけを個別に有効にする(空白クリックで選択解除できるように) */}
         <svg style={{ position: 'absolute', inset: 0, width: '5000px', height: '5000px', pointerEvents: 'none' }}>
           {links.map(link => (
-            <LinkRenderer key={link.id} link={link} nodes={nodes} isDeleteMode={isDeleteMode} isSelected={link.id === selectedLinkId} canSelect={canSelectLinks} onSelect={setSelectedLinkId} onRemove={removeLink} />
+            <LinkRenderer key={link.id} link={link} nodes={nodes} isSelected={link.id === selectedLinkId} canSelect={canSelectLinks} onSelect={setSelectedLinkId} onContextMenu={(id, x, y) => openMenu({ kind: 'link', linkId: id }, x, y)} onRemove={removeLink} />
           ))}
           {wiring && (() => {
             const srcNode = nodes.find(n => n.id === wiring.source.nodeId);
@@ -281,10 +296,8 @@ export const NetworkCanvas: React.FC = () => {
             isSelected={node.id === selectedNodeId} 
             isSimSource={node.id === simSourceId} 
             isSimTarget={node.id === simTargetId}
-            isLinkingSource={node.id === linkingSourceId}
             isInspectMode={isInspectMode}
             mode={mode} 
-            isLinkMode={isLinkMode} 
             zoom={zoom} 
             onUpdatePosition={updateNodePosition} 
             onClick={handleNodeClick} 
@@ -292,6 +305,7 @@ export const NetworkCanvas: React.FC = () => {
             wireSource={wiring ? wiring.source : null}
             canWire={canWire}
             onPortStart={handlePortStart}
+            onContextMenu={(target, x, y) => openMenu(target, x, y)}
           />
         ))}
       </div>

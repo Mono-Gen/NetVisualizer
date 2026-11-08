@@ -2,15 +2,15 @@ import React from 'react';
 import { useNetworkStore } from '../store/useNetworkStore';
 import { NodeIcon } from './canvas/NodeIcon';
 import type { NodeType } from '../types/network';
-import { Plus, Play, Settings, Trash2, Link as LinkIcon, Activity } from 'lucide-react';
+import { Plus, Play, Settings } from 'lucide-react';
 import { SidebarCommandPanel } from './SidebarCommandPanel';
 import { SampleMenu } from './SampleMenu';
 import { NODE_PALETTE, DND_NODE_TYPE, createNode } from '../logic/nodeFactory';
 
 export const Sidebar: React.FC = () => {
   const { 
-    nodes, addNode, mode, setMode, isLinkMode, setLinkMode, 
-    isDeleteMode, setDeleteMode, isInspectMode, setInspectMode, 
+    nodes, addNode, mode, setMode, 
+    isInspectMode, setInspectMode, 
     clearCanvas, packetLogs, clearPacketLogs, selectedNodeId
   } = useNetworkStore();
 
@@ -68,25 +68,6 @@ export const Sidebar: React.FC = () => {
               </div>
             </div>
 
-            <div>
-              <label className="form-label" style={{ fontSize: '11px', color: 'var(--text-dim)', marginBottom: '8px' }}>TOOLS</label>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <button 
-                  onClick={() => setLinkMode(!isLinkMode)} 
-                  className={`btn ${isLinkMode ? 'btn-primary' : 'btn-glass'}`}
-                  style={{ justifyContent: 'flex-start', gap: '10px' }}
-                >
-                  <LinkIcon size={16} /> {isLinkMode ? 'Wiring Mode (On)' : 'Connect Nodes'}
-                </button>
-                <button 
-                  onClick={() => setDeleteMode(!isDeleteMode)} 
-                  className={`btn ${isDeleteMode ? 'btn-danger' : 'btn-glass'}`}
-                  style={{ justifyContent: 'flex-start', gap: '10px' }}
-                >
-                  <Trash2 size={16} /> {isDeleteMode ? 'Eraser Mode (On)' : 'Remove Items'}
-                </button>
-              </div>
-            </div>
           </>
         ) : (
           <>

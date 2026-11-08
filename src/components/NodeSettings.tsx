@@ -18,11 +18,21 @@ export const NodeSettings: React.FC = () => {
     clearDnsCache,
     clearNodeArpTable,
     clearNodeMacTable,
-    clearTCPSocket
+    clearTCPSocket,
+    removeNode,
+    links
   } = useNetworkStore();
   const node = nodes.find(n => n.id === selectedNodeId);
 
   if (!node) return null;
+
+  // 接続中のケーブルも一緒に消える破壊的操作なので、ケーブルがあるときは確認する
+  const handleDeleteNode = () => {
+    const cableCount = links.filter(l => l.from === node.id || l.to === node.id).length;
+    if (cableCount > 0 && !window.confirm(`Delete ${node.label}? Its ${cableCount} connected cable(s) will also be removed.`)) return;
+    removeNode(node.id);
+    setSelectedNodeId(null);
+  };
 
   const activeTcpConns = Object.entries(node?.tcpConnections || {});
 
@@ -45,9 +55,21 @@ export const NodeSettings: React.FC = () => {
             <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-dim)' }}>ID: {node.id}</p>
           </div>
         </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        {mode === 'DESIGN' && (
+          <button
+            onClick={handleDeleteNode}
+            className="btn btn-glass btn-small"
+            title="Delete this device and its cables"
+            style={{ color: '#f87171', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}
+          >
+            <Trash2 size={14} /> Delete device
+          </button>
+        )}
         <button onClick={() => setSelectedNodeId(null)} className="btn-icon">
           <X size={20} />
         </button>
+        </div>
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>

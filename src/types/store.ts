@@ -7,10 +7,7 @@ export type NodeSlice = {
   mode: 'DESIGN' | 'SIMULATE';
   selectedNodeId: string | null;
   simSourceId: string | null;
-  isLinkMode: boolean;
-  isDeleteMode: boolean;
   isInspectMode: boolean;
-  linkingSourceId: string | null;
   selectedLinkId: string | null;
   isPaused: boolean;
   simSpeed: number;
@@ -27,9 +24,6 @@ export type NodeSlice = {
   
   setMode: (mode: 'DESIGN' | 'SIMULATE') => void;
   setZoom: (zoom: number) => void;
-  setLinkMode: (enabled: boolean) => void;
-  setDeleteMode: (enabled: boolean) => void;
-  setLinkingSourceId: (id: string | null) => void;
   setSelectedNodeId: (id: string | null) => void;
   setSimSourceId: (id: string | null) => void;
   setSelectedLinkId: (id: string | null) => void;

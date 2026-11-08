@@ -10,10 +10,8 @@ interface NodeRendererProps {
   isSelected: boolean;
   isSimSource: boolean;
   isSimTarget?: boolean;
-  isLinkingSource?: boolean;
   isInspectMode?: boolean;
   mode: 'DESIGN' | 'SIMULATE';
-  isLinkMode: boolean;
   zoom: number;
   onUpdatePosition: (id: string, x: number, y: number) => void;
   onClick: (id: string) => void;
@@ -24,6 +22,7 @@ interface NodeRendererProps {
   /** ポートからの配線を許可するか(DESIGNモードかつ消しゴムでない) */
   canWire: boolean;
   onPortStart: (nodeId: string, ifaceId: string) => void;
+  onContextMenu: (target: { kind: 'node'; nodeId: string } | { kind: 'port'; nodeId: string; ifaceId: string }, clientX: number, clientY: number) => void;
 }
 
 export const NodeRenderer: React.FC<NodeRendererProps> = ({
@@ -31,10 +30,8 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
   isSelected,
   isSimSource,
   isSimTarget,
-  isLinkingSource,
   isInspectMode,
   mode,
-  isLinkMode,
   zoom,
   onUpdatePosition,
   onClick,
@@ -42,9 +39,9 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
   wireSource,
   canWire,
   onPortStart,
+  onContextMenu,
 }) => {
   const getHighlightColor = () => {
-    if (isLinkingSource) return '#22c55e'; // Green for Wiring
     if (isSimSource) return '#f97316'; // Orange for Sender
     if (isSimTarget) return '#3b82f6'; // Blue for Target
     if (isSelected) return 'rgba(255,255,255,0.8)'; // Subtle white for selection
@@ -52,26 +49,26 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
   };
 
   const getShadow = () => {
-    if (isLinkingSource) return '0 0 25px #22c55e';
     if (isSimSource) return '0 0 25px #f97316';
     if (isSimTarget) return '0 0 25px #3b82f6';
     return 'none';
   };
 
   const highlightColor = getHighlightColor();
-  const isGlow = isSimSource || isSimTarget || isLinkingSource;
+  const isGlow = isSimSource || isSimTarget;
 
   return (
     <motion.div
       key={node.id}
       onPan={(_, info) => onUpdatePosition(node.id, node.x + info.delta.x / zoom, node.y + info.delta.y / zoom)}
       onTap={(e) => { e.stopPropagation(); onClick(node.id); }}
+      onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); onContextMenu({ kind: 'node', nodeId: node.id }, e.clientX, e.clientY); }}
       onPointerDown={(e) => e.stopPropagation()}
       style={{ 
         position: 'absolute', left: node.x, top: node.y, 
         width: '64px', height: '64px',
         display: 'flex', flexDirection: 'column', alignItems: 'center',
-        cursor: isLinkMode ? 'pointer' : 'grab',
+        cursor: 'grab',
         zIndex: (isGlow || isSelected) ? 30 : 10, touchAction: 'none'
       }}
       whileHover={{ scale: 1.05 }}
@@ -104,6 +101,7 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
             isBlocked={!!wireSource && !isSource && (used || wireSource.nodeId === node.id)}
             interactive={canWire}
             onStart={() => onPortStart(node.id, iface.id)}
+            onContextMenu={(x, y) => onContextMenu({ kind: 'port', nodeId: node.id, ifaceId: iface.id }, x, y)}
           />
         );
       })}

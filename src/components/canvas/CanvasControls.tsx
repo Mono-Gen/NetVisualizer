@@ -3,10 +3,7 @@ import { ZoomIn, ZoomOut, Maximize } from 'lucide-react';
 
 interface CanvasControlsProps {
   mode: 'DESIGN' | 'SIMULATE';
-  isDeleteMode: boolean;
-  isLinkMode: boolean;
   isInspectMode: boolean;
-  linkingSourceId: string | null;
   zoom: number;
   setZoom: (zoom: number) => void;
   isPaused: boolean;
@@ -14,10 +11,7 @@ interface CanvasControlsProps {
 
 export const CanvasControls: React.FC<CanvasControlsProps> = ({
   mode,
-  isDeleteMode,
-  isLinkMode,
   isInspectMode,
-  linkingSourceId,
   zoom,
   setZoom,
   isPaused,
@@ -46,8 +40,6 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
       }}>
         <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: mode === 'DESIGN' ? '#fbbf24' : '#22c55e', boxShadow: `0 0 10px ${mode === 'DESIGN' ? '#fbbf24' : '#22c55e'}` }} />
         {mode === 'DESIGN' ? (
-          isDeleteMode ? 'ERASER MODE: SELECT ITEMS TO REMOVE' : 
-          isLinkMode ? (linkingSourceId ? 'WIRING: SELECT TARGET NetNode' : 'WIRING MODE: SELECT START NetNode') : 
           'DESIGN MODE: DRAG PARTS IN · DRAG PORT TO PORT TO CONNECT'
         ) : (
           isInspectMode ? 'INSPECT MODE: CLICK TO VIEW TABLES' : 'SIMULATION MODE: CLICK NODES TO START PACKETS'

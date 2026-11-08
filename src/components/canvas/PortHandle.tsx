@@ -15,6 +15,7 @@ interface PortHandleProps {
   isBlocked: boolean;
   interactive: boolean;
   onStart: () => void;
+  onContextMenu: (clientX: number, clientY: number) => void;
 }
 
 /**
@@ -22,7 +23,7 @@ interface PortHandleProps {
  *  - 空き: 中抜きの円 / 使用中: 塗りつぶしの円 / 配線元: 太い枠 / 候補: 二重リング / 不可: 破線
  */
 export const PortHandle: React.FC<PortHandleProps> = ({
-  cx, cy, name, tooltip, used, isWireSource, isCandidate, isBlocked, interactive, onStart
+  cx, cy, name, tooltip, used, isWireSource, isCandidate, isBlocked, interactive, onStart, onContextMenu
 }) => {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -50,6 +51,7 @@ export const PortHandle: React.FC<PortHandleProps> = ({
     <div
       ref={ref}
       title={tooltip}
+      onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); onContextMenu(e.clientX, e.clientY); }}
       aria-label={`${name} ${used ? 'connected' : 'free'}`}
       style={{
         position: 'absolute',

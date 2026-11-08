@@ -97,6 +97,13 @@ Click a node to select it. A settings panel will open in the left pane.
   /24                      GW=192.168.1.1                /24
 ```
 
+### 2.5a Deleting and the Right-Click Menu
+
+- **Delete a cable**: click the cable to select it (it turns yellow), then press **Delete** or click the **×** in its middle.
+- **Delete a device**: select it and press **Delete**, or use **Delete device** in the settings panel. Connected cables are removed too (a confirmation appears).
+- **Right-click menu** (Design Mode): right-click empty canvas to add a device at that spot; right-click a device for *Open settings / Add port / Delete device*; right-click a port for *Disconnect cable / Remove port*; right-click a cable for *Delete cable*. In Simulation Mode, right-click a device to clear its ARP / MAC / DNS tables.
+- Keyboard: select a device or cable and press **Shift+F10** (or the Menu key) to open the same menu. **Esc** closes it.
+
 ### 2.6 Loading a Sample Topology
 
 Use **Load a sample** at the bottom of the sidebar (available in both modes) to start from a ready-made network. Hover a sample to see what to try.
