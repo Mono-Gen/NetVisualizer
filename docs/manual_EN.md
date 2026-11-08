@@ -113,6 +113,7 @@ Use **Load a sample** at the bottom of the sidebar (available in both modes) to 
 | 1. Basic LAN | Ping `10.0.0.2` from PC 1 and watch ARP, then ICMP |
 | 2. Two Networks via Router | Ping `192.168.2.10` from PC 1 and watch the gateway ARP |
 | 3. IGMP Snooping | Join `239.1.1.1` on Receiver 1, then send UDP to `239.1.1.1` from the Sender |
+| 4. Switch Loop (Broadcast Storm) | Ping `10.0.0.2` from PC 1 and watch the packet count explode; pause to see the MAC tables flip, then remove two of the three cables |
 
 > Loading replaces the current topology (a confirmation appears if the canvas is not empty).
 
@@ -121,6 +122,12 @@ Use **Load a sample** at the bottom of the sidebar (available in both modes) to 
 ## Chapter 3 — Sending Traffic (Simulation Mode)
 
 Press `▶ Simulate` and click the node you want to use as the source.
+
+### 3.0a Broadcast Storms
+
+If switches are connected in a loop (for example, two switches joined by more than one cable), a broadcast is copied around the loop again and again and the number of packets in flight grows explosively. A real network can be brought down this way.
+
+NetVisualizer lets this happen so you can see it. The **In flight** counter in the playback controls shows the packet count. To keep the app responsive, at most 300 packets can be in flight; the excess is discarded and a **Broadcast storm** warning appears. Pause to inspect the switches' MAC tables (the same MAC keeps moving between ports). To stop it, remove cables until the loop is gone (Design mode), or press **Clear all packets** in the warning.
 
 ### 3.0 Playback Controls (Pause / Step / Speed)
 

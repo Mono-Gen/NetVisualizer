@@ -2,6 +2,7 @@ import React from 'react';
 import { Play, Pause, SkipForward } from 'lucide-react';
 import { useNetworkStore } from '../../store/useNetworkStore';
 import { SIM_SPEEDS } from '../../logic/simClock';
+import { MAX_IN_FLIGHT_PACKETS } from '../../logic/simLimits';
 
 /**
  * シミュレーションの再生制御(一時停止・ステップ・速度)。SIMULATEモード専用。
@@ -56,6 +57,10 @@ export const PlaybackControls: React.FC = () => {
         <SkipForward size={16} />
         Step
       </button>
+
+      <span className="label-mono" style={{ fontSize: '12px', color: packets.length >= MAX_IN_FLIGHT_PACKETS ? '#f87171' : 'var(--text-dim)' }} title="Packets currently in flight (limit shown after the slash)">
+        In flight: {packets.length}/{MAX_IN_FLIGHT_PACKETS}
+      </span>
 
       <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-dim)' }}>
         Speed

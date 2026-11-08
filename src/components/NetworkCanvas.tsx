@@ -7,6 +7,7 @@ import { CanvasControls } from './canvas/CanvasControls';
 import { PlaybackControls } from './canvas/PlaybackControls';
 import { WelcomeGuide } from './canvas/WelcomeGuide';
 import { ContextMenu } from './canvas/ContextMenu';
+import { StormBanner } from './canvas/StormBanner';
 import { buildContextMenuItems, type ContextTarget } from '../logic/contextMenu';
 import { DND_NODE_TYPE, createNode } from '../logic/nodeFactory';
 import type { NodeType } from '../types/network';
@@ -241,6 +242,7 @@ export const NetworkCanvas: React.FC = () => {
       />
 
       {mode === 'SIMULATE' && <PlaybackControls />}
+      {mode === 'SIMULATE' && <StormBanner />}
 
       {nodes.length === 0 && mode === 'DESIGN' && <WelcomeGuide />}
 

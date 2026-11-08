@@ -10,6 +10,7 @@ import { DNSHandler } from '../logic/DNSHandler';
 import { generateId } from '../logic/networkUtils';
 import { isMulticastIP, multicastIPToMAC } from '../logic/MulticastEngine';
 import { isInSameSubnet } from '../logic/networkUtils';
+import { L2_TTL_DEFAULT } from '../logic/simLimits';
 
 /**
  * Central Network Engine to handle packet processing and state generation
@@ -83,7 +84,7 @@ export class NetworkEngine {
     if ((l2Result.action === 'forward' || l2Result.action === 'flood') && l2Result.forwardPorts) {
       if (l2Result.action === 'flood') update.addLogs?.push({ ...packet, status: 'sent', info: `L2 Flood: ${packet.protocol}` });
       
-      const currentL2Ttl = packet.l2ttl !== undefined ? packet.l2ttl : 20;
+      const currentL2Ttl = packet.l2ttl !== undefined ? packet.l2ttl : L2_TTL_DEFAULT;
       if (currentL2Ttl <= 0) {
         update.addLogs?.push({ ...packet, status: 'error', info: `L2 Loop Detected: Packet dropped by ${receiverNode.label} (L2 TTL expired)` });
       } else {

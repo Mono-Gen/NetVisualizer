@@ -116,4 +116,24 @@ const igmp: SampleTopology = {
   }
 };
 
-export const SAMPLE_TOPOLOGIES: SampleTopology[] = [basicLan, routed, igmp];
+const switchLoop: SampleTopology = {
+  id: 'switch-loop',
+  name: '4. Switch Loop (Broadcast Storm)',
+  description: 'Two switches joined by three cables. Ping 10.0.0.2 from PC 1: the ARP broadcast is copied around the loop and the packet count explodes. Pause to watch the MAC tables flip between ports, then remove two of the three cables.',
+  build: () => {
+    MAC_SEQ.reset();
+    const sw1 = makeNode('sw1', 'switch', 'Switch 1', 160, 200, makeSwitchPorts('sw1', 8));
+    const sw2 = makeNode('sw2', 'switch', 'Switch 2', 560, 200, makeSwitchPorts('sw2', 8));
+    const pc1 = makeNode('pc1', 'pc', 'PC 1', 160, 420, [makeIface('pc1', 0, '10.0.0.1', LAN)]);
+    const pc2 = makeNode('pc2', 'pc', 'PC 2', 560, 420, [makeIface('pc2', 0, '10.0.0.2', LAN)]);
+    return {
+      nodes: [sw1, sw2, pc1, pc2],
+      links: [
+        link('l1', sw1, 0, sw2, 0), link('l2', sw1, 1, sw2, 1), link('l3', sw1, 2, sw2, 2),
+        link('l4', pc1, 0, sw1, 3), link('l5', pc2, 0, sw2, 3)
+      ]
+    };
+  }
+};
+
+export const SAMPLE_TOPOLOGIES: SampleTopology[] = [basicLan, routed, igmp, switchLoop];

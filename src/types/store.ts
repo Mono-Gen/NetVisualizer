@@ -36,6 +36,10 @@ export type PacketSlice = {
   packets: NetPacket[];
   pendingPackets: NetPacket[];
   dnsPendingPings: Record<string, string[]>;
+  /** ブロードキャストストーム(パケット上限到達)の検知状態と、上限で破棄した累計数 */
+  stormActive: boolean;
+  stormDropped: number;
+  clearPackets: () => void;
   sendPacket: (packetData: Omit<NetPacket, 'id' | 'progress'>) => void;
   handlePacketArrival: (packet: NetPacket) => void;
   tick: () => void;

@@ -10,6 +10,8 @@ export const useNetworkStore = create<NetworkState>((set, get) => ({
   ...createLogSlice(set, get),
 
   clearCanvas: () => set({ 
+    stormActive: false,
+    stormDropped: 0,
     selectedLinkId: null,
     nodes: [], 
     links: [], 
@@ -26,6 +28,8 @@ export const useNetworkStore = create<NetworkState>((set, get) => ({
     packetLogs: [],
     pendingPackets: [],
     dnsPendingPings: {},
+    stormActive: false,
+    stormDropped: 0,
     selectedNodeId: null,
     simSourceId: null,
     selectedLinkId: null,

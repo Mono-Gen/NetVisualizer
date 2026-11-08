@@ -6,10 +6,26 @@ import { DHCPHandler } from '../../logic/DHCPHandler';
 import { findEgressInterface } from '../../logic/networkUtils';
 import { multicastIPToMAC } from '../../logic/MulticastEngine';
 import { progressUntilNextArrival } from '../../logic/simClock';
+import { appendWithCap, isStormCleared } from '../../logic/simLimits';
+
+/**
+ * 上限で破棄したパケットがあればストーム状態にする。
+ * 利用者への説明は常駐の警告バナー(StormBanner)が担う。ストーム中はログが大量に流れ、
+ * 1件のログは50件の表示枠からすぐ押し出されるため、ログでは伝えない。
+ */
+const stormUpdate = (state: any, dropped: number) => {
+  if (dropped === 0) return {};
+  return { stormActive: true, stormDropped: (state.stormDropped || 0) + dropped };
+};
 
 export const createPacketSlice = (set: any, get: any) => ({
   packets: [],
   pendingPackets: [],
+  stormActive: false,
+  stormDropped: 0,
+
+  // 飛行中のパケットを全て消す(ストームの停止用)
+  clearPackets: () => set({ packets: [], pendingPackets: [], stormActive: false, stormDropped: 0 }),
 
   sendPacket: (packetData: any) => {
     const { nodes, links } = get();
@@ -39,7 +55,11 @@ export const createPacketSlice = (set: any, get: any) => ({
     
     set((state: any) => {
       const updates: any = {};
-      if (result.addPackets) updates.packets = [...state.packets, ...result.addPackets];
+      if (result.addPackets) {
+        const capped = appendWithCap(state.packets, result.addPackets);
+        updates.packets = capped.packets;
+        Object.assign(updates, stormUpdate(state, capped.dropped));
+      }
       if (result.pendingPacketsUpdate?.add) updates.pendingPackets = [...state.pendingPackets, ...result.pendingPacketsUpdate.add];
       if (result.addLogs) {
         // Reverse to ensure the very latest sub-event is at the top
@@ -188,7 +208,9 @@ export const createPacketSlice = (set: any, get: any) => ({
       }
 
       if (update.addPackets) {
-        newState.packets = [...(newState.packets || state.packets), ...update.addPackets];
+        const capped = appendWithCap(newState.packets || state.packets, update.addPackets);
+        newState.packets = capped.packets;
+        Object.assign(newState, stormUpdate(state, capped.dropped));
       }
 
       if (update.removePacketIds) {
@@ -255,6 +277,8 @@ export const createPacketSlice = (set: any, get: any) => ({
     }).filter((p: any) => p !== null);
 
     set({ packets: updatedPackets });
+    // 飛行数が十分減ったらストーム警告を解除する
+    if (get().stormActive && isStormCleared(updatedPackets.length)) set({ stormActive: false, stormDropped: 0 });
     arrivedPackets.forEach(p => handlePacketArrival(p));
   },
 
