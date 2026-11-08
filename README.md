@@ -11,7 +11,10 @@
 - **Dynamic Linking**: Connect nodes with virtual Ethernet cables and manage multiple interfaces.
 - **Node Configuration**: Manually configure IP addresses, subnet masks, and default gateways, or use automated services.
 
+- **Sample Topologies**: Load ready-made networks (basic LAN, routed networks, IGMP Snooping) from the sidebar and start experimenting right away.
+
 ### 🔬 Real-time Protocol Simulation
+- **Playback Controls**: Pause, step to the next packet arrival, and slow down or speed up (0.25x–4x) to follow each protocol exchange.
 - **ICMP (Ping)**: Visualize reachability checks and observe ARP requests for next-hop resolution.
 - **L4 Messaging (TCP/UDP)**:
   - **TCP**: Experience the 3-way handshake (SYN, SYN-ACK, ACK) and connection lifecycle.

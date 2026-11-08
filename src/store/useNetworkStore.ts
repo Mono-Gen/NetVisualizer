@@ -17,6 +17,25 @@ export const useNetworkStore = create<NetworkState>((set, get) => ({
     pendingPackets: [] 
   }),
 
+  // トポロジーを丸ごと差し替える(サンプル読込用)。実行時の状態も全て初期化する。
+  loadTopology: (nodes, links) => set({
+    nodes,
+    links,
+    packets: [],
+    packetLogs: [],
+    pendingPackets: [],
+    dnsPendingPings: {},
+    selectedNodeId: null,
+    simSourceId: null,
+    linkingSourceId: null,
+    isLinkMode: false,
+    isDeleteMode: false,
+    isInspectMode: false,
+    isPaused: false,
+    pausedAt: null,
+    zoom: 1.0
+  }),
+
   clearTables: () => set((state) => ({
     nodes: state.nodes.map(n => ({ ...n, macTable: {}, arpTable: {}, dnsCache: {} })),
     packetLogs: [],

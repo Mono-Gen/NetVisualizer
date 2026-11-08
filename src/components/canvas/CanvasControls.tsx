@@ -9,6 +9,7 @@ interface CanvasControlsProps {
   linkingSourceId: string | null;
   zoom: number;
   setZoom: (zoom: number) => void;
+  isPaused: boolean;
 }
 
 export const CanvasControls: React.FC<CanvasControlsProps> = ({
@@ -19,6 +20,7 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
   linkingSourceId,
   zoom,
   setZoom,
+  isPaused,
 }) => {
   return (
     <>
@@ -49,6 +51,11 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
           'DESIGN MODE: ADD & ARRANGE COMPONENTS'
         ) : (
           isInspectMode ? 'INSPECT MODE: CLICK TO VIEW TABLES' : 'SIMULATION MODE: CLICK NODES TO START PACKETS'
+        )}
+        {mode === 'SIMULATE' && isPaused && (
+          <span style={{ marginLeft: '8px', padding: '2px 8px', borderRadius: '4px', background: 'rgba(251, 191, 36, 0.25)', color: '#fbbf24', border: '1px solid rgba(251, 191, 36, 0.5)' }}>
+            ⏸ PAUSED
+          </span>
         )}
       </div>
     </>

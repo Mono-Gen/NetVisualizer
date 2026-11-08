@@ -5,11 +5,12 @@ import { LinkRenderer } from './canvas/LinkRenderer';
 import { PacketRenderer } from './canvas/PacketRenderer';
 import { CanvasControls } from './canvas/CanvasControls';
 import { InterfaceSelector } from './canvas/InterfaceSelector';
+import { PlaybackControls } from './canvas/PlaybackControls';
 
 export const NetworkCanvas: React.FC = () => {
   const { 
     nodes, links, packets, mode, isLinkMode, isDeleteMode, linkingSourceId, 
-    selectedNodeId, simSourceId, zoom, isInspectMode,
+    selectedNodeId, simSourceId, zoom, isInspectMode, isPaused,
     updateNodePosition, setLinkingSourceId, setSelectedNodeId, setSimSourceId, 
     setZoom, addLink, sendPacket, removeNode, removeLink 
   } = useNetworkStore();
@@ -151,10 +152,13 @@ export const NetworkCanvas: React.FC = () => {
         isDeleteMode={isDeleteMode} 
         isLinkMode={isLinkMode} 
         isInspectMode={isInspectMode} 
-        linkingSourceId={linkingSourceId} 
-        zoom={zoom} 
-        setZoom={setZoom} 
+        linkingSourceId={linkingSourceId}
+        zoom={zoom}
+        setZoom={setZoom}
+        isPaused={isPaused}
       />
+
+      {mode === 'SIMULATE' && <PlaybackControls />}
 
       <div style={{ transform: `scale(${zoom})`, transformOrigin: '0 0', transition: 'transform 0.15s ease-out', width: '100%', height: '100%' }}>
         <svg style={{ position: 'absolute', inset: 0, width: '5000px', height: '5000px' }}>

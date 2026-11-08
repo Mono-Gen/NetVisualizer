@@ -37,9 +37,6 @@ export const processL2 = (
   const result: L2ProcessingResult = { action: 'process' };
   const ingressPortId = packet.toInterfaceId || '';
   
-  // Log arrival at L2
-  console.log(`L2 Arrival: ${currentNode.label} (ID: ${currentNode.id}) on port ${ingressPortId}`);
-
   // 1. MAC Learning (for Switch / L3Switch)
   if (['switch', 'l3switch'].includes(currentNode.type) && packet.senderMAC && ingressPortId) {
     const macTable = { ...(currentNode.macTable || {}) };
@@ -142,8 +139,10 @@ export const processL2 = (
 
       // If no receiver or mrouter port is registered, strictly drop (no flooding)
       if (egressPortIds.length === 0) {
-        return { 
-          action: 'drop', 
+        // ...result: このReport自体の学習結果(snooping table/MAC)を失わないために必須
+        return {
+          ...result,
+          action: 'drop',
           log: { status: 'dropped', info: `IGMP Snooping: Target ${packet.targetIP} is unregistered. Packet dropped on ${currentNode.label}.` } 
         };
       }
@@ -173,7 +172,7 @@ export const processL2 = (
     } else {
       // Targeted forwarding
       if (targetPortId === ingressPortId) {
-        return { action: 'drop', log: { status: 'error', info: 'Switch: Source and Target port are the same' } };
+        return { ...result, action: 'drop', log: { status: 'error', info: 'Switch: Source and Target port are the same' } };
       }
       return { ...result, action: 'forward', forwardPorts: [targetPortId] };
     }

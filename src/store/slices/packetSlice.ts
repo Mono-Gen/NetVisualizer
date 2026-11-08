@@ -4,6 +4,8 @@ import { TCPHandler } from '../../logic/TCPHandler';
 import { IGMPHandler } from '../../logic/IGMPHandler';
 import { DHCPHandler } from '../../logic/DHCPHandler';
 import { findEgressInterface } from '../../logic/networkUtils';
+import { multicastIPToMAC } from '../../logic/MulticastEngine';
+import { progressUntilNextArrival } from '../../logic/simClock';
 
 export const createPacketSlice = (set: any, get: any) => ({
   packets: [],
@@ -147,13 +149,14 @@ export const createPacketSlice = (set: any, get: any) => ({
       nodesWaiting.forEach((waitingNodeId: string) => {
         const waitingNode = nodes.find((n: NetNode) => n.id === waitingNodeId);
         if (waitingNode) {
-          // Trigger the ping to the CORRECT resolved IP
+          // Trigger the ping to the CORRECT resolved IP (送信元は宛先に応じた出口IFを選ぶ)
+          const egressIface = findEgressInterface(waitingNode, resolvedIP);
           sendPacket({
             from: waitingNodeId,
-            senderIP: waitingNode.interfaces[0].ip,
+            senderIP: egressIface.ip,
             targetIP: resolvedIP,
-            targetMAC: '', 
-            senderMAC: waitingNode.interfaces[0].mac,
+            targetMAC: '',
+            senderMAC: egressIface.mac,
             protocol: 'ICMP',
             type: 'echo-request',
             status: 'pending'
@@ -218,8 +221,46 @@ export const createPacketSlice = (set: any, get: any) => ({
     packets: state.packets.filter((p: NetPacket) => p.id !== id)
   })),
 
+  // 100msごとに呼ばれる。一時停止中は何も進めない。速度はパケット進行量に掛ける。
   tick: () => {
-    const { packets, pendingPackets, handlePacketArrival, nodes } = get();
+    const state = get();
+    if (state.isPaused) return;
+    state.advanceSimulation(0.1 * state.simSpeed);
+    get().runHousekeeping();
+  },
+
+  // 一時停止中のみ有効: 次にパケットが到着するところまで進める(定期処理は進めない)
+  stepSimulation: () => {
+    const state = get();
+    if (!state.isPaused) return;
+    const delta = progressUntilNextArrival(state.packets);
+    if (delta === null) return;
+    state.advanceSimulation(delta);
+  },
+
+  // パケットを delta(0〜1)だけ進め、到着したものを処理する
+  advanceSimulation: (delta: number) => {
+    const { packets, handlePacketArrival } = get();
+    if (packets.length === 0) return;
+
+    const arrivedPackets: NetPacket[] = [];
+    const updatedPackets = packets.map((packet: NetPacket) => {
+      const next = Math.min(1, packet.progress + delta);
+      // 浮動小数の誤差(0.9999999)で到着が1周期遅れないよう、微小な許容を設ける
+      if (next >= 1 - 1e-9) {
+        arrivedPackets.push(packet);
+        return null;
+      }
+      return { ...packet, progress: next };
+    }).filter((p: any) => p !== null);
+
+    set({ packets: updatedPackets });
+    arrivedPackets.forEach(p => handlePacketArrival(p));
+  },
+
+  // 壁時計基準の定期処理(ペンディングGC・エイジング・Querier送信・DHCPリース掃除)
+  runHousekeeping: () => {
+    const { pendingPackets } = get();
     const now = Date.now();
 
     // 1. GC Stale Pending Packets (timeout after 30 seconds)
@@ -230,24 +271,12 @@ export const createPacketSlice = (set: any, get: any) => ({
       }
     }
 
-    // 2. Packet progress updating
-    if (packets.length > 0) {
-      const arrivedPackets: NetPacket[] = [];
-      const updatedPackets = packets.map((packet: NetPacket) => {
-        if (packet.progress >= 1) {
-          arrivedPackets.push(packet);
-          return null;
-        }
-        return { ...packet, progress: packet.progress + 0.1 };
-      }).filter((p: any) => p !== null);
-
-      set({ packets: updatedPackets });
-      arrivedPackets.forEach(p => handlePacketArrival(p));
-    }
-
     // 3. IGMP Snooping & Querier Aging / Processing
+    // 到着処理(手順2)でノード状態が更新されているため、必ず最新の nodes を取り直す。
+    // 古いスナップショットで set すると、MAC/ARP学習結果を上書きして消してしまう。
+    const freshNodes: NetNode[] = get().nodes;
     let nodesUpdated = false;
-    const updatedNodes = nodes.map((n: NetNode) => {
+    const updatedNodes = freshNodes.map((n: NetNode) => {
       let nodeChanged = false;
       let updatedTable = n.igmpSnoopingTable ? { ...n.igmpSnoopingTable } : undefined;
       let updatedExpires = n.igmpSnoopingExpires ? { ...n.igmpSnoopingExpires } : undefined;
@@ -321,7 +350,7 @@ export const createPacketSlice = (set: any, get: any) => ({
       set({ nodes: updatedNodes });
     }
 
-    const currentNodes = nodesUpdated ? updatedNodes : nodes;
+    const currentNodes = nodesUpdated ? updatedNodes : freshNodes;
 
     // 4. IGMP Querier Periodic Query Transmission
     currentNodes.forEach((n: NetNode) => {
@@ -400,7 +429,7 @@ export const createPacketSlice = (set: any, get: any) => ({
       senderIP: iface.ip,
       targetIP: groupIP,
       senderMAC: iface.mac,
-      targetMAC: '01:00:5E:00:00:FB', // Generalized for pedagogical use
+      targetMAC: multicastIPToMAC(groupIP), // RFC 1112: グループIPから導出したマルチキャストMAC
       protocol: 'IGMP',
       type: 'membership-report',
       payload: { group: groupIP },

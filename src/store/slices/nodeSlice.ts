@@ -1,4 +1,5 @@
 import type { NetNode, NetLink } from '../../types/network';
+import { SIM_SPEEDS, shiftNodeTimers, shiftPendingTimestamps } from '../../logic/simClock';
 
 export const createNodeSlice = (set: any, get: any) => ({
   nodes: [],
@@ -11,6 +12,9 @@ export const createNodeSlice = (set: any, get: any) => ({
   isDeleteMode: false,
   isInspectMode: false,
   linkingSourceId: null,
+  isPaused: false,
+  simSpeed: 1,
+  pausedAt: null,
 
   addNode: (node: NetNode) => set((state: any) => ({ nodes: [...state.nodes, node] })),
   updateNode: (id: string, updates: Partial<NetNode>) => set((state: any) => ({
@@ -28,7 +32,24 @@ export const createNodeSlice = (set: any, get: any) => ({
     links: state.links.filter((l: NetLink) => l.id !== id)
   })),
   
-  setMode: (mode: any) => set({ mode, simSourceId: null, isInspectMode: false }),
+  // モードを切り替えたら一時停止も解除する。解除時は停止分の時間を期限へ加算する(setPausedと同じ補正)
+  setMode: (mode: any) => {
+    get().setPaused(false);
+    set({ mode, simSourceId: null, isInspectMode: false });
+  },
+  setPaused: (paused: boolean) => set((state: any) => {
+    if (paused === state.isPaused) return {};
+    if (paused) return { isPaused: true, pausedAt: Date.now() };
+    // 再開: 停止していた時間を、壁時計基準の期限・タイムスタンプへ加算する
+    const delta = state.pausedAt ? Date.now() - state.pausedAt : 0;
+    return {
+      isPaused: false,
+      pausedAt: null,
+      nodes: shiftNodeTimers(state.nodes, delta),
+      pendingPackets: shiftPendingTimestamps(state.pendingPackets, delta)
+    };
+  }),
+  setSimSpeed: (speed: number) => set({ simSpeed: SIM_SPEEDS.includes(speed as any) ? speed : 1 }),
   setZoom: (zoom: any) => set({ zoom: Math.max(0.1, Math.min(2, zoom)) }),
   setLinkMode: (enabled: any) => set({ isLinkMode: enabled, isDeleteMode: false, linkingSourceId: null }),
   setDeleteMode: (enabled: any) => set({ isDeleteMode: enabled, isLinkMode: false, linkingSourceId: null }),

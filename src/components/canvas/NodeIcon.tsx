@@ -1,5 +1,5 @@
 import React from 'react';
-import { Monitor, Router, Server, Network, HelpCircle, Layout, Database } from 'lucide-react';
+import { Monitor, Router, Server, Network, HelpCircle, Layout, Database, Waypoints } from 'lucide-react';
 import type { NodeType } from '../../types/network';
 
 interface NodeIconProps {
@@ -14,6 +14,7 @@ export const NodeIcon: React.FC<NodeIconProps> = ({ type, size = 32, color }) =>
     type === 'router' ? '#f87171' :
     type === 'server' ? '#4ade80' :
     type === 'switch' ? '#c084fc' :
+    type === 'l3switch' ? '#38bdf8' :
     type === 'hub' ? '#94a3b8' :
     type === 'dns' ? '#fbbf24' : 
     type === 'dhcp' ? '#ec4899' : '#ffffff'
@@ -24,6 +25,7 @@ export const NodeIcon: React.FC<NodeIconProps> = ({ type, size = 32, color }) =>
     case 'router': return <Router size={size} color={defaultColor} />;
     case 'server': return <Server size={size} color={defaultColor} />;
     case 'switch': return <Network size={size} color={defaultColor} />;
+    case 'l3switch': return <Waypoints size={size} color={defaultColor} />;
     case 'hub': return <Layout size={size} color={defaultColor} />;
     case 'dns': return <HelpCircle size={size} color={defaultColor} />;
     case 'dhcp': return <Database size={size} color={defaultColor} />;

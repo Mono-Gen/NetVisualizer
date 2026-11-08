@@ -11,7 +11,10 @@ export type NodeSlice = {
   isDeleteMode: boolean;
   isInspectMode: boolean;
   linkingSourceId: string | null;
-  
+  isPaused: boolean;
+  simSpeed: number;
+  pausedAt: number | null;
+
   addNode: (node: NetNode) => void;
   updateNode: (id: string, updates: Partial<NetNode>) => void;
   updateNodePosition: (id: string, x: number, y: number) => void;
@@ -27,6 +30,8 @@ export type NodeSlice = {
   setSelectedNodeId: (id: string | null) => void;
   setSimSourceId: (id: string | null) => void;
   setInspectMode: (enabled: boolean) => void;
+  setPaused: (paused: boolean) => void;
+  setSimSpeed: (speed: number) => void;
 };
 
 export type PacketSlice = {
@@ -36,6 +41,9 @@ export type PacketSlice = {
   sendPacket: (packetData: Omit<NetPacket, 'id' | 'progress'>) => void;
   handlePacketArrival: (packet: NetPacket) => void;
   tick: () => void;
+  stepSimulation: () => void;
+  advanceSimulation: (delta: number) => void;
+  runHousekeeping: () => void;
   applyEngineUpdate: (update: EngineUpdate) => void;
   removePacket: (id: string) => void;
   startTCPHandshake: (fromId: string, toIP: string, port: number) => void;
@@ -52,6 +60,7 @@ export type LogSlice = {
 
 export type NetworkState = NodeSlice & PacketSlice & LogSlice & {
   clearCanvas: () => void;
+  loadTopology: (nodes: NetNode[], links: NetLink[]) => void;
   clearTables: () => void;
   clearDnsCache: (nodeId: string) => void;
   clearNodeArpTable: (nodeId: string) => void;

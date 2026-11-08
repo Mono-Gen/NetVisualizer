@@ -5,7 +5,6 @@ import { NodeSettings } from './components/NodeSettings';
 import { useNetworkStore } from './store/useNetworkStore';
 
 function App() {
-  console.log('App Rendering...');
   const selectedNodeId = useNetworkStore(state => state.selectedNodeId);
   const tick = useNetworkStore(state => state.tick);
 

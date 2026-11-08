@@ -4,6 +4,7 @@ import { NodeIcon } from './canvas/NodeIcon';
 import type { NetNode, NodeType, NetInterface } from '../types/network';
 import { Plus, Play, Settings, Trash2, Link as LinkIcon, Activity } from 'lucide-react';
 import { SidebarCommandPanel } from './SidebarCommandPanel';
+import { SampleMenu } from './SampleMenu';
 
 export const Sidebar: React.FC = () => {
   const { 
@@ -16,6 +17,7 @@ export const Sidebar: React.FC = () => {
     { type: 'pc', label: 'PC' },
     { type: 'router', label: 'Router' },
     { type: 'switch', label: 'Switch' },
+    { type: 'l3switch', label: 'L3 Switch' },
     { type: 'server', label: 'Server' },
     { type: 'hub', label: 'Hub' },
     { type: 'dns', label: 'DNS Server' },
@@ -25,7 +27,7 @@ export const Sidebar: React.FC = () => {
   const handleAddNode = (type: NodeType, label: string) => {
     // Determine number of interfaces based on type
     let interfaceCount = 1;
-    if (type === 'switch' || type === 'hub') interfaceCount = 8;
+    if (type === 'switch' || type === 'hub' || type === 'l3switch') interfaceCount = 8;
     else if (type === 'router') interfaceCount = 4;
 
     const interfaces: NetInterface[] = Array.from({ length: interfaceCount }).map((_, i) => ({
@@ -216,6 +218,10 @@ export const Sidebar: React.FC = () => {
             </div>
           </>
         )}
+      </div>
+
+      <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px' }}>
+        <SampleMenu />
       </div>
 
       {mode === 'DESIGN' && (

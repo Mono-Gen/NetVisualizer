@@ -32,12 +32,10 @@ export class NetworkEngine {
 
     // 1. L2 Layer
     const l2Result = processL2(receiverNode, packet);
-    if (l2Result.action === 'drop') {
-      if (l2Result.log) update.addLogs?.push({ ...packet, status: 'error', info: l2Result.log.info });
-      return update;
-    }
 
     // Merge L2 Updates
+    // Why: MAC/IGMP学習は転送可否の判定より前に行われる処理。Dropでも学習結果は保存しないと、
+    // 転送先が無いIGMP Report(単一スイッチ構成)が永遠に登録されない。
     if (l2Result.updatedMacTable || l2Result.updatedArpTable || l2Result.updatedIgmpTable || 
         l2Result.updatedIgmpExpires || l2Result.updatedMrouterPortId !== undefined || 
         l2Result.updatedMrouterPortExpiresAt !== undefined || l2Result.updatedQuerierStandby !== undefined) {
@@ -49,6 +47,11 @@ export class NetworkEngine {
       if (l2Result.updatedMrouterPortId !== undefined) update.nodes![receiverNode.id].mrouterPortId = l2Result.updatedMrouterPortId || undefined;
       if (l2Result.updatedMrouterPortExpiresAt !== undefined) update.nodes![receiverNode.id].mrouterPortExpiresAt = l2Result.updatedMrouterPortExpiresAt || undefined;
       if (l2Result.updatedQuerierStandby !== undefined) update.nodes![receiverNode.id].igmpQuerierStandby = l2Result.updatedQuerierStandby;
+    }
+
+    if (l2Result.action === 'drop') {
+      if (l2Result.log) update.addLogs?.push({ ...packet, status: 'error', info: l2Result.log.info });
+      return update;
     }
 
     // Auto-learn MAC / ARP (Only if sender IP and MAC are valid)

@@ -96,11 +96,33 @@ Click a node to select it. A settings panel will open in the left pane.
   /24                      GW=192.168.1.1                /24
 ```
 
+### 2.6 Loading a Sample Topology
+
+Use **Load a sample** at the bottom of the sidebar (available in both modes) to start from a ready-made network. Hover a sample to see what to try.
+
+| Sample | What to try |
+|--------|-------------|
+| 1. Basic LAN | Ping `10.0.0.2` from PC 1 and watch ARP, then ICMP |
+| 2. Two Networks via Router | Ping `192.168.2.10` from PC 1 and watch the gateway ARP |
+| 3. IGMP Snooping | Join `239.1.1.1` on Receiver 1, then send UDP to `239.1.1.1` from the Sender |
+
+> Loading replaces the current topology (a confirmation appears if the canvas is not empty).
+
 ---
 
 ## Chapter 3 — Sending Traffic (Simulation Mode)
 
 Press `▶ Simulate` and click the node you want to use as the source.
+
+### 3.0 Playback Controls (Pause / Step / Speed)
+
+The controls at the bottom center of the canvas let you slow down and inspect packet flow.
+
+- **Pause / Resume**: freezes packet movement. Timers such as IGMP snooping aging and DHCP leases are also held while paused, so table entries do not expire.
+- **Step**: while paused, advances to the next packet arrival (for example ARP Request → ARP Reply → ICMP Echo Request).
+- **Speed**: 0.25x to 4x.
+
+Switching to Design Mode resumes the simulation automatically.
 
 ### 3.1 Ping (ICMP Echo Request / Reply)
 
