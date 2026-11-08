@@ -82,7 +82,7 @@ export const SidebarCommandPanel: React.FC<SidebarCommandPanelProps> = ({ node }
         {actionButton(avail.ping, () => resolveAndPing(node.id, targetIP), 'Ping', { width: '64px', flexShrink: 0, background: avail.ping.enabled ? 'var(--proto-icmp)' : undefined, color: avail.ping.enabled ? 'var(--on-proto)' : undefined })}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <label style={fieldLabel} htmlFor="cmd-port">{t('cmd.destPort')}</label>
+        <label style={{ ...fieldLabel, whiteSpace: 'nowrap', flexShrink: 0 }} htmlFor="cmd-port">{t('cmd.destPort')}</label>
         <input
           id="cmd-port"
           className="input"
@@ -92,9 +92,9 @@ export const SidebarCommandPanel: React.FC<SidebarCommandPanelProps> = ({ node }
           aria-invalid={portInvalid}
           value={targetPort}
           onChange={e => setTargetPort(e.target.value)}
-          style={{ ...inputStyle, padding: '6px', width: '80px', flexShrink: 0, borderColor: portInvalid ? 'var(--c-red)' : undefined }}
+          style={{ ...inputStyle, padding: '6px', width: '72px', flexShrink: 0, borderColor: portInvalid ? 'var(--c-red)' : undefined }}
         />
-        <span style={{ fontSize: '11px', color: 'var(--text-dim)' }}>{t('cmd.portHint')}</span>
+        <span style={{ fontSize: '11px', color: 'var(--text-dim)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }} title={t('cmd.portHint')}>{t('cmd.portHint')}</span>
       </div>
       {hintLine(destHint, portInvalid ? 'error' : 'dim')}
       {hintLine(ipv4Note)}

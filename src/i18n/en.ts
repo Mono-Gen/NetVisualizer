@@ -217,7 +217,7 @@ export const en = {
   "cmd.tcp.notConnected": "Nothing to close: not connected.",
   "cmd.tcp.hintStart": "Start with ① Connect (3-way handshake), then ② Send, then ③ Close.",
   "cmd.tcp.hintEstablished": "Connected. Send a message, or close with ③.",
-  "cmd.portHint": "Used by UDP and TCP",
+  "cmd.portHint": "for UDP / TCP",
   "cmd.udp.desc": "Sends right away, without connecting. It does not check that the data arrived.",
   "cmd.tcp.desc": "Connects first, then sends. It confirms that the data arrived.",
 };

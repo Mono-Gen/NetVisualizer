@@ -216,7 +216,7 @@ export const ja: Record<DictKey, string> = {
   "cmd.tcp.notConnected": "切断する接続がありません (未接続です)。",
   "cmd.tcp.hintStart": "「① 接続」(3ウェイハンドシェイク) から始め、② 送信、③ 切断の順に進めます。",
   "cmd.tcp.hintEstablished": "接続できました。メッセージを送るか、③ で切断します。",
-  "cmd.portHint": "UDP/TCPで使います",
+  "cmd.portHint": "UDP/TCP用",
   "cmd.udp.desc": "接続せず、すぐ送ります。届いたかどうかは確認しません。",
   "cmd.tcp.desc": "先に接続してから送ります。届いたことを確認します。",
 };
