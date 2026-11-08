@@ -4,6 +4,8 @@ export type NodeSlice = {
   nodes: NetNode[];
   links: NetLink[];
   zoom: number;
+  panX: number;
+  panY: number;
   mode: 'DESIGN' | 'SIMULATE';
   selectedNodeId: string | null;
   simSourceId: string | null;
@@ -24,6 +26,7 @@ export type NodeSlice = {
   
   setMode: (mode: 'DESIGN' | 'SIMULATE') => void;
   setZoom: (zoom: number) => void;
+  setView: (view: { x: number; y: number; zoom: number }) => void;
   setSelectedNodeId: (id: string | null) => void;
   setSimSourceId: (id: string | null) => void;
   setSelectedLinkId: (id: string | null) => void;

@@ -53,6 +53,20 @@ Use the three buttons at the bottom of the sidebar to choose **Auto** (follow yo
 
 Use the **日本語 / EN** buttons at the bottom of the sidebar to switch the screen language. The first time, the language follows your browser setting; after that, your choice is remembered on this device. Protocol names (ARP, ICMP, DHCP, …) are not translated.
 
+### 1.4 Moving Around the Canvas
+
+| To do this | Do this |
+|------------|---------|
+| **Move the view** | Drag an empty area of the canvas, or drag with the **middle mouse button**. A simple click on an empty area still deselects. |
+| Move up / down | Scroll the mouse wheel (or use two fingers on a trackpad) |
+| Move left / right | **Shift + wheel** |
+| **Zoom** (around the pointer) | **Ctrl + wheel** (or pinch on a trackpad) |
+| Zoom in / out (around the center) | The **+ / -** buttons at the bottom left |
+| Back to 100% | The **percentage** button |
+| **See all devices at once** | The **Fit** button |
+
+The grid in the background moves and scales with the view. Loading a sample or pressing Clear All returns the view to its starting position.
+
 ---
 
 ## Chapter 2 — Building a Network (Design Mode)

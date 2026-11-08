@@ -247,7 +247,8 @@ body {
   background-image: 
     linear-gradient(rgba(var(--ink),0.04) 1px, transparent 1px),
     linear-gradient(90deg, rgba(var(--ink),0.04) 1px, transparent 1px);
-  background-size: 40px 40px;
+  background-size: calc(40px * var(--view-zoom, 1)) calc(40px * var(--view-zoom, 1));
+  background-position: var(--view-x, 0px) var(--view-y, 0px);
   pointer-events: none;
 }
 

@@ -10,6 +10,9 @@ export const useNetworkStore = create<NetworkState>((set, get) => ({
   ...createLogSlice(set, get),
 
   clearCanvas: () => set({ 
+    zoom: 1.0,
+    panX: 0,
+    panY: 0,
     stormActive: false,
     stormDropped: 0,
     selectedLinkId: null,
@@ -36,7 +39,9 @@ export const useNetworkStore = create<NetworkState>((set, get) => ({
     isInspectMode: false,
     isPaused: false,
     pausedAt: null,
-    zoom: 1.0
+    zoom: 1.0,
+    panX: 0,
+    panY: 0
   }),
 
   clearTables: () => set((state) => ({

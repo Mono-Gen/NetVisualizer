@@ -8,6 +8,7 @@
 
 ### 📡 Visual Network Building
 - **Interactive Canvas**: Drag and drop network nodes (PCs, Servers, Switches, Routers, and Hubs).
+- **Pan, Zoom & Fit**: Drag the canvas to move, zoom around the pointer, and fit every device into view with one button.
 - **Dynamic Linking**: Connect nodes with virtual Ethernet cables and manage multiple interfaces.
 - **Multi-NIC PCs**: Up to 4 NICs per PC/server, with a documented sending-NIC rule (longest prefix, then Metric, then listed order) and Route lines in the log.
 - **Node Configuration**: Manually configure IP addresses, subnet masks, and default gateways, or use automated services.

@@ -12,6 +12,7 @@ import { msg } from '../i18n/msg';
 import type { Msg } from '../i18n/translate';
 import { StormBanner } from './canvas/StormBanner';
 import { ProtocolLegend } from './canvas/ProtocolLegend';
+import { canvasToScreen, fitView, panBy, screenToCanvas, wheelDeltaPx, zoomAt, type View } from '../logic/viewport';
 import { buildContextMenuItems, type ContextTarget } from '../logic/contextMenu';
 import { DND_NODE_TYPE, createNode } from '../logic/nodeFactory';
 import type { NodeType } from '../types/network';
@@ -20,14 +21,27 @@ import { PORT_SIZE, findNearestPort, getPortPosition, isPortUsed, validateConnec
 export const NetworkCanvas: React.FC = () => {
   const { 
     nodes, links, packets, mode, 
-    selectedNodeId, selectedLinkId, setSelectedLinkId, simSourceId, zoom, isInspectMode, isPaused,
+    selectedNodeId, selectedLinkId, setSelectedLinkId, simSourceId, zoom, panX, panY, isInspectMode, isPaused,
     updateNodePosition, addNode, addInterface, removeInterface, clearNodeArpTable, clearNodeMacTable, clearDnsCache, setSelectedNodeId, setSimSourceId, 
-    setZoom, addLink, sendPacket, removeNode, removeLink 
+    setView, addLink, sendPacket, removeNode, removeLink 
   } = useNetworkStore();
 
   const t = useT();
   const tMsg = useTMsg();
   const containerRef = useRef<HTMLDivElement>(null);
+  const sceneRef = useRef<HTMLDivElement>(null);
+  const [isPanning, setIsPanning] = useState(false);
+
+  // 現在の表示。イベントハンドラ(ホイール・ドラッグ)から最新値を読むために ref にも持つ
+  const view: View = { x: panX, y: panY, zoom };
+  const viewRef = useRef<View>(view);
+  viewRef.current = view;
+
+  /** クライアント座標 → コンテナ内の画面座標 */
+  const toScreenPoint = (clientX: number, clientY: number) => {
+    const rect = containerRef.current!.getBoundingClientRect();
+    return { x: clientX - rect.left, y: clientY - rect.top };
+  };
 
   // サイドバーからのドロップでノードを追加する(DESIGNモードのみ)。
   // 画面座標 → キャンバス座標: コンテナ左上を引き、ズームで割る(ノード中心がカーソルに来るよう半分戻す)
@@ -35,10 +49,9 @@ export const NetworkCanvas: React.FC = () => {
     const type = e.dataTransfer.getData(DND_NODE_TYPE) as NodeType;
     if (!type || mode !== 'DESIGN') return;
     e.preventDefault();
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = Math.max(0, (e.clientX - rect.left) / zoom - 32);
-    const y = Math.max(0, (e.clientY - rect.top) / zoom - 32);
-    addNode(createNode(type, nodes, { x, y }));
+    // 表示の移動・拡大を考慮して、キャンバス座標へ。ノードの中心がカーソルに来るよう半分戻す
+    const p = screenToCanvas(viewRef.current, toScreenPoint(e.clientX, e.clientY));
+    addNode(createNode(type, nodes, { x: p.x - 32, y: p.y - 32 }));
   };
   const [simTargetId, setSimTargetId] = useState<string | null>(null);
   // ポートからのドラッグ配線: 配線元と現在のポインタ位置(キャンバス座標)
@@ -49,10 +62,8 @@ export const NetworkCanvas: React.FC = () => {
   const closeMenu = useCallback(() => setMenu(null), []);
 
   // 画面座標 → キャンバス座標(ズーム補正)
-  const toCanvasPoint = (clientX: number, clientY: number) => {
-    const rect = containerRef.current!.getBoundingClientRect();
-    return { x: (clientX - rect.left) / zoom, y: (clientY - rect.top) / zoom };
-  };
+  const toCanvasPoint = (clientX: number, clientY: number) =>
+    screenToCanvas(viewRef.current, toScreenPoint(clientX, clientY));
 
   const openMenu = (target: ContextTarget, clientX: number, clientY: number) => {
     const rect = containerRef.current!.getBoundingClientRect();
@@ -92,14 +103,11 @@ export const NetworkCanvas: React.FC = () => {
   useEffect(() => {
     if (!wiring) return;
     const source = wiring.source;
-    const toCanvas = (e: PointerEvent) => {
-      const rect = containerRef.current!.getBoundingClientRect();
-      return { x: (e.clientX - rect.left) / zoom, y: (e.clientY - rect.top) / zoom };
-    };
+    const toCanvas = (e: PointerEvent) => toCanvasPoint(e.clientX, e.clientY);
     const onMove = (e: PointerEvent) => setWiring(w => (w ? { ...w, ...toCanvas(e) } : w));
     const onUp = (e: PointerEvent) => {
       // 画面上で一定の許容(約16px)を持たせる。ズームアウト時でも狙いやすくする
-      const target = findNearestPort(nodes, toCanvas(e), Math.max(PORT_SIZE / 2 + 2, 16 / zoom));
+      const target = findNearestPort(nodes, toCanvas(e), Math.max(PORT_SIZE / 2 + 2, 16 / viewRef.current.zoom));
       if (target) {
         const check = validateConnection(nodes, links, source, target);
         if (check.ok) {
@@ -129,19 +137,70 @@ export const NetworkCanvas: React.FC = () => {
     return () => clearTimeout(timer);
   }, [wireMessage]);
 
-  // Mouse wheel zoom
+  // ホイール: Ctrl(またはトラックパッドのピンチ)=カーソル中心の拡大縮小 / それ以外=移動(Shiftで横)
   useEffect(() => {
-    const handleWheel = (e: WheelEvent) => {
+    const container = containerRef.current;
+    if (!container) return;
+    const onWheel = (e: WheelEvent) => {
+      if ((e.target as Element).closest?.('[role="menu"]')) return; // メニュー自身のスクロールは邪魔しない
+      e.preventDefault();
+      const rect = container.getBoundingClientRect();
+      const v = viewRef.current;
       if (e.ctrlKey || e.metaKey) {
-        e.preventDefault();
-        const delta = e.deltaY > 0 ? -0.1 : 0.1;
-        setZoom(zoom + delta);
+        const factor = Math.exp(-wheelDeltaPx(e.deltaY, e.deltaMode, rect.height) * 0.0015);
+        setView(zoomAt(v, v.zoom * factor, { x: e.clientX - rect.left, y: e.clientY - rect.top }));
+      } else {
+        let dx = wheelDeltaPx(e.deltaX, e.deltaMode, rect.width);
+        let dy = wheelDeltaPx(e.deltaY, e.deltaMode, rect.height);
+        if (e.shiftKey) { dx = dx || dy; dy = 0; } // Shift+ホイールは横移動
+        setView(panBy(v, -dx, -dy));
       }
     };
-    const container = containerRef.current;
-    if (container) container.addEventListener('wheel', handleWheel, { passive: false });
-    return () => container?.removeEventListener('wheel', handleWheel);
-  }, [zoom, setZoom]);
+    container.addEventListener('wheel', onWheel, { passive: false });
+    return () => container.removeEventListener('wheel', onWheel);
+  }, [setView]);
+
+  // 空白のドラッグ(左ボタン)またはホイールボタンのドラッグで、表示を動かす。
+  // 動かさずに離した左クリックは、従来どおり「選択解除」として扱う。
+  const startPan = (e: React.PointerEvent) => {
+    const start = { x: e.clientX, y: e.clientY, view: viewRef.current, moved: false, button: e.button };
+    const onMove = (ev: PointerEvent) => {
+      const dx = ev.clientX - start.x, dy = ev.clientY - start.y;
+      if (!start.moved && Math.hypot(dx, dy) < 4) return; // 少しの手ぶれはクリック扱い
+      start.moved = true;
+      setIsPanning(true);
+      setView({ ...start.view, x: start.view.x + dx, y: start.view.y + dy });
+    };
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      setIsPanning(false);
+      if (!start.moved && start.button === 0) {
+        setSelectedNodeId(null);
+        setSelectedLinkId(null);
+        setSimSourceId(null);
+      }
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  };
+
+  // 拡大縮小ボタン・全体表示。ボタンの拡大縮小は画面中央を中心にする
+  const containerSize = () => ({ width: containerRef.current?.clientWidth ?? 0, height: containerRef.current?.clientHeight ?? 0 });
+  const zoomFromCenter = (newZoom: number) => {
+    const { width, height } = containerSize();
+    setView(zoomAt(viewRef.current, newZoom, { x: width / 2, y: height / 2 }));
+  };
+  const handleFit = () => setView(fitView(nodes, containerSize()));
+
+  // 方眼の背景を、表示の移動・拡大に合わせて動かす(CSS変数)
+  useEffect(() => {
+    const host = containerRef.current?.parentElement;
+    if (!host) return;
+    host.style.setProperty('--view-x', `${panX}px`);
+    host.style.setProperty('--view-y', `${panY}px`);
+    host.style.setProperty('--view-zoom', String(zoom));
+  }, [panX, panY, zoom]);
 
   // Keyboard Shortcuts (Delete Node)
   useEffect(() => {
@@ -187,11 +246,12 @@ export const NetworkCanvas: React.FC = () => {
       }
       if (!point || !target) return;
       e.preventDefault();
-      setMenu({ x: point.x * zoom, y: point.y * zoom, target });
+      const s = canvasToScreen(viewRef.current, point);
+      setMenu({ x: s.x, y: s.y, target });
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [mode, nodes, links, selectedNodeId, selectedLinkId, zoom]);
+  }, [mode, nodes, links, selectedNodeId, selectedLinkId, zoom, panX, panY]);
 
   const handleNodeClick = (id: string) => {
     const node = nodes.find(n => n.id === id);
@@ -231,19 +291,21 @@ export const NetworkCanvas: React.FC = () => {
       onDrop={handleDrop}
       onContextMenu={handleCanvasContextMenu}
       onPointerDown={(e) => {
-        if (e.target === e.currentTarget) {
-          setSelectedNodeId(null);
-          setSelectedLinkId(null);
-          setSimSourceId(null);
-        }
+        // 空白(コンテナ自身、または機器・線を載せる土台)の左ボタン、または、ホイールボタンで、移動を始める
+        const blank = e.target === e.currentTarget || e.target === sceneRef.current;
+        if ((blank && e.button === 0) || e.button === 1) startPan(e);
       }}
-      style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}
+      onMouseDown={(e) => { if (e.button === 1) e.preventDefault(); }} // ホイールボタンの自動スクロールを防ぐ
+      style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', cursor: isPanning ? 'grabbing' : 'default', userSelect: 'none' }}
     >
       <CanvasControls 
         mode={mode} 
         isInspectMode={isInspectMode}
         zoom={zoom}
-        setZoom={setZoom}
+        onZoomIn={() => zoomFromCenter(viewRef.current.zoom + 0.1)}
+        onZoomOut={() => zoomFromCenter(viewRef.current.zoom - 0.1)}
+        onZoomReset={() => zoomFromCenter(1)}
+        onFit={handleFit}
         isPaused={isPaused}
       />
 
@@ -281,9 +343,9 @@ export const NetworkCanvas: React.FC = () => {
         </div>
       )}
 
-      <div style={{ transform: `scale(${zoom})`, transformOrigin: '0 0', transition: 'transform 0.15s ease-out', width: '100%', height: '100%' }}>
+      <div ref={sceneRef} style={{ transform: `translate(${panX}px, ${panY}px) scale(${zoom})`, transformOrigin: '0 0', width: '100%', height: '100%' }}>
         {/* svg自体はクリックを素通りさせ、リンクの当たり判定だけを個別に有効にする(空白クリックで選択解除できるように) */}
-        <svg style={{ position: 'absolute', inset: 0, width: '5000px', height: '5000px', pointerEvents: 'none' }}>
+        <svg style={{ position: 'absolute', inset: 0, width: '5000px', height: '5000px', pointerEvents: 'none', overflow: 'visible' }}>
           {links.map(link => (
             <LinkRenderer key={link.id} link={link} nodes={nodes} isSelected={link.id === selectedLinkId} canSelect={canSelectLinks} onSelect={setSelectedLinkId} onContextMenu={(id, x, y) => openMenu({ kind: 'link', linkId: id }, x, y)} onRemove={removeLink} />
           ))}
@@ -316,7 +378,7 @@ export const NetworkCanvas: React.FC = () => {
         ))}
 
         {/* ノードより上の透明な層: パケットとポート名。ノードやポートの円に隠れないようにする */}
-        <svg style={{ position: 'absolute', inset: 0, width: '5000px', height: '5000px', pointerEvents: 'none', zIndex: 60 }}>
+        <svg style={{ position: 'absolute', inset: 0, width: '5000px', height: '5000px', pointerEvents: 'none', zIndex: 60, overflow: 'visible' }}>
           {links.map(link => (
             <LinkPortLabels key={link.id} link={link} nodes={nodes} />
           ))}

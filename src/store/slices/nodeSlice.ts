@@ -1,11 +1,14 @@
 import type { NetNode, NetLink } from '../../types/network';
 import { PORT_LIMITS, createInterface, collectMacs } from '../../logic/interfaceFactory';
+import { clampZoom } from '../../logic/viewport';
 import { SIM_SPEEDS, shiftNodeTimers, shiftPendingTimestamps } from '../../logic/simClock';
 
 export const createNodeSlice = (set: any, get: any) => ({
   nodes: [],
   links: [],
   zoom: 1.0,
+  panX: 0,
+  panY: 0,
   mode: 'DESIGN',
   selectedNodeId: null,
   simSourceId: null,
@@ -87,7 +90,9 @@ export const createNodeSlice = (set: any, get: any) => ({
     };
   }),
   setSimSpeed: (speed: number) => set({ simSpeed: SIM_SPEEDS.includes(speed as any) ? speed : 1 }),
-  setZoom: (zoom: any) => set({ zoom: Math.max(0.1, Math.min(2, zoom)) }),
+  setZoom: (zoom: any) => set({ zoom: clampZoom(zoom) }),
+  // 表示(平行移動と拡大率)をまとめて更新する
+  setView: (view: { x: number; y: number; zoom: number }) => set({ panX: view.x, panY: view.y, zoom: clampZoom(view.zoom) }),
   // ノードとリンクは同時に選択しない(設定パネルと削除対象が食い違うのを防ぐ)
   setSelectedNodeId: (id: any) => set((state: any) => ({ selectedNodeId: id, selectedLinkId: id ? null : state.selectedLinkId })),
   setSelectedLinkId: (id: any) => set((state: any) => ({ selectedLinkId: id, selectedNodeId: id ? null : state.selectedNodeId })),

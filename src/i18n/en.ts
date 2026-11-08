@@ -231,6 +231,11 @@ export const en = {
   "cmd.viaNicHint": "Used by DHCP, mDNS and multicast. Ping, UDP and TCP choose the NIC from the destination.",
   "sample.multi-nic.name": "5. PC with Two NICs",
   "sample.multi-nic.desc": "PC 1 has two NICs on two different networks. Ping 192.168.1.20 and 192.168.2.20 and watch which NIC each packet leaves from (see the Route lines in the log). Then give both NICs the same network and change the Metric.",
+  "view.zoomIn": "Zoom in",
+  "view.zoomOut": "Zoom out",
+  "view.zoomReset": "Reset zoom to 100%",
+  "view.fit": "Fit",
+  "view.fitTitle": "Fit all devices in view",
 };
 
 export type DictKey = keyof typeof en;

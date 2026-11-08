@@ -1,12 +1,15 @@
 import React from 'react';
-import { ZoomIn, ZoomOut, Maximize } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize, Scan } from 'lucide-react';
 import { useT } from '../../i18n/useT';
 
 interface CanvasControlsProps {
   mode: 'DESIGN' | 'SIMULATE';
   isInspectMode: boolean;
   zoom: number;
-  setZoom: (zoom: number) => void;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
+  onZoomReset: () => void;
+  onFit: () => void;
   isPaused: boolean;
 }
 
@@ -14,22 +17,29 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
   mode,
   isInspectMode,
   zoom,
-  setZoom,
+  onZoomIn,
+  onZoomOut,
+  onZoomReset,
+  onFit,
   isPaused,
 }) => {
   const t = useT();
   return (
     <>
       <div style={{ position: 'absolute', bottom: '20px', left: '20px', display: 'flex', gap: '8px', zIndex: 100 }}>
-        <button onClick={(e) => { e.stopPropagation(); setZoom(zoom + 0.1); }} className="btn btn-glass btn-small" style={{ borderRadius: '8px', padding: '8px' }}>
+        <button onClick={(e) => { e.stopPropagation(); onZoomIn(); }} className="btn btn-glass btn-small" style={{ borderRadius: '8px', padding: '8px' }} title={t('view.zoomIn')} aria-label={t('view.zoomIn')}>
           <ZoomIn size={18} />
         </button>
-        <button onClick={(e) => { e.stopPropagation(); setZoom(zoom - 0.1); }} className="btn btn-glass btn-small" style={{ borderRadius: '8px', padding: '8px' }}>
+        <button onClick={(e) => { e.stopPropagation(); onZoomOut(); }} className="btn btn-glass btn-small" style={{ borderRadius: '8px', padding: '8px' }} title={t('view.zoomOut')} aria-label={t('view.zoomOut')}>
           <ZoomOut size={18} />
         </button>
-        <button onClick={(e) => { e.stopPropagation(); setZoom(1.0); }} className="btn btn-glass btn-small" style={{ borderRadius: '8px', padding: '8px' }}>
+        <button onClick={(e) => { e.stopPropagation(); onZoomReset(); }} className="btn btn-glass btn-small" style={{ borderRadius: '8px', padding: '8px' }} title={t('view.zoomReset')} aria-label={t('view.zoomReset')}>
           <Maximize size={18} />
           <span style={{ fontSize: '11px', marginLeft: '4px' }}>{Math.round(zoom * 100)}%</span>
+        </button>
+        <button onClick={(e) => { e.stopPropagation(); onFit(); }} className="btn btn-glass btn-small" style={{ borderRadius: '8px', padding: '8px', gap: '6px' }} title={t('view.fitTitle')} aria-label={t('view.fitTitle')}>
+          <Scan size={18} />
+          <span style={{ fontSize: '11px' }}>{t('view.fit')}</span>
         </button>
       </div>
 

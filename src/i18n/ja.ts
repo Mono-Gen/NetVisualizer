@@ -230,4 +230,9 @@ export const ja: Record<DictKey, string> = {
   "cmd.viaNicHint": "DHCP・mDNS・マルチキャストに使います。Ping・UDP・TCPは、宛先から自動でNICが決まります。",
   "sample.multi-nic.name": "5. NICが2つのPC",
   "sample.multi-nic.desc": "PC 1 は2つのNICで、別々のネットワークにつながっています。192.168.1.20 と 192.168.2.20 に ping して、パケットがどちらのNICから出るかを観察します (ログの「経路」の行)。そのあと、2つのNICを同じネットワークにして、メトリックを変えてみます。",
+  "view.zoomIn": "拡大",
+  "view.zoomOut": "縮小",
+  "view.zoomReset": "拡大率を100%に戻す",
+  "view.fit": "全体表示",
+  "view.fitTitle": "すべての機器が見えるように表示する",
 };
