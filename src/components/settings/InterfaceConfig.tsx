@@ -3,6 +3,8 @@ import type { NetNode, NetInterface } from '../../types/network';
 import { useNetworkStore } from '../../store/useNetworkStore';
 import { PORT_LIMITS, canChangePortCount } from '../../logic/interfaceFactory';
 import { DEFAULT_METRIC } from '../../logic/networkUtils';
+import { interfaceIssues, type IfaceIssues } from '../../logic/ipValidation';
+import type { DictKey } from '../../i18n/en';
 import { useT } from '../../i18n/useT';
 
 interface InterfaceConfigProps {
@@ -11,9 +13,28 @@ interface InterfaceConfigProps {
   onUpdate: (id: string, updates: Partial<NetNode>) => void;
 }
 
+const ISSUE_FIELD_LABEL: Record<keyof IfaceIssues, DictKey> = { ip: 'iface.ip', subnet: 'iface.subnet', gateway: 'iface.gateway', dns: 'iface.dns' };
+
+/** 入力の問題を、「どの欄が・何が悪く・どうすればよいか」の文で一覧にする。赤だけに頼らず、記号と文字で示す */
+const IssueList: React.FC<{ issues: IfaceIssues; t: (key: DictKey) => string }> = ({ issues, t }) => {
+  const rows = (Object.keys(issues) as (keyof IfaceIssues)[]).filter(k => issues[k]);
+  if (rows.length === 0) return null;
+  return (
+    <ul role="status" style={{ listStyle: 'none', margin: '6px 0 0', padding: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+      {rows.map(k => (
+        <li key={k} style={{ fontSize: '11px', lineHeight: 1.4, color: 'var(--c-red)' }}>
+          ⚠ <strong>{t(ISSUE_FIELD_LABEL[k])}</strong>: {t(issues[k] as DictKey)}
+        </li>
+      ))}
+    </ul>
+  );
+};
+
 export const InterfaceConfig: React.FC<InterfaceConfigProps> = ({ node, mode, onUpdate }) => {
   const t = useT();
-  const { links, addInterface, removeInterface } = useNetworkStore();
+  const { nodes, links, addInterface, removeInterface } = useNetworkStore();
+  // 入力の間違いを指摘する(入力は止めない)。重複IPの判定のため、全機器を渡す
+  const issueOf = (iface: NetInterface) => interfaceIssues(iface, nodes);
   const canHaveMultipleInterfaces = canChangePortCount(node.type);
   const limits = PORT_LIMITS[node.type];
   const isL3Node = ['pc', 'router', 'server', 'dns', 'l3switch'].includes(node.type);
@@ -89,7 +110,8 @@ export const InterfaceConfig: React.FC<InterfaceConfigProps> = ({ node, mode, on
                     <label className="form-label" style={{ fontSize: '11px' }}>{t('iface.ip')}</label>
                     <input 
                       className="input" 
-                      style={{ fontSize: '11px', padding: '6px' }}
+                      style={{ fontSize: '11px', padding: '6px', borderColor: issueOf(iface).ip ? 'var(--c-red)' : undefined }}
+                      aria-invalid={!!issueOf(iface).ip}
                       value={iface.ip} 
                       onChange={(e) => handleInterfaceChange(iface.id, { ip: e.target.value })}
                       disabled={mode === 'SIMULATE'}
@@ -99,7 +121,8 @@ export const InterfaceConfig: React.FC<InterfaceConfigProps> = ({ node, mode, on
                     <label className="form-label" style={{ fontSize: '11px' }}>{t('iface.subnet')}</label>
                     <input 
                       className="input" 
-                      style={{ fontSize: '11px', padding: '6px' }}
+                      style={{ fontSize: '11px', padding: '6px', borderColor: issueOf(iface).subnet ? 'var(--c-red)' : undefined }}
+                      aria-invalid={!!issueOf(iface).subnet}
                       value={iface.subnet} 
                       onChange={(e) => handleInterfaceChange(iface.id, { subnet: e.target.value })}
                       disabled={mode === 'SIMULATE'}
@@ -112,7 +135,8 @@ export const InterfaceConfig: React.FC<InterfaceConfigProps> = ({ node, mode, on
                     <label className="form-label" style={{ fontSize: '11px' }}>{t('iface.gateway')}</label>
                     <input 
                       className="input" 
-                      style={{ fontSize: '11px', padding: '6px' }}
+                      style={{ fontSize: '11px', padding: '6px', borderColor: issueOf(iface).gateway ? 'var(--c-red)' : undefined }}
+                      aria-invalid={!!issueOf(iface).gateway}
                       value={iface.gateway || ''} 
                       onChange={(e) => handleInterfaceChange(iface.id, { gateway: e.target.value })}
                       disabled={mode === 'SIMULATE'}
@@ -122,13 +146,16 @@ export const InterfaceConfig: React.FC<InterfaceConfigProps> = ({ node, mode, on
                     <label className="form-label" style={{ fontSize: '11px' }}>{t('iface.dns')}</label>
                     <input 
                       className="input" 
-                      style={{ fontSize: '11px', padding: '6px' }}
+                      style={{ fontSize: '11px', padding: '6px', borderColor: issueOf(iface).dns ? 'var(--c-red)' : undefined }}
+                      aria-invalid={!!issueOf(iface).dns}
                       value={iface.dns || ''} 
                       onChange={(e) => handleInterfaceChange(iface.id, { dns: e.target.value })}
                       disabled={mode === 'SIMULATE'}
                     />
                   </div>
                 </div>
+
+                <IssueList issues={issueOf(iface)} t={t} />
 
                 {isMultiNic && (
                   <div className="form-group" style={{ marginTop: '4px' }}>

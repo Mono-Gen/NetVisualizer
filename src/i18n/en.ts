@@ -232,6 +232,12 @@ export const en = {
   "view.zoomReset": "Reset zoom to 100%",
   "view.fit": "Fit",
   "view.fitTitle": "Fit all devices in view",
+  "ip.invalid": "Not a valid IPv4 address. Use four numbers from 0 to 255, like 192.168.1.10.",
+  "mask.invalid": "Not a valid subnet mask. Use a mask like 255.255.255.0.",
+  "ip.duplicate": "Another interface already uses this IP address, so they will conflict. Change one of them.",
+  "ip.reserved": "This is the network or broadcast address of its subnet, so a device cannot use it. Pick another address.",
+  "gw.outside": "The gateway must be in the same network as this IP address and mask. Otherwise the device cannot reach it.",
+  "gw.self": "The gateway is this interface's own address. Enter the router's address instead.",
 };
 
 export type DictKey = keyof typeof en;
