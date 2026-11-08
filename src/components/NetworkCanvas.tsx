@@ -6,6 +6,7 @@ import { PacketRenderer } from './canvas/PacketRenderer';
 import { CanvasControls } from './canvas/CanvasControls';
 import { InterfaceSelector } from './canvas/InterfaceSelector';
 import { PlaybackControls } from './canvas/PlaybackControls';
+import { WelcomeGuide } from './canvas/WelcomeGuide';
 import { DND_NODE_TYPE, createNode } from '../logic/nodeFactory';
 import type { NodeType } from '../types/network';
 import { PORT_SIZE, findNearestPort, getPortPosition, isPortUsed, validateConnection, type PortRef } from '../logic/portLayout';
@@ -240,6 +241,8 @@ export const NetworkCanvas: React.FC = () => {
       />
 
       {mode === 'SIMULATE' && <PlaybackControls />}
+
+      {nodes.length === 0 && mode === 'DESIGN' && <WelcomeGuide />}
 
       {wireMessage && (
         <div role="status" style={{ position: 'absolute', top: '84px', left: '50%', transform: 'translateX(-50%)', zIndex: 120, maxWidth: '80%', padding: '10px 16px', borderRadius: '8px', fontSize: '12px', fontWeight: 600, color: '#fecaca', background: 'rgba(127, 29, 29, 0.9)', border: '1px solid rgba(248, 113, 113, 0.6)' }}>
