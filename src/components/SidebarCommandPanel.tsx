@@ -20,12 +20,32 @@ const fieldLabel: React.CSSProperties = { fontSize: '11px', color: 'var(--text-d
 const inputStyle: React.CSSProperties = { fontSize: '11px', padding: '6px 10px', height: '28px' };
 const divider: React.CSSProperties = { height: '1px', background: 'rgba(var(--ink), 0.12)', margin: '4px 0' };
 
+const SERVICES_OPEN_KEY = 'netvisualizer.servicesOpen';
+// 縦がこの高さ以上なら、スクロールなしで全部が収まるので、初期状態で展開する
+const TALL_WINDOW_PX = 820;
+
+const initialServicesOpen = (): boolean => {
+  try {
+    const saved = localStorage.getItem(SERVICES_OPEN_KEY);
+    if (saved === '1' || saved === '0') return saved === '1';
+  } catch { /* 読めない環境では高さで決める */ }
+  return window.innerHeight >= TALL_WINDOW_PX;
+};
+
 export const SidebarCommandPanel: React.FC<SidebarCommandPanelProps> = ({ node }) => {
   const t = useT();
   const { resolveAndPing, sendUDPMessage, startTCPHandshake, sendTCPData, closeTCPConnection, requestDHCP, sendmDNSQuery, joinMulticastGroup, leaveMulticastGroup } = useNetworkStore();
   const [targetIP, setTargetIP] = useState('');
   const [targetPort, setTargetPort] = useState('80');
   const [message, setMessage] = useState('Hello, Server!');
+  const [servicesOpen, setServicesOpen] = useState(initialServicesOpen);
+
+  // 利用者が開閉したときだけ保存する(初期状態は保存しない。画面の高さが変わったときに再判定できるように)
+  const toggleServices = () => {
+    const next = !servicesOpen;
+    setServicesOpen(next);
+    try { localStorage.setItem(SERVICES_OPEN_KEY, next ? '1' : '0'); } catch { /* 保存できなくても動作する */ }
+  };
 
   const port = parsePort(targetPort);
   const phase = tcpPhaseOf(node, targetIP, port);
@@ -134,8 +154,11 @@ export const SidebarCommandPanel: React.FC<SidebarCommandPanelProps> = ({ node }
       <div style={divider} />
 
       {/* Network Services / Multicast */}
-      <details>
-        <summary style={{ ...sectionTitle, cursor: 'pointer', listStyle: 'none' }}>
+      <details open={servicesOpen}>
+        <summary
+          style={{ ...sectionTitle, cursor: 'pointer', listStyle: 'none' }}
+          onClick={(e) => { e.preventDefault(); toggleServices(); }}
+        >
           <Search size={12} /> {t('cmd.services')}
         </summary>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '8px' }}>
