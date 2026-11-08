@@ -362,63 +362,6 @@ body {
 .animate-slide-up {
   animation: slideUp 0.4s ease-out;
 }
-/* Node Table Overlays */
-.node-table-overlay {
-  position: absolute;
-  left: 110%;
-  top: 0;
-  min-width: 220px; /* Increased for full MAC */
-  background: rgba(var(--panel-rgb), 0.95);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(59, 130, 246, 0.4);
-  border-radius: 12px;
-  padding: 10px;
-  pointer-events: none;
-  z-index: 20;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-  animation: slideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.node-table-section {
-  margin-bottom: 12px;
-}
-
-.node-table-section:last-child {
-  margin-bottom: 0;
-}
-
-.node-table-header {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  font-weight: 700;
-  color: rgba(var(--ink), 0.4);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  padding-bottom: 4px;
-  margin-bottom: 6px;
-  border-bottom: 1px solid rgba(var(--ink), 0.1);
-  display: flex;
-  justify-content: space-between;
-}
-
-.node-table-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  padding: 2px 0;
-}
-
-.node-table-val {
-  color: var(--c-blue);
-  font-weight: 500;
-}
-
-.node-table-key {
-  color: rgba(var(--ink), 0.7);
-}
-
 @keyframes slideInRight {
   from { opacity: 0; transform: translateX(-10px); }
   to { opacity: 1; transform: translateX(0); }

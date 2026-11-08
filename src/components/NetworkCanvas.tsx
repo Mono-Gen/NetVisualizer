@@ -21,7 +21,7 @@ import { PORT_SIZE, findNearestPort, getPortPosition, isPortUsed, validateConnec
 export const NetworkCanvas: React.FC = () => {
   const { 
     nodes, links, packets, mode, 
-    selectedNodeId, selectedLinkId, setSelectedLinkId, simSourceId, zoom, panX, panY, isInspectMode, isPaused,
+    selectedNodeId, selectedLinkId, setSelectedLinkId, simSourceId, zoom, panX, panY, isPaused,
     updateNodePosition, addNode, addInterface, removeInterface, clearNodeArpTable, clearNodeMacTable, clearDnsCache, setSelectedNodeId, setSimSourceId, 
     setView, addLink, sendPacket, removeNode, removeLink 
   } = useNetworkStore();
@@ -264,10 +264,6 @@ export const NetworkCanvas: React.FC = () => {
     }
 
     if (mode === 'SIMULATE') {
-      if (isInspectMode) {
-        setSelectedNodeId(id);
-        return;
-      }
       if (!simSourceId) {
         setSimSourceId(id);
         setSimTargetId(null);
@@ -300,7 +296,6 @@ export const NetworkCanvas: React.FC = () => {
     >
       <CanvasControls 
         mode={mode} 
-        isInspectMode={isInspectMode}
         zoom={zoom}
         onZoomIn={() => zoomFromCenter(viewRef.current.zoom + 0.1)}
         onZoomOut={() => zoomFromCenter(viewRef.current.zoom - 0.1)}
@@ -364,7 +359,6 @@ export const NetworkCanvas: React.FC = () => {
             isSelected={node.id === selectedNodeId} 
             isSimSource={node.id === simSourceId} 
             isSimTarget={node.id === simTargetId}
-            isInspectMode={isInspectMode}
             mode={mode} 
             zoom={zoom} 
             onUpdatePosition={updateNodePosition} 

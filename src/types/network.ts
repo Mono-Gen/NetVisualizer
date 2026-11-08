@@ -82,7 +82,7 @@ export interface NetPacket {
   targetIP: string;
   senderMAC: string;
   targetMAC: string;
-  protocol: 'ARP' | 'ICMP' | 'TCP' | 'UDP' | 'DNS' | 'HTTP' | 'DHCP' | 'IGMP' | 'mDNS';
+  protocol: 'ARP' | 'ICMP' | 'TCP' | 'UDP' | 'DNS' | 'DHCP' | 'IGMP' | 'mDNS';
   type: string; // RFC packet types: echo-request, echo-reply, report, membership-report, query, leave, leave-group, error, response, syn, syn-ack, ack, fin, rst, request, reply
   progress: number;
   status: 'pending' | 'confirmed' | 'error' | 'sent';

@@ -12,7 +12,6 @@ export const createNodeSlice = (set: any, get: any) => ({
   mode: 'DESIGN',
   selectedNodeId: null,
   simSourceId: null,
-  isInspectMode: false,
   selectedLinkId: null,
   isPaused: false,
   simSpeed: 1,
@@ -75,7 +74,7 @@ export const createNodeSlice = (set: any, get: any) => ({
   // モードを切り替えたら一時停止も解除する。解除時は停止分の時間を期限へ加算する(setPausedと同じ補正)
   setMode: (mode: any) => {
     get().setPaused(false);
-    set({ mode, simSourceId: null, isInspectMode: false });
+    set({ mode, simSourceId: null });
   },
   setPaused: (paused: boolean) => set((state: any) => {
     if (paused === state.isPaused) return {};
@@ -97,5 +96,4 @@ export const createNodeSlice = (set: any, get: any) => ({
   setSelectedNodeId: (id: any) => set((state: any) => ({ selectedNodeId: id, selectedLinkId: id ? null : state.selectedLinkId })),
   setSelectedLinkId: (id: any) => set((state: any) => ({ selectedLinkId: id, selectedNodeId: id ? null : state.selectedNodeId })),
   setSimSourceId: (id: any) => set({ simSourceId: id }),
-  setInspectMode: (enabled: any) => set({ isInspectMode: enabled, simSourceId: null }),
 });

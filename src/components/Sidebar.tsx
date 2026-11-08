@@ -15,7 +15,6 @@ export const Sidebar: React.FC = () => {
   const t = useT();
   const { 
     nodes, addNode, mode, setMode, 
-    isInspectMode, setInspectMode, 
     clearCanvas, selectedNodeId
   } = useNetworkStore();
 

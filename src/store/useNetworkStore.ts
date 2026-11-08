@@ -36,7 +36,6 @@ export const useNetworkStore = create<NetworkState>((set, get) => ({
     selectedNodeId: null,
     simSourceId: null,
     selectedLinkId: null,
-    isInspectMode: false,
     isPaused: false,
     pausedAt: null,
     zoom: 1.0,

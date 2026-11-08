@@ -11,7 +11,6 @@ interface NodeRendererProps {
   isSelected: boolean;
   isSimSource: boolean;
   isSimTarget?: boolean;
-  isInspectMode?: boolean;
   mode: 'DESIGN' | 'SIMULATE';
   zoom: number;
   onUpdatePosition: (id: string, x: number, y: number) => void;
@@ -31,7 +30,6 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
   isSelected,
   isSimSource,
   isSimTarget,
-  isInspectMode,
   mode,
   zoom,
   onUpdatePosition,
@@ -188,35 +186,6 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
                   <span style={{ color: 'rgba(var(--ink), 0.6)' }}>{conn.remoteIP}:{conn.remotePort}</span>
                 </div>
               ))}
-            </div>
-          )}
-        </div>
-      )}
-      {mode === 'SIMULATE' && isInspectMode && (
-        <div className="node-table-overlay" style={{ animation: 'fadeIn 0.2s ease-out' }}>
-          {(node.type === 'pc' || node.type === 'router' || node.type === 'server' || node.type === 'dns') && (
-            <div className="node-table-section">
-              <div className="node-table-header"><span>{t('node.myInterfaces')}</span></div>
-              {node.interfaces.map(iface => (
-                <div key={iface.id} className="node-table-row"><span className="node-table-key" style={{ color: 'var(--text-main)' }}>{iface.ip || 'no-ip'}</span><span className="node-table-val" style={{ color: 'rgba(var(--ink), 0.4)' }}>{iface.mac}</span></div>
-              ))}
-            </div>
-          )}
-          {(node.type === 'pc' || node.type === 'router' || node.type === 'server' || node.type === 'dns') && node.arpTable && Object.keys(node.arpTable).length > 0 && (
-            <div className="node-table-section">
-              <div className="node-table-header"><span>{t('node.arpCache')}</span><span>{Object.keys(node.arpTable).length}</span></div>
-              {Object.entries(node.arpTable).map(([ip, mac]) => (
-                <div key={ip} className="node-table-row"><span className="node-table-key" style={{ color: 'var(--proto-arp-text)' }}>{ip}</span><span className="node-table-val">{mac}</span></div>
-              ))}
-            </div>
-          )}
-          {node.type === 'switch' && node.macTable && Object.keys(node.macTable).length > 0 && (
-            <div className="node-table-section">
-              <div className="node-table-header"><span>{t('node.macAddressTable')}</span><span>{Object.keys(node.macTable).length}</span></div>
-              {Object.entries(node.macTable).map(([mac, portId]) => {
-                const iface = node.interfaces.find(i => i.id === portId);
-                return (<div key={mac} className="node-table-row"><span className="node-table-key">{mac}</span><span className="node-table-val">{iface?.name || portId}</span></div>);
-              })}
             </div>
           )}
         </div>

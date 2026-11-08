@@ -9,7 +9,6 @@ export type NodeSlice = {
   mode: 'DESIGN' | 'SIMULATE';
   selectedNodeId: string | null;
   simSourceId: string | null;
-  isInspectMode: boolean;
   selectedLinkId: string | null;
   isPaused: boolean;
   simSpeed: number;
@@ -30,7 +29,6 @@ export type NodeSlice = {
   setSelectedNodeId: (id: string | null) => void;
   setSimSourceId: (id: string | null) => void;
   setSelectedLinkId: (id: string | null) => void;
-  setInspectMode: (enabled: boolean) => void;
   setPaused: (paused: boolean) => void;
   setSimSpeed: (speed: number) => void;
 };

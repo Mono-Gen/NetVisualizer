@@ -4,7 +4,6 @@ import { useT } from '../../i18n/useT';
 
 interface CanvasControlsProps {
   mode: 'DESIGN' | 'SIMULATE';
-  isInspectMode: boolean;
   zoom: number;
   onZoomIn: () => void;
   onZoomOut: () => void;
@@ -15,7 +14,6 @@ interface CanvasControlsProps {
 
 export const CanvasControls: React.FC<CanvasControlsProps> = ({
   mode,
-  isInspectMode,
   zoom,
   onZoomIn,
   onZoomOut,
@@ -54,7 +52,7 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
         {mode === 'DESIGN' ? (
           t('banner.design')
         ) : (
-          isInspectMode ? t('banner.inspect') : t('banner.simulate')
+          t('banner.simulate')
         )}
         {mode === 'SIMULATE' && isPaused && (
           <span style={{ marginLeft: '8px', padding: '2px 8px', borderRadius: '4px', background: 'rgba(251, 191, 36, 0.25)', color: 'var(--c-yellow)', border: '1px solid rgba(251, 191, 36, 0.5)' }}>
