@@ -29,14 +29,14 @@ const PortRow: React.FC<{ node: NetNode; iface: NetInterface; warning?: PortVlan
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '8px', borderRadius: '8px', background: 'rgba(var(--shade), 0.2)', minWidth: 0, outline: invalid ? '1px solid var(--c-red)' : undefined }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-        <span className="label-mono" style={{ fontSize: '11px', flex: '1 1 0', minWidth: 0, overflowWrap: 'anywhere' }} title={iface.name}>{iface.name}</span>
-        <select className="input" style={{ fontSize: '11px', padding: '6px', flex: '0 0 auto' }} value={trunk ? 'trunk' : 'access'}
+        <span className="label-mono" style={{ fontSize: '11px', flex: '0 0 auto', whiteSpace: 'nowrap' }} title={iface.name}>{iface.name}</span>
+        <select className="input" style={{ fontSize: '11px', padding: '6px', flex: '1 1 0', minWidth: 0, width: 'auto' }} value={trunk ? 'trunk' : 'access'}
           aria-label={`${iface.name} ${t('vlan.mode')}`} onChange={e => setPortMode(node.id, iface.id, e.target.value as 'access' | 'trunk')}>
           <option value="access">{t('vlan.modeAccess')}</option>
           <option value="trunk">{t('vlan.modeTrunk')}</option>
         </select>
         {!trunk && (
-          <input className="input" style={{ fontSize: '11px', padding: '6px', width: '72px', flex: '0 0 auto' }} inputMode="numeric"
+          <input className="input" style={{ fontSize: '11px', padding: '6px', width: '64px', flex: '0 0 64px' }} inputMode="numeric"
             aria-label={`${iface.name} ${t('vlan.id')}`} value={text}
             onChange={e => {
               const v = e.target.value.replace(/\D/g, '').slice(0, 4);
