@@ -516,7 +516,19 @@ You can adjust this value in the **SWITCH IGMP CONFIG** panel while IGMP Snoopin
 
 ### 5.7 IGMP Querier
 
-The **IGMP Querier** periodically sends **IGMP General Query** messages to all ports, prompting group members to re-report their membership. This prevents snooping table entries from expiring.
+The **IGMP Querier** periodically sends **IGMP General Query** messages out of its ports (into every VLAN it has ports in), prompting group members to re-report their membership. This prevents snooping table entries from expiring.
+
+#### When do you need one?
+
+A group member sends its membership report **once, when it joins**. After that it only answers queries. Without a querier:
+
+| Situation | Result |
+|---|---|
+| One switch, right after the join | Multicast is delivered. The switch learned the member from its report. |
+| One switch, after the **Aging Time** (default 30 s) | The entry expires and delivery **silently stops**. |
+| **Two or more switches** (a cable between them) | Delivery **never starts**. Only the receiver's switch learns the member; the sender's switch does not know where the receiver is, and drops the packet (`IGMP Snooping: Target ... is unregistered`). |
+
+The querier also teaches the other switches which port leads toward it (the **mrouter port**, section 5.8), and that is the port their reports are forwarded to. So **give every network that has more than one switch a querier**, or turn IGMP Snooping off on the switches (then multicast is flooded to every port).
 
 #### Requirements
 
@@ -561,7 +573,7 @@ Press **[Send General Query]** to immediately send a General Query from all port
 
 When IGMP Snooping is enabled, the switch automatically learns which port leads toward a **multicast router or Active Querier**.
 
-- When a General Query arrives on port P, that port is recorded as the **mrouter port**.
+- When a General Query arrives on port P, that port is recorded as the **mrouter port** (for the VLAN the query belongs to).
 - Multicast traffic for any group is always forwarded to the mrouter port (routers need to receive all multicast for routing/PIM purposes).
 - The mrouter port entry expires after `Aging Time × 2` seconds.
 - The current mrouter port and its remaining lifetime are shown in the **IGMP SNOOPING TABLE** on the canvas.
@@ -596,6 +608,15 @@ When IGMP Snooping is enabled, the switch automatically learns which port leads 
 4. Multicast is correctly forwarded across both switches via the mrouter port.
 
 → **Lesson**: Querier election prevents duplicate queries; mrouter port learning enables cross-switch multicast forwarding.
+
+#### Scenario D — Two Switches Without a Querier
+
+1. SwitchA and SwitchB connected directly. **Querier OFF on both.** A sender is on SwitchA, a receiver on SwitchB.
+2. The receiver joins `239.1.1.1`. Only SwitchB shows the entry in its table; SwitchA shows nothing.
+3. The sender sends to `239.1.1.1`. SwitchA logs `IGMP Snooping: Target 239.1.1.1 is unregistered. Packet dropped` and the receiver gets nothing.
+4. Enable the Querier on SwitchA (set its management IP first). SwitchB learns its mrouter port, the receiver joins again, and the packet now arrives.
+
+→ **Lesson**: With more than one switch, a querier is not optional: it is what lets reports reach the sender's switch.
 
 ---
 
@@ -713,6 +734,8 @@ When a ping gets no answer, the log shows **Request timed out: no reply from …
 ### ✅ Multicast-Specific Checks
 
 - [ ] Has the receiving node joined the multicast group?
+- [ ] Is the multicast crossing **more than one switch**? Then a **querier** must be enabled (section 5.7), or the sender's switch will drop the packet as "unregistered".
+- [ ] Did the join happen more than the **Aging Time** ago with no querier? The entry has expired; join again or enable a querier.
 - [ ] Is `mDNS RESPONDER` set to **ENABLED** on the responding node?
 
 ### Common Mistakes
