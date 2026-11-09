@@ -33,7 +33,7 @@ export const SampleMenu: React.FC = () => {
             onClick={() => handleLoad(s.id)}
             className="btn btn-glass"
             title={t(`sample.${s.id}.desc` as DictKey)}
-            style={{ justifyContent: 'flex-start', fontSize: '12px', textAlign: 'left', height: 'auto', padding: '8px 10px' }}
+            style={{ justifyContent: 'flex-start', fontSize: '12px', textAlign: 'left', height: 'auto', padding: '8px 10px', whiteSpace: 'normal', overflowWrap: 'anywhere', lineHeight: 1.4, minWidth: 0, width: '100%' }}
           >
             {t(`sample.${s.id}.name` as DictKey)}
           </button>
