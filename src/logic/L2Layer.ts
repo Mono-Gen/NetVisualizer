@@ -1,6 +1,7 @@
 import type { NetNode, NetPacket } from '../types/network';
 import { isMulticastMAC, isLinkLocalMulticast } from './MulticastEngine';
 import { IGMPHandler } from './IGMPHandler';
+import { vlanOfPort, portsInVlan } from './vlan';
 
 export interface L2ProcessingResult {
   action: 'drop' | 'forward' | 'process' | 'flood';
@@ -84,6 +85,9 @@ export const processL2 = (
   if (currentNode.type === 'switch' || currentNode.type === 'l3switch') {
     const isBroadcast = packet.targetMAC === 'FF:FF:FF:FF:FF:FF';
     const isMulticast = isMulticastMAC(packet.targetMAC);
+    // VLAN: フレームは、受けたポートのVLANに属し、同じVLANのポートにしか出ない
+    const ingressVlan = vlanOfPort(currentNode, ingressPortId);
+    const sameVlanPorts = portsInVlan(currentNode, ingressVlan, ingressPortId);
     
     // L3Switch intercepts packets targeted to its own MAC
     if (currentNode.type === 'l3switch') {
@@ -118,27 +122,22 @@ export const processL2 = (
     if (isMulticast) {
       // RFC 4541: 224.0.0.x is Link-Local Multicast, which must always be flooded
       if (isLinkLocalMulticast(packet.targetIP)) {
-        const otherPorts = currentNode.interfaces
-          .filter(iface => iface.id !== ingressPortId)
-          .map(iface => iface.id);
-        return { ...result, action: 'flood', forwardPorts: otherPorts };
+        return { ...result, action: 'flood', forwardPorts: sameVlanPorts };
       }
 
       // If Snooping is disabled, flood to all ports except ingress
       if (currentNode.igmpSnoopingEnabled === false) {
-        const otherPorts = currentNode.interfaces
-          .filter(iface => iface.id !== ingressPortId)
-          .map(iface => iface.id);
-        return { ...result, action: 'flood', forwardPorts: otherPorts };
+        return { ...result, action: 'flood', forwardPorts: sameVlanPorts };
       }
 
       const snoopingTable = currentNode.igmpSnoopingTable || {};
       const registeredPorts = snoopingTable[packet.targetIP] || [];
-      let egressPortIds = registeredPorts.filter(p => p !== ingressPortId);
+      // 登録されたポートのうち、同じVLANのものだけ(アクセスポートは1つのVLANにしか属さないので、これで分離できる)
+      let egressPortIds = registeredPorts.filter(p => p !== ingressPortId && sameVlanPorts.includes(p));
       
       // If there's an active mrouter port and it's not the ingress port, duplicate traffic to it
       const currentMrouterPortId = result.updatedMrouterPortId !== undefined ? result.updatedMrouterPortId : currentNode.mrouterPortId;
-      if (currentMrouterPortId && currentMrouterPortId !== ingressPortId && !egressPortIds.includes(currentMrouterPortId)) {
+      if (currentMrouterPortId && currentMrouterPortId !== ingressPortId && sameVlanPorts.includes(currentMrouterPortId) && !egressPortIds.includes(currentMrouterPortId)) {
         egressPortIds = [...egressPortIds, currentMrouterPortId];
       }
 
@@ -158,20 +157,18 @@ export const processL2 = (
     const macTable = result.updatedMacTable || currentNode.macTable || {};
     
     // Find entry using fuzzy MAC comparison
-    const targetPortId = Object.keys(macTable).find(m => compareMAC(m, packet.targetMAC || '')) 
+    const learnedPortId = Object.keys(macTable).find(m => compareMAC(m, packet.targetMAC || '')) 
       ? macTable[Object.keys(macTable).find(m => compareMAC(m, packet.targetMAC || ''))!] 
       : undefined;
+    // 別のVLANのポートで学習した相手は、このVLANでは「未学習」として扱う(このVLANの中でフラッドする)
+    const targetPortId = learnedPortId && (learnedPortId === ingressPortId || sameVlanPorts.includes(learnedPortId)) ? learnedPortId : undefined;
 
     if (isBroadcast || !targetPortId) {
-      // Flood to all ports except ingress
-      const otherPorts = currentNode.interfaces
-        .filter(iface => iface.id !== ingressPortId)
-        .map(iface => iface.id);
-      
+      // 同じVLANの、受けたポート以外へフラッド
       return { 
         ...result, 
         action: 'flood', 
-        forwardPorts: otherPorts,
+        forwardPorts: sameVlanPorts,
         processAtL3: currentNode.type === 'l3switch' && isBroadcast 
       };
     } else {

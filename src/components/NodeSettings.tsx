@@ -4,6 +4,7 @@ import { InterfaceConfig } from './settings/InterfaceConfig';
 import { DNSConfig } from './settings/DNSConfig';
 import { FirewallConfig } from './settings/FirewallConfig';
 import { NatConfig } from './settings/NatConfig';
+import { VlanConfig } from './settings/VlanConfig';
 import { MulticastConfig } from './settings/MulticastConfig';
 import { ServiceConfig } from './settings/ServiceConfig';
 import { DHCPConfig } from './settings/DHCPConfig';
@@ -91,6 +92,10 @@ export const NodeSettings: React.FC = () => {
 
         {['switch', 'l3switch'].includes(node.type) && (
           <SwitchIGMPConfig node={node} />
+        )}
+
+        {['switch', 'l3switch'].includes(node.type) && (
+          <VlanConfig node={node} />
         )}
 
         {/* Table Displays - Real-time Pedagogical Feedback */}

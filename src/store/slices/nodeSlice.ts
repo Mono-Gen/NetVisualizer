@@ -2,6 +2,7 @@ import type { NetNode, NetLink } from '../../types/network';
 import { PORT_LIMITS, createInterface, collectMacs } from '../../logic/interfaceFactory';
 import { forgetPortState, pruneAfterLinkRemoved, pruneAfterNodeRemoved } from '../../logic/pruning';
 import { clampZoom } from '../../logic/viewport';
+import { isValidVlanId, isVlanSwitch } from '../../logic/vlan';
 import { SIM_SPEEDS, shiftNodeTimers, shiftPendingTimestamps } from '../../logic/simClock';
 
 export const createNodeSlice = (set: any, get: any) => ({
@@ -25,6 +26,18 @@ export const createNodeSlice = (set: any, get: any) => ({
   updateNodePosition: (id: string, x: number, y: number) => set((state: any) => ({
     nodes: state.nodes.map((n: NetNode) => (n.id === id ? { ...n, x, y } : n))
   })),
+  // スイッチのポートのVLANを変える。そのポートで学習したMAC/IGMPの記憶は、古いVLANのものなので忘れる。
+  // 範囲外の値・スイッチ以外は受け付けない。
+  setPortVlan: (nodeId: string, ifaceId: string, vlan: number) => set((state: any) => {
+    const node: NetNode | undefined = state.nodes.find((n: NetNode) => n.id === nodeId);
+    if (!node || !isVlanSwitch(node) || !isValidVlanId(vlan) || !node.interfaces.some(i => i.id === ifaceId)) return {};
+    return {
+      nodes: state.nodes.map((n: NetNode) => n.id !== nodeId ? n : {
+        ...forgetPortState(n, ifaceId),
+        interfaces: n.interfaces.map(i => i.id === ifaceId ? { ...i, accessVlan: vlan } : i)
+      })
+    };
+  }),
   // 機器を消すとき: つながっていたケーブル、相手側のMAC/ARPの記憶、飛行中のパケットも片付ける
   removeNode: (id: string) => set((state: any) => {
     const removed: NetNode | undefined = state.nodes.find((n: NetNode) => n.id === id);

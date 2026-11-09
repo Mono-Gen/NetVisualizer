@@ -274,6 +274,12 @@ export const en = {
   "nat.remote": "to",
   "sample.nat.name": "7. NAT Lets Inside PCs Go Out",
   "sample.nat.desc": "Two PCs (192.168.1.0/24) reach a server on the outside network (203.0.113.0/24) through a router with NAT. The server has no route back to 192.168.1.0/24, yet replies arrive, because it only sees the router's outside address. Ping 203.0.113.10 from both PCs and read the translation table on the router. Then turn NAT off and ping again.",
+  "vlan.title": "PORT VLANS",
+  "vlan.desc": "A VLAN splits one switch into separate networks. Frames only travel between ports in the same VLAN, so devices in different VLANs cannot reach each other here. Every port starts in VLAN 1. Valid VLAN numbers: {min} to {max}.",
+  "vlan.access": "Access VLAN",
+  "vlan.id": "VLAN number",
+  "vlan.invalid": "Enter a whole number from 1 to 4094. Until then, the port keeps its previous VLAN.",
+  "vlan.mismatch": "The other end ({peer}) is in VLAN {vlan}, but this port is in VLAN {mine}. Frames from this port enter the other switch as VLAN {vlan}, so the two VLANs get mixed. Set the same number on both ends unless you want to see this.",
 };
 
 export type DictKey = keyof typeof en;

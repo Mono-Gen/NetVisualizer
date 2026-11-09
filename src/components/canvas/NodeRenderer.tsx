@@ -5,6 +5,7 @@ import { NodeIcon } from './NodeIcon';
 import { PortHandle } from './PortHandle';
 import { getPortCenter, getPortStripExtra, type PortRef } from '../../logic/portLayout';
 import { useT } from '../../i18n/useT';
+import { isVlanSwitch, vlanOfInterface, vlanSummary } from '../../logic/vlan';
 
 interface NodeRendererProps {
   node: NetNode;
@@ -94,7 +95,7 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
             key={iface.id}
             cx={c.x - node.x} cy={c.y - node.y}
             name={iface.name}
-            tooltip={`${iface.name}${iface.ip ? ' • ' + iface.ip : ''}${iface.mac ? ' • ' + iface.mac : ''} — ${used ? t('port.connected') : t('port.free')}`}
+            tooltip={`${iface.name}${isVlanSwitch(node) ? ' • VLAN ' + vlanOfInterface(iface) : ''}${iface.ip ? ' • ' + iface.ip : ''}${iface.mac ? ' • ' + iface.mac : ''} — ${used ? t('port.connected') : t('port.free')}`}
             used={used}
             isWireSource={isSource}
             isCandidate={!!wireSource && !isSource && !used && wireSource.nodeId !== node.id}
@@ -106,6 +107,15 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
         );
       })}
       <span className="label-mono" style={{ marginTop: `${8 + getPortStripExtra(node.interfaces.length)}px`, background: 'var(--node-bg)', padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(var(--ink), 0.1)', fontSize: '11px', whiteSpace: 'nowrap' }}>{node.label}</span>
+      {/* VLANを使っているスイッチだけ、VLANごとのポートの要約を出す(狭い幅でも折り返す) */}
+      {isVlanSwitch(node) && vlanSummary(node).length > 1 && (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '4px', maxWidth: '180px' }}>
+          {vlanSummary(node).map(s => (
+            <span key={s.vlan} className="label-mono" style={{ fontSize: '11px', color: 'var(--text-dim)', textAlign: 'center', overflowWrap: 'anywhere' }}
+              title={`VLAN ${s.vlan}: ${s.ports.join(', ')}`}>VLAN {s.vlan}: {s.ports.join(', ')}</span>
+          ))}
+        </div>
+      )}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '4px', gap: '2px' }}>
         {['pc', 'router', 'server', 'dns', 'l3switch'].includes(node.type) && node.interfaces.map(iface => (
           <div key={iface.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'rgba(var(--shade), 0.2)', padding: '2px 6px', borderRadius: '4px' }}>

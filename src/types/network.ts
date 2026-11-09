@@ -12,6 +12,8 @@ export interface NetInterface {
   dns?: string;
   /** 経路の優先度。小さいほど優先(未設定は既定値 100) */
   metric?: number;
+  /** スイッチ/L3スイッチのポートのアクセスVLAN(1〜4094)。未設定は VLAN 1 */
+  accessVlan?: number;
 }
 
 export interface ListeningPort {

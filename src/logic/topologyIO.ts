@@ -1,5 +1,6 @@
 import type { NetNode, NetLink, NetInterface, NodeType, FwRule } from '../types/network';
 import { fwRuleIssue } from './firewall';
+import { isValidVlanId } from './vlan';
 
 /**
  * トポロジー(構成)の保存形式と、読み込み時の検証(純粋関数)。
@@ -9,7 +10,9 @@ import { fwRuleIssue } from './firewall';
  */
 
 export const TOPOLOGY_APP = 'NetVisualizer';
-export const TOPOLOGY_VERSION = 1;
+export const TOPOLOGY_VERSION = 2;
+/** 読み込める保存形式。2 は VLAN(accessVlan)を含む。1 は VLAN 無し(全ポートが VLAN 1 として読まれる) */
+const READABLE_VERSIONS: unknown[] = [1, 2];
 export const MAX_TEXT_BYTES = 2 * 1024 * 1024;
 export const MAX_NODES = 200;
 
@@ -31,7 +34,8 @@ const configOf = (n: NetNode): NetNode => {
       id: i.id, name: i.name, ip: i.ip, mac: i.mac, subnet: i.subnet,
       ...(i.gateway !== undefined ? { gateway: i.gateway } : {}),
       ...(i.dns !== undefined ? { dns: i.dns } : {}),
-      ...(i.metric !== undefined ? { metric: i.metric } : {})
+      ...(i.metric !== undefined ? { metric: i.metric } : {}),
+      ...(i.accessVlan !== undefined ? { accessVlan: i.accessVlan } : {})
     }))
   };
   const copy = <K extends keyof NetNode>(k: K) => { if (n[k] !== undefined) (out as any)[k] = n[k]; };
@@ -57,6 +61,8 @@ const parseInterface = (raw: unknown): NetInterface | null => {
   if (str(raw.gateway)) iface.gateway = raw.gateway;
   if (str(raw.dns)) iface.dns = raw.dns;
   if (num(raw.metric)) iface.metric = raw.metric;
+  // 範囲外のVLANは捨てる(VLAN 1 として読む)
+  if (isValidVlanId(raw.accessVlan)) iface.accessVlan = raw.accessVlan;
   return iface;
 };
 
@@ -65,7 +71,7 @@ export const parseTopology = (text: string): ParseResult => {
   let data: unknown;
   try { data = JSON.parse(text); } catch { return fail('invalid-json'); }
   if (!isObj(data) || data.app !== TOPOLOGY_APP) return fail('not-a-topology');
-  if (data.version !== TOPOLOGY_VERSION) return fail('unsupported-version');
+  if (!READABLE_VERSIONS.includes(data.version)) return fail('unsupported-version');
   if (!Array.isArray(data.nodes) || !Array.isArray(data.links)) return fail('missing-lists');
   if (data.nodes.length > MAX_NODES) return fail('too-many-nodes');
 
