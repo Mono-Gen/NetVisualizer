@@ -1,4 +1,4 @@
-import type { NetNode, NetLink, NetInterface } from '../types/network';
+import type { NetNode, NetLink, NetInterface, VlanState } from '../types/network';
 
 /**
  * VLAN(ポートベース)の純粋関数。
@@ -63,3 +63,24 @@ export const portVlanWarnings = (node: NetNode, nodes: NetNode[], links: NetLink
   }
   return out;
 };
+
+/** そのVLANのIGMP状態(無ければ空) */
+export const getVlanState = (node: NetNode, vlan: number): VlanState => node.vlanState?.[vlan] ?? {};
+
+/** そのVLANの状態を一部だけ更新した、新しい vlanState を返す(値が undefined の項目は消える) */
+export const patchVlanState = (node: NetNode, vlan: number, patch: Partial<VlanState>): Record<number, VlanState> => {
+  const next: VlanState = { ...getVlanState(node, vlan), ...patch };
+  (Object.keys(next) as (keyof VlanState)[]).forEach(k => { if (next[k] === undefined) delete next[k]; });
+  return { ...(node.vlanState || {}), [vlan]: next };
+};
+
+/** ポートが1つでもあるVLAN番号(昇順)。クエリを送る対象 */
+export const activeVlans = (node: NetNode): number[] =>
+  [...new Set(node.interfaces.map(vlanOfInterface))].sort((a, b) => a - b);
+
+/**
+ * そのVLANで、クエリアが使う送信元IP。空なら、IPを持たない(選挙では常に負ける)。
+ * 管理IPは VLAN 1 のインターフェースのもの。他のVLANには、SVI(別段階)が必要。
+ */
+export const querierSourceIp = (node: NetNode, vlan: number): string =>
+  vlan === DEFAULT_VLAN ? (node.managementIP || '') : '';

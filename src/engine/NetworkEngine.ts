@@ -1,4 +1,5 @@
-import type { NetNode, NetPacket, NetLink, EngineUpdate } from '../types/network';
+import type { NetNode, NetPacket, NetLink, EngineUpdate, VlanState } from '../types/network';
+import { patchVlanState } from '../logic/vlan';
 import { processL2 } from '../logic/L2Layer';
 import { processL3, determineNextHop } from '../logic/L3Layer';
 import { ARPEngine } from '../logic/ARPEngine';
@@ -48,9 +49,14 @@ export class NetworkEngine {
       if (l2Result.updatedArpTable) update.nodes![receiverNode.id].arpTable = l2Result.updatedArpTable;
       if (l2Result.updatedIgmpTable) update.nodes![receiverNode.id].igmpSnoopingTable = l2Result.updatedIgmpTable;
       if (l2Result.updatedIgmpExpires) update.nodes![receiverNode.id].igmpSnoopingExpires = l2Result.updatedIgmpExpires;
-      if (l2Result.updatedMrouterPortId !== undefined) update.nodes![receiverNode.id].mrouterPortId = l2Result.updatedMrouterPortId || undefined;
-      if (l2Result.updatedMrouterPortExpiresAt !== undefined) update.nodes![receiverNode.id].mrouterPortExpiresAt = l2Result.updatedMrouterPortExpiresAt || undefined;
-      if (l2Result.updatedQuerierStandby !== undefined) update.nodes![receiverNode.id].igmpQuerierStandby = l2Result.updatedQuerierStandby;
+      // mrouter・クエリアの状態は、受けたポートのVLANの入れ物へ書く
+      if (l2Result.vlan !== undefined && (l2Result.updatedMrouterPortId !== undefined || l2Result.updatedMrouterPortExpiresAt !== undefined || l2Result.updatedQuerierStandby !== undefined)) {
+        const patch: Partial<VlanState> = {};
+        if (l2Result.updatedMrouterPortId !== undefined) patch.mrouterPortId = l2Result.updatedMrouterPortId || undefined;
+        if (l2Result.updatedMrouterPortExpiresAt !== undefined) patch.mrouterPortExpiresAt = l2Result.updatedMrouterPortExpiresAt || undefined;
+        if (l2Result.updatedQuerierStandby !== undefined) patch.querierStandby = l2Result.updatedQuerierStandby;
+        update.nodes![receiverNode.id].vlanState = patchVlanState(receiverNode, l2Result.vlan, patch);
+      }
     }
 
     if (l2Result.action === 'drop') {

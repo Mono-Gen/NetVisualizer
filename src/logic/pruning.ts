@@ -32,9 +32,13 @@ export const forgetPortState = (node: NetNode, ifaceId: string): NetNode => {
   }
   // ケーブルの抜き差し(リンクの切断)では、NATの変換を全て忘れる(再接続後に古い対応が残らないように)
   if (node.natTable && node.natTable.length > 0) next.natTable = [];
-  if (node.mrouterPortId === ifaceId) {
-    next.mrouterPortId = undefined;
-    next.mrouterPortExpiresAt = undefined;
+  if (node.vlanState) {
+    // そのポートを mrouter にしていたVLANの記憶を消す
+    const state: NonNullable<NetNode['vlanState']> = {};
+    Object.entries(node.vlanState).forEach(([vlan, s]) => {
+      state[Number(vlan)] = s.mrouterPortId === ifaceId ? { ...s, mrouterPortId: undefined, mrouterPortExpiresAt: undefined } : s;
+    });
+    next.vlanState = state;
   }
   return next;
 };

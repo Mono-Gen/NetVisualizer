@@ -5,6 +5,7 @@ import { DNSConfig } from './settings/DNSConfig';
 import { FirewallConfig } from './settings/FirewallConfig';
 import { NatConfig } from './settings/NatConfig';
 import { VlanConfig } from './settings/VlanConfig';
+import { activeVlans, getVlanState } from '../logic/vlan';
 import { MulticastConfig } from './settings/MulticastConfig';
 import { ServiceConfig } from './settings/ServiceConfig';
 import { DHCPConfig } from './settings/DHCPConfig';
@@ -278,14 +279,14 @@ export const NodeSettings: React.FC = () => {
                 </div>
 
                 {/* Active mrouter Port display */}
-                {node.mrouterPortId && (
+                {activeVlans(node).map(vlan => ({ vlan, s: getVlanState(node, vlan) })).filter(x => x.s.mrouterPortId).map(({ vlan, s }) => (
                   <div style={{ fontSize: '11px', background: 'color-mix(in srgb, var(--proto-igmp) 10%, transparent)', border: '1px dashed color-mix(in srgb, var(--proto-igmp) 40%, transparent)', padding: '6px 10px', borderRadius: '6px', color: 'var(--proto-igmp-text)', display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontFamily: 'JetBrains Mono, monospace' }}>
-                    <span>{t('table.mrouter')}</span>
-                    <span>{node.interfaces.find(i => i.id === node.mrouterPortId)?.name || node.mrouterPortId}
-                      {node.mrouterPortExpiresAt && ` (${Math.max(0, Math.round((node.mrouterPortExpiresAt - Date.now()) / 1000))}s)`}
+                    <span>{t('table.mrouter')}{activeVlans(node).length > 1 ? ` (VLAN ${vlan})` : ''}</span>
+                    <span>{node.interfaces.find(i => i.id === s.mrouterPortId)?.name || s.mrouterPortId}
+                      {s.mrouterPortExpiresAt && ` (${Math.max(0, Math.round((s.mrouterPortExpiresAt - Date.now()) / 1000))}s)`}
                     </span>
                   </div>
-                )}
+                ))}
 
                 <div style={{ fontSize: '11px' }}>
                   {Object.entries(node.igmpSnoopingTable || {}).length > 0 ? (

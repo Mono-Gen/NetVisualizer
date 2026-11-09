@@ -28,14 +28,17 @@ export const shiftNodeTimers = (nodes: NetNode[], deltaMs: number): NetNode[] =>
       shifted.igmpSnoopingExpires = expires;
     }
 
-    if (n.mrouterPortExpiresAt !== undefined) {
-      shifted.mrouterPortExpiresAt = n.mrouterPortExpiresAt + deltaMs;
-    }
-
-    // lastQuerierTime は型定義外の実行時フィールド(packetSlice の Querier 送信管理用)
-    const last = (n as NetNode & { lastQuerierTime?: number }).lastQuerierTime;
-    if (last !== undefined) {
-      (shifted as NetNode & { lastQuerierTime?: number }).lastQuerierTime = last + deltaMs;
+    // VLANごとの mrouter の期限と、クエリの最終送信時刻
+    if (n.vlanState) {
+      const state: NonNullable<NetNode['vlanState']> = {};
+      Object.entries(n.vlanState).forEach(([vlan, s]) => {
+        state[Number(vlan)] = {
+          ...s,
+          ...(s.mrouterPortExpiresAt !== undefined ? { mrouterPortExpiresAt: s.mrouterPortExpiresAt + deltaMs } : {}),
+          ...(s.lastQuerierTime !== undefined ? { lastQuerierTime: s.lastQuerierTime + deltaMs } : {})
+        };
+      });
+      shifted.vlanState = state;
     }
 
     if (n.dhcpScope?.leases) {

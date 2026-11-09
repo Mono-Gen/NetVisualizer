@@ -1,7 +1,7 @@
 import type { NetNode, NetPacket } from '../types/network';
 import { isMulticastMAC, isLinkLocalMulticast } from './MulticastEngine';
 import { IGMPHandler } from './IGMPHandler';
-import { vlanOfPort, portsInVlan } from './vlan';
+import { vlanOfPort, portsInVlan, getVlanState } from './vlan';
 
 export interface L2ProcessingResult {
   action: 'drop' | 'forward' | 'process' | 'flood';
@@ -10,6 +10,8 @@ export interface L2ProcessingResult {
   updatedArpTable?: Record<string, string>;
   updatedIgmpTable?: Record<string, string[]>;
   updatedIgmpExpires?: Record<string, Record<string, number>>;
+  /** mrouter・クエリアの更新が、どのVLANの状態か(受けたポートのVLAN) */
+  vlan?: number;
   updatedMrouterPortId?: string;
   updatedMrouterPortExpiresAt?: number;
   updatedQuerierStandby?: boolean; // クエリアの選挙に負けたとき true
@@ -100,6 +102,7 @@ export const processL2 = (
     // IGMP Snooping Learning
     if (packet.protocol === 'IGMP' && ingressPortId && currentNode.igmpSnoopingEnabled !== false) {
       const igmpResult = IGMPHandler.handleSnooping(currentNode, packet, ingressPortId);
+      result.vlan = ingressVlan;
       if (igmpResult.updatedIgmpTable) {
         result.updatedIgmpTable = igmpResult.updatedIgmpTable;
       }
@@ -136,7 +139,7 @@ export const processL2 = (
       let egressPortIds = registeredPorts.filter(p => p !== ingressPortId && sameVlanPorts.includes(p));
       
       // If there's an active mrouter port and it's not the ingress port, duplicate traffic to it
-      const currentMrouterPortId = result.updatedMrouterPortId !== undefined ? result.updatedMrouterPortId : currentNode.mrouterPortId;
+      const currentMrouterPortId = result.updatedMrouterPortId !== undefined ? result.updatedMrouterPortId : getVlanState(currentNode, ingressVlan).mrouterPortId;
       if (currentMrouterPortId && currentMrouterPortId !== ingressPortId && sameVlanPorts.includes(currentMrouterPortId) && !egressPortIds.includes(currentMrouterPortId)) {
         egressPortIds = [...egressPortIds, currentMrouterPortId];
       }

@@ -52,6 +52,13 @@ export interface NatConfig {
   outsideInterfaceId: string; // 外側ポート。それ以外のポートはすべて内側
 }
 
+export interface VlanState {
+  mrouterPortId?: string;
+  mrouterPortExpiresAt?: number;
+  querierStandby?: boolean; // クエリアの選挙に負けている
+  lastQuerierTime?: number; // 最後にクエリを送った時刻(壁時計)
+}
+
 export interface NetNode {
   id: string;
   type: NodeType;
@@ -67,11 +74,10 @@ export interface NetNode {
   igmpSnoopingAgingTime?: number; // seconds (default 30)
   igmpQuerierEnabled?: boolean;
   igmpQuerierInterval?: number; // seconds
-  mrouterPortId?: string;
-  mrouterPortExpiresAt?: number;
+  /** VLANごとのIGMPの状態(mrouterポート・クエリアの選挙・送信時刻)。キーはVLAN番号 */
+  vlanState?: Record<number, VlanState>;
   managementIP?: string;
   managementSubnet?: string;
-  igmpQuerierStandby?: boolean;
   joinedGroups?: string[];
   tcpConnections?: Record<string, {
     state: 'CLOSED' | 'LISTEN' | 'SYN_SENT' | 'SYN_RECEIVED' | 'ESTABLISHED' | 'FIN_WAIT_1' | 'FIN_WAIT_2' | 'CLOSE_WAIT' | 'LAST_ACK' | 'TIME_WAIT';

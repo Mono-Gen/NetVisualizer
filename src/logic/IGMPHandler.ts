@@ -1,5 +1,6 @@
 import type { NetNode, NetPacket, EngineUpdate } from '../types/network';
 import { multicastIPToMAC } from './MulticastEngine';
+import { DEFAULT_VLAN, vlanOfPort, portsInVlan, querierSourceIp } from './vlan';
 
 export class IGMPHandler {
   
@@ -53,17 +54,18 @@ export class IGMPHandler {
     if (packet.type === 'query') {
       const agingTime = (node.igmpSnoopingAgingTime || 30) * 1000;
       const result: any = {
-        updatedMrouterPortId: ingressPortId,
+        updatedMrouterPortId: ingressPortId, // 受けたポートのVLANの、mrouterポートとして学ぶ
         updatedMrouterPortExpiresAt: Date.now() + (agingTime * 2)
       };
 
       // Querier Election
       if (node.igmpQuerierEnabled && packet.senderIP) {
-        const myIP = node.managementIP || '';
+        // 選挙は、クエリを受けたVLANごと。自分のIPは、そのVLANでクエリアが使うIP
+        const myIP = querierSourceIp(node, vlanOfPort(node, ingressPortId));
         const peerIP = packet.senderIP;
 
         const ipToLong = (ip: string): number => {
-          if (!ip) return 0xFFFFFFFF;
+          if (!ip || ip === '0.0.0.0') return 0xFFFFFFFF; // IPなし(0.0.0.0)は、選挙では常に負ける
           const parts = ip.split('.').map(Number);
           if (parts.length !== 4 || parts.some(isNaN)) return 0xFFFFFFFF;
           return ((parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8) | parts[3]) >>> 0;
@@ -76,7 +78,8 @@ export class IGMPHandler {
           result.updatedQuerierStandby = true; // Lost election
         } else if (peerIPLong === myIPLong) {
           // If IP is same or empty, tie-breaker with MAC
-          const myMAC = node.interfaces[0]?.mac || '';
+          // 相手のクエリの送信元MACは、そのVLANの最初のポートのMAC(createQuery)。自分も同じ基準で比べる
+          const myMAC = (node.interfaces.find(i => vlanOfPort(node, i.id) === vlanOfPort(node, ingressPortId)) ?? node.interfaces[0])?.mac || '';
           const peerMAC = packet.senderMAC || '';
           if (peerMAC < myMAC) {
             result.updatedQuerierStandby = true;
@@ -124,9 +127,10 @@ export class IGMPHandler {
     return {};
   }
 
-  static createQuery(currentNode: NetNode): NetPacket {
-    const matchingIface = currentNode.interfaces[0];
-    const senderIP = currentNode.managementIP || (matchingIface ? matchingIface.ip : '0.0.0.0');
+  /** 1つのVLAN用の、一般クエリ(出すポートは呼び出し側が指定。既定はそのVLANの最初のポート) */
+  static createQuery(currentNode: NetNode, vlan: number = DEFAULT_VLAN): NetPacket {
+    const matchingIface = currentNode.interfaces.find(i => vlanOfPort(currentNode, i.id) === vlan) ?? currentNode.interfaces[0];
+    const senderIP = querierSourceIp(currentNode, vlan) || '0.0.0.0';
     const senderMAC = matchingIface ? matchingIface.mac : '00:00:00:00:00:00';
     const faceId = matchingIface ? matchingIface.id : 'mgmt';
     return {
@@ -144,6 +148,17 @@ export class IGMPHandler {
       id: `p_igmp_q_${Date.now()}`,
       progress: 0
     };
+  }
+
+  /** そのVLANのポートごとに、クエリを1つずつ作る(手動送信と定期送信で共用) */
+  static createQueriesForVlan(currentNode: NetNode, vlan: number): NetPacket[] {
+    const base = IGMPHandler.createQuery(currentNode, vlan);
+    return portsInVlan(currentNode, vlan).map(ifaceId => ({
+      ...base,
+      fromInterfaceId: ifaceId,
+      originatingInterfaceId: ifaceId,
+      id: `p_igmp_q_${Date.now()}_${ifaceId}`
+    }));
   }
 
   static createReport(currentNode: NetNode, groupIP: string): NetPacket {

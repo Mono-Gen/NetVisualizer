@@ -8,6 +8,7 @@ import { multicastIPToMAC } from '../../logic/MulticastEngine';
 import { progressUntilNextArrival } from '../../logic/simClock';
 import { HARD_TIMEOUT_SECONDS, trackIdle, type PendingDns, type PendingPing } from '../../logic/pendingChecks';
 import { appendWithCap, isStormCleared, MAX_LOG_ENTRIES } from '../../logic/simLimits';
+import { activeVlans, getVlanState, patchVlanState } from '../../logic/vlan';
 
 /**
  * 上限で破棄したパケットがあればストーム状態にする。
@@ -392,19 +393,19 @@ export const createPacketSlice = (set: any, get: any) => ({
       let nodeChanged = false;
       let updatedTable = n.igmpSnoopingTable ? { ...n.igmpSnoopingTable } : undefined;
       let updatedExpires = n.igmpSnoopingExpires ? { ...n.igmpSnoopingExpires } : undefined;
-      let updatedMrouterId = n.mrouterPortId;
-      let updatedMrouterExpires = n.mrouterPortExpiresAt;
-      let updatedStandby = n.igmpQuerierStandby;
+      let updatedVlanState = n.vlanState;
       
-      // mrouter aging
-      if (updatedMrouterId && updatedMrouterExpires && now > updatedMrouterExpires) {
-        updatedMrouterId = undefined;
-        updatedMrouterExpires = undefined;
-        nodeChanged = true;
-        
-        if (n.igmpQuerierEnabled && updatedStandby) {
-          updatedStandby = false;
-        }
+      // mrouter aging(VLANごと)。期限が切れたVLANで、待機中のクエリアは、クエリを再開する
+      if (n.vlanState) {
+        Object.entries(n.vlanState).forEach(([vlanKey, s]) => {
+          if (s.mrouterPortId && s.mrouterPortExpiresAt && now > s.mrouterPortExpiresAt) {
+            updatedVlanState = {
+              ...(updatedVlanState || {}),
+              [Number(vlanKey)]: { ...s, mrouterPortId: undefined, mrouterPortExpiresAt: undefined, ...(n.igmpQuerierEnabled && s.querierStandby ? { querierStandby: false } : {}) }
+            };
+            nodeChanged = true;
+          }
+        });
       }
       
       // snooping entries aging
@@ -450,9 +451,7 @@ export const createPacketSlice = (set: any, get: any) => ({
           ...n,
           igmpSnoopingTable: updatedTable,
           igmpSnoopingExpires: updatedExpires,
-          mrouterPortId: updatedMrouterId,
-          mrouterPortExpiresAt: updatedMrouterExpires,
-          igmpQuerierStandby: updatedStandby
+          vlanState: updatedVlanState
         };
       }
       return n;
@@ -466,29 +465,22 @@ export const createPacketSlice = (set: any, get: any) => ({
 
     // 4. IGMP Querier Periodic Query Transmission
     currentNodes.forEach((n: NetNode) => {
-      if ((n.type === 'switch' || n.type === 'l3switch') && n.igmpQuerierEnabled && !n.igmpQuerierStandby) {
+      // クエリアは、VLANごと: 自分のポートがあるVLANのうち、選挙に負けていないVLANへ、そのVLANのポートからだけ出す
+      if ((n.type === 'switch' || n.type === 'l3switch') && n.igmpQuerierEnabled) {
         const intervalMs = (n.igmpQuerierInterval || 60) * 1000;
-        const lastTime = (n as any).lastQuerierTime || 0;
-        
-        if (now - lastTime >= intervalMs) {
-          const baseQuery = IGMPHandler.createQuery(n);
-          n.interfaces.forEach(iface => {
-            const portQuery = {
-              ...baseQuery,
-              fromInterfaceId: iface.id,
-              originatingInterfaceId: iface.id,
-              id: `p_igmp_q_${Date.now()}_${iface.id}`
-            };
+        activeVlans(n).forEach(vlan => {
+          const state = getVlanState(n, vlan);
+          if (state.querierStandby || now - (state.lastQuerierTime || 0) < intervalMs) return;
+          IGMPHandler.createQueriesForVlan(n, vlan).forEach(portQuery => {
             const transmissionUpdate = NetworkEngine.prepareTransmission(n, portQuery, currentNodes, get().links, true);
             get().applyEngineUpdate(transmissionUpdate);
           });
-          
-          set((state: any) => ({
-            nodes: state.nodes.map((node: NetNode) => 
-              node.id === n.id ? { ...node, lastQuerierTime: now } as any : node
+          set((state2: any) => ({
+            nodes: state2.nodes.map((node: NetNode) =>
+              node.id === n.id ? { ...node, vlanState: patchVlanState(node, vlan, { lastQuerierTime: now }) } : node
             )
           }));
-        }
+        });
       }
     });
 
@@ -520,8 +512,8 @@ export const createPacketSlice = (set: any, get: any) => ({
   sendIGMPQuery: (nodeId: string) => {
     const node = get().nodes.find((n: NetNode) => n.id === nodeId);
     if (!node) return;
-    const packet = IGMPHandler.createQuery(node);
-    get().sendPacket(packet);
+    // 手動送信は、自分のポートがあるすべてのVLANへ(定期送信と同じ生成関数)
+    activeVlans(node).forEach(vlan => IGMPHandler.createQueriesForVlan(node, vlan).forEach(q => get().sendPacket(q)));
   },
 
   joinMulticastGroup: (nodeId: string, groupIP: string, ifaceId?: string) => {

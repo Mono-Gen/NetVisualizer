@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import type { NetNode } from '../../types/network';
 import { useNetworkStore } from '../../store/useNetworkStore';
 import { IGMPHandler } from '../../logic/IGMPHandler';
+import { activeVlans, getVlanState } from '../../logic/vlan';
 import { AlertCircle, Cpu, RefreshCw, Layers } from 'lucide-react';
 import { useT } from '../../i18n/useT';
 
@@ -57,23 +58,14 @@ export const SwitchIGMPConfig: React.FC<SwitchIGMPConfigProps> = ({ node }) => {
   const toggleQuerier = () => {
     if (!node.managementIP) return;
     const isEnabled = !!node.igmpQuerierEnabled;
-    updateNode(node.id, { 
-      igmpQuerierEnabled: !isEnabled,
-      igmpQuerierStandby: false // Reset election state when toggled
-    });
+    // 切り替えたら、全VLANの選挙の状態を戻す
+    const vlanState: NonNullable<NetNode['vlanState']> = {};
+    Object.entries(node.vlanState || {}).forEach(([v, s]) => { vlanState[Number(v)] = { ...s, querierStandby: undefined }; });
+    updateNode(node.id, { igmpQuerierEnabled: !isEnabled, vlanState });
   };
 
   const handleManualQuery = () => {
-    const baseQuery = IGMPHandler.createQuery(node);
-    node.interfaces.forEach(iface => {
-      const portQuery = {
-        ...baseQuery,
-        fromInterfaceId: iface.id,
-        originatingInterfaceId: iface.id,
-        id: `p_igmp_q_${Date.now()}_${iface.id}`
-      };
-      sendPacket(portQuery);
-    });
+    activeVlans(node).forEach(vlan => IGMPHandler.createQueriesForVlan(node, vlan).forEach(q => sendPacket(q)));
   };
 
   const isSnoopingEnabled = node.igmpSnoopingEnabled !== false;
@@ -178,9 +170,10 @@ export const SwitchIGMPConfig: React.FC<SwitchIGMPConfigProps> = ({ node }) => {
           <div>
             <div style={{ fontSize: '12px', fontWeight: 600 }}>IGMP Querier</div>
             <div style={{ fontSize: '11px', color: 'var(--text-dim)' }}>
-              {isQuerierEnabled 
-                ? (node.igmpQuerierStandby ? t('igmp.standby') : t('igmp.sending')) 
-                : t('igmp.querierDisabled')}
+              {!isQuerierEnabled ? t('igmp.querierDisabled')
+                : activeVlans(node).length === 1
+                  ? (getVlanState(node, activeVlans(node)[0]).querierStandby ? t('igmp.standby') : t('igmp.sending'))
+                  : activeVlans(node).map(v => `VLAN ${v}: ${getVlanState(node, v).querierStandby ? t('igmp.standby') : t('igmp.sending')}`).join(' / ')}
             </div>
           </div>
           <button
