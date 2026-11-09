@@ -22,6 +22,11 @@ export const LOG_TEMPLATES: ReadonlyArray<readonly [string, string]> = [
   ['Firewall: {proto} {src} -> {dst} denied by rule {n}', 'ファイアウォール: {proto} {src} → {dst} をルール{n}で拒否しました'],
   ['Firewall: {proto} {src} -> {dst} denied by the default policy', 'ファイアウォール: {proto} {src} → {dst} を既定の動作(拒否)で破棄しました'],
 
+  // VLAN
+  ['VLAN Drop: {label} received a tagged frame on access port {port}. Access ports only accept untagged frames.', 'VLAN破棄: {label} が、アクセスポート {port} でタグ付きのフレームを受けました。アクセスポートが受けられるのは、タグ無しのフレームだけです。'],
+  ['VLAN Drop: {label} received an untagged frame on trunk port {port}. Trunk ports only accept tagged frames.', 'VLAN破棄: {label} が、トランクポート {port} でタグ無しのフレームを受けました。トランクポートが受けられるのは、タグ付きのフレームだけです。'],
+  ['VLAN Drop: {label} received a tagged frame. Hosts and routers only accept untagged frames; connect them to an access port.', 'VLAN破棄: {label} が、タグ付きのフレームを受けました。ホストとルーターが受けられるのは、タグ無しのフレームだけです。アクセスポートにつないでください。'],
+
   // NAT
   ['NAT: {inside} is now {outside}', 'NAT: {inside} を {outside} に変換しました'],
   ['NAT: reply to {outside} sent back to {inside}', 'NAT: {outside} あての応答を {inside} へ戻しました'],

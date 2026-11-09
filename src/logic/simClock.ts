@@ -17,23 +17,17 @@ export const shiftNodeTimers = (nodes: NetNode[], deltaMs: number): NetNode[] =>
   return nodes.map((n) => {
     const shifted: NetNode = { ...n };
 
-    if (n.igmpSnoopingExpires) {
-      const expires: Record<string, Record<string, number>> = {};
-      Object.entries(n.igmpSnoopingExpires).forEach(([group, ports]) => {
-        expires[group] = {};
-        Object.entries(ports).forEach(([portId, at]) => {
-          expires[group][portId] = at + deltaMs;
-        });
-      });
-      shifted.igmpSnoopingExpires = expires;
-    }
-
     // VLANごとの mrouter の期限と、クエリの最終送信時刻
     if (n.vlanState) {
       const state: NonNullable<NetNode['vlanState']> = {};
       Object.entries(n.vlanState).forEach(([vlan, s]) => {
+        const expires: Record<string, Record<string, number>> | undefined = s.igmpSnoopingExpires
+          ? Object.fromEntries(Object.entries(s.igmpSnoopingExpires).map(([group, ports]) =>
+              [group, Object.fromEntries(Object.entries(ports).map(([portId, at]) => [portId, at + deltaMs]))]))
+          : undefined;
         state[Number(vlan)] = {
           ...s,
+          ...(expires ? { igmpSnoopingExpires: expires } : {}),
           ...(s.mrouterPortExpiresAt !== undefined ? { mrouterPortExpiresAt: s.mrouterPortExpiresAt + deltaMs } : {}),
           ...(s.lastQuerierTime !== undefined ? { lastQuerierTime: s.lastQuerierTime + deltaMs } : {})
         };

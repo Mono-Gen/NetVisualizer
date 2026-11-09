@@ -37,7 +37,7 @@ const makeNode = (
   interfaces: NetNode['interfaces'], extra: Partial<NetNode> = {}
 ): NetNode => ({
   id, type, label, x, y, interfaces,
-  macTable: {}, arpTable: {}, igmpSnoopingTable: {}, joinedGroups: [],
+  arpTable: {}, joinedGroups: [],
   ...extra
 });
 

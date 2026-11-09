@@ -61,9 +61,7 @@ export const createNode = (type: NodeType, nodes: NetNode[], position?: { x: num
     y: pos.y,
     label: nextLabel(prefix, nodes),
     interfaces,
-    macTable: {},
     arpTable: {},
-    igmpSnoopingTable: {},
     joinedGroups: [],
     ...(type === 'dhcp' ? {
       dhcpScope: {

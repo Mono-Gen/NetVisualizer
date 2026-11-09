@@ -38,6 +38,21 @@ export const createNodeSlice = (set: any, get: any) => ({
       })
     };
   }),
+  // スイッチのポートの種類(アクセス/トランク)を変える。古い種類で学習した記憶は忘れる。
+  setPortMode: (nodeId: string, ifaceId: string, mode: 'access' | 'trunk') => set((state: any) => {
+    const node: NetNode | undefined = state.nodes.find((n: NetNode) => n.id === nodeId);
+    if (!node || !isVlanSwitch(node) || (mode !== 'access' && mode !== 'trunk') || !node.interfaces.some(i => i.id === ifaceId)) return {};
+    return {
+      nodes: state.nodes.map((n: NetNode) => n.id !== nodeId ? n : {
+        ...forgetPortState(n, ifaceId),
+        interfaces: n.interfaces.map(i => {
+          if (i.id !== ifaceId) return i;
+          const { vlanMode: _old, ...rest } = i;
+          return mode === 'trunk' ? { ...rest, vlanMode: 'trunk' as const } : rest;
+        })
+      })
+    };
+  }),
   // 機器を消すとき: つながっていたケーブル、相手側のMAC/ARPの記憶、飛行中のパケットも片付ける
   removeNode: (id: string) => set((state: any) => {
     const removed: NetNode | undefined = state.nodes.find((n: NetNode) => n.id === id);

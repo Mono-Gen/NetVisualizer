@@ -5,7 +5,7 @@ import { DNSConfig } from './settings/DNSConfig';
 import { FirewallConfig } from './settings/FirewallConfig';
 import { NatConfig } from './settings/NatConfig';
 import { VlanConfig } from './settings/VlanConfig';
-import { activeVlans, getVlanState } from '../logic/vlan';
+import { activeVlans, getVlanState, allMacEntries, allSnoopingEntries, trunkPortNames } from '../logic/vlan';
 import { MulticastConfig } from './settings/MulticastConfig';
 import { ServiceConfig } from './settings/ServiceConfig';
 import { DHCPConfig } from './settings/DHCPConfig';
@@ -41,6 +41,9 @@ export const NodeSettings: React.FC = () => {
   };
 
   const activeTcpConns = Object.entries(node?.tcpConnections || {});
+
+  // VLANを使っている(複数のVLANがある、またはトランクがある)スイッチでは、表の行にVLAN番号を添える
+  const vlanBadgeNeeded = activeVlans(node).length > 1 || trunkPortNames(node).length > 0;
 
   return (
     <div className="glass" style={{ 
@@ -231,7 +234,7 @@ export const NodeSettings: React.FC = () => {
             )}
 
             {/* 3. L2 MAC Table */}
-            {(node.type === 'switch' || node.type === 'l3switch' || (node.macTable && Object.keys(node.macTable).length > 0)) && (
+            {(node.type === 'switch' || node.type === 'l3switch') && (
               <div style={{ padding: '16px', background: 'color-mix(in srgb, var(--proto-other) 5%, transparent)', borderRadius: '12px', border: '1px solid color-mix(in srgb, var(--proto-other) 10%, transparent)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                   <label className="form-label" style={{ fontSize: '11px', color: 'var(--proto-other-text)', marginBottom: 0, display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}>
@@ -247,15 +250,15 @@ export const NodeSettings: React.FC = () => {
                   </button>
                 </div>
                 <div style={{ fontSize: '11px' }}>
-                  {Object.entries(node.macTable || {}).length > 0 ? (
+                  {allMacEntries(node).length > 0 ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', opacity: 0.4, fontSize: '11px', paddingBottom: '4px', borderBottom: '1px solid rgba(var(--ink), 0.1)' }}>
                         <span>{t('table.macAddress')}</span>
                         <span>{t('table.portIface')}</span>
                       </div>
-                      {Object.entries(node.macTable || {}).map(([mac, portId]) => (
-                        <div key={mac} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
-                          <span className="label-mono" style={{ color: 'var(--proto-other-text)' }}>{mac}</span>
+                      {allMacEntries(node).map(({ vlan, mac, portId }) => (
+                        <div key={`${vlan}-${mac}`} style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', padding: '4px 0', minWidth: 0 }}>
+                          <span className="label-mono" style={{ color: 'var(--proto-other-text)', minWidth: 0, overflowWrap: 'anywhere' }}>{vlanBadgeNeeded ? `VLAN ${vlan} · ` : ''}{mac}</span>
                           <span className="label-mono" style={{ color: 'var(--text-dim)' }}>{node.interfaces.find(i => i.id === portId)?.name || 'Port'}</span>
                         </div>
                       ))}
@@ -289,19 +292,19 @@ export const NodeSettings: React.FC = () => {
                 ))}
 
                 <div style={{ fontSize: '11px' }}>
-                  {Object.entries(node.igmpSnoopingTable || {}).length > 0 ? (
+                  {allSnoopingEntries(node).length > 0 ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', opacity: 0.4, fontSize: '11px', paddingBottom: '4px', borderBottom: '1px solid rgba(var(--ink), 0.1)' }}>
                         <span>{t('table.multicastGroup')}</span>
                         <span>{t('table.portIfaceExpires')}</span>
                       </div>
-                      {Object.entries(node.igmpSnoopingTable || {}).map(([group, ports]) => (
-                        <div key={group} style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '4px 0', borderBottom: '1px dashed rgba(var(--ink), 0.03)' }}>
-                          <span className="label-mono" style={{ color: 'var(--proto-igmp-text)', fontWeight: 700 }}>{group}</span>
+                      {allSnoopingEntries(node).map(({ vlan, group, portIds: ports }) => (
+                        <div key={`${vlan}-${group}`} style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '4px 0', borderBottom: '1px dashed rgba(var(--ink), 0.03)' }}>
+                          <span className="label-mono" style={{ color: 'var(--proto-igmp-text)', fontWeight: 700, overflowWrap: 'anywhere' }}>{vlanBadgeNeeded ? `VLAN ${vlan} · ` : ''}{group}</span>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', paddingLeft: '8px', borderLeft: '2px solid color-mix(in srgb, var(--proto-igmp) 30%, transparent)' }}>
                             {(ports as string[]).map(pid => {
                               const name = node.interfaces.find(i => i.id === pid)?.name || pid;
-                              const expireTime = node.igmpSnoopingExpires?.[group]?.[pid];
+                              const expireTime = node.vlanState?.[vlan]?.igmpSnoopingExpires?.[group]?.[pid];
                               const timeLeft = expireTime ? Math.max(0, Math.round((expireTime - Date.now()) / 1000)) : null;
                               return (
                                 <div key={pid} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }} className="label-mono">

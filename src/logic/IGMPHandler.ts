@@ -1,6 +1,6 @@
 import type { NetNode, NetPacket, EngineUpdate } from '../types/network';
 import { multicastIPToMAC } from './MulticastEngine';
-import { DEFAULT_VLAN, vlanOfPort, portsInVlan, querierSourceIp } from './vlan';
+import { DEFAULT_VLAN, portsInVlan, querierSourceIp, getVlanState, isTrunkInterface } from './vlan';
 
 export class IGMPHandler {
   
@@ -39,7 +39,8 @@ export class IGMPHandler {
   static handleSnooping(
     node: NetNode,
     packet: NetPacket,
-    ingressPortId: string
+    ingressPortId: string,
+    vlan: number = DEFAULT_VLAN
   ): {
     updatedIgmpTable?: Record<string, string[]>;
     updatedIgmpExpires?: Record<string, Record<string, number>>;
@@ -47,8 +48,10 @@ export class IGMPHandler {
     updatedMrouterPortExpiresAt?: number | null;
     updatedQuerierStandby?: boolean;
   } {
-    const table = { ...(node.igmpSnoopingTable || {}) };
-    const expires = { ...(node.igmpSnoopingExpires || {}) };
+    // 表は、そのVLANのもの(同じグループでも、VLANが違えば別の表)
+    const vlanState = getVlanState(node, vlan);
+    const table = { ...(vlanState.igmpSnoopingTable || {}) };
+    const expires = { ...(vlanState.igmpSnoopingExpires || {}) };
     
     // 1. Handle Query (Querier Election & mrouter Port Learning)
     if (packet.type === 'query') {
@@ -61,7 +64,7 @@ export class IGMPHandler {
       // Querier Election
       if (node.igmpQuerierEnabled && packet.senderIP) {
         // 選挙は、クエリを受けたVLANごと。自分のIPは、そのVLANでクエリアが使うIP
-        const myIP = querierSourceIp(node, vlanOfPort(node, ingressPortId));
+        const myIP = querierSourceIp(node, vlan);
         const peerIP = packet.senderIP;
 
         const ipToLong = (ip: string): number => {
@@ -79,7 +82,7 @@ export class IGMPHandler {
         } else if (peerIPLong === myIPLong) {
           // If IP is same or empty, tie-breaker with MAC
           // 相手のクエリの送信元MACは、そのVLANの最初のポートのMAC(createQuery)。自分も同じ基準で比べる
-          const myMAC = (node.interfaces.find(i => vlanOfPort(node, i.id) === vlanOfPort(node, ingressPortId)) ?? node.interfaces[0])?.mac || '';
+          const myMAC = (node.interfaces.find(i => portsInVlan(node, vlan).includes(i.id)) ?? node.interfaces[0])?.mac || '';
           const peerMAC = packet.senderMAC || '';
           if (peerMAC < myMAC) {
             result.updatedQuerierStandby = true;
@@ -109,6 +112,8 @@ export class IGMPHandler {
 
       return { updatedIgmpTable: table, updatedIgmpExpires: expires };
     } else if (isLeave) {
+      // トランクの上の登録は、下流の複数の受信者をまとめたもの。1つのLeaveでは消さず、時間切れを待つ
+      if (isTrunkInterface(node.interfaces.find(i => i.id === ingressPortId))) return {};
       const currentPorts = table[groupIP] || [];
       const updatedPorts = currentPorts.filter(p => p !== ingressPortId);
       
@@ -129,7 +134,7 @@ export class IGMPHandler {
 
   /** 1つのVLAN用の、一般クエリ(出すポートは呼び出し側が指定。既定はそのVLANの最初のポート) */
   static createQuery(currentNode: NetNode, vlan: number = DEFAULT_VLAN): NetPacket {
-    const matchingIface = currentNode.interfaces.find(i => vlanOfPort(currentNode, i.id) === vlan) ?? currentNode.interfaces[0];
+    const matchingIface = currentNode.interfaces.find(i => portsInVlan(currentNode, vlan).includes(i.id)) ?? currentNode.interfaces[0];
     const senderIP = querierSourceIp(currentNode, vlan) || '0.0.0.0';
     const senderMAC = matchingIface ? matchingIface.mac : '00:00:00:00:00:00';
     const faceId = matchingIface ? matchingIface.id : 'mgmt';
@@ -143,6 +148,7 @@ export class IGMPHandler {
       protocol: 'IGMP',
       type: 'query',
       status: 'pending',
+      vlanTag: vlan, // トランクから出るときのタグ(アクセスポートから出るときは、エンジンが外す)
       fromInterfaceId: faceId,
       originatingInterfaceId: faceId,
       id: `p_igmp_q_${Date.now()}`,
@@ -175,8 +181,8 @@ export class IGMPHandler {
     };
   }
 
-  static getMulticastEgressPorts(node: NetNode, groupIP: string, ingressPortId: string): string[] {
-    const snoopingTable = node.igmpSnoopingTable || {};
+  static getMulticastEgressPorts(node: NetNode, groupIP: string, ingressPortId: string, vlan: number = DEFAULT_VLAN): string[] {
+    const snoopingTable = getVlanState(node, vlan).igmpSnoopingTable || {};
     const registeredPorts = snoopingTable[groupIP] || [];
     
     if (registeredPorts.length > 0) {

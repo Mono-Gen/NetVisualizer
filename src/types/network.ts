@@ -14,6 +14,8 @@ export interface NetInterface {
   metric?: number;
   /** スイッチ/L3スイッチのポートのアクセスVLAN(1〜4094)。未設定は VLAN 1 */
   accessVlan?: number;
+  /** スイッチ/L3スイッチのポートの種類。未設定は 'access'。トランクは全VLANをタグ付きで通す(許可リスト・ネイティブVLANは無い) */
+  vlanMode?: 'access' | 'trunk';
 }
 
 export interface ListeningPort {
@@ -57,6 +59,11 @@ export interface VlanState {
   mrouterPortExpiresAt?: number;
   querierStandby?: boolean; // クエリアの選挙に負けている
   lastQuerierTime?: number; // 最後にクエリを送った時刻(壁時計)
+  /** このVLANで学習したMAC(MAC → ポートID) */
+  macTable?: Record<string, string>;
+  /** このVLANのIGMPスヌーピング表(グループ → ポートIDの一覧)と、その期限 */
+  igmpSnoopingTable?: Record<string, string[]>;
+  igmpSnoopingExpires?: Record<string, Record<string, number>>;
 }
 
 export interface NetNode {
@@ -66,10 +73,7 @@ export interface NetNode {
   y: number;
   label: string;
   interfaces: NetInterface[];
-  macTable?: Record<string, string>;
   arpTable?: Record<string, string>;
-  igmpSnoopingTable?: Record<string, string[]>;
-  igmpSnoopingExpires?: Record<string, Record<string, number>>; // GroupIP -> { portId: expiresAt }
   igmpSnoopingEnabled?: boolean;
   igmpSnoopingAgingTime?: number; // seconds (default 30)
   igmpQuerierEnabled?: boolean;
@@ -123,6 +127,8 @@ export interface NetPacket {
   targetIP: string;
   senderMAC: string;
   targetMAC: string;
+  /** 線上のVLANタグ。トランクの上でだけ付く(アクセスポートとホストの間は常に無し) */
+  vlanTag?: number;
   protocol: 'ARP' | 'ICMP' | 'TCP' | 'UDP' | 'DNS' | 'DHCP' | 'IGMP' | 'mDNS';
   type: string; // RFC packet types: echo-request, echo-reply, report, membership-report, query, leave, leave-group, error, response, syn, syn-ack, ack, fin, rst, request, reply
   progress: number;

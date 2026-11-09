@@ -1,5 +1,5 @@
 import type { NetNode, NetPacket, NetLink, EngineUpdate, VlanState } from '../types/network';
-import { patchVlanState } from '../logic/vlan';
+import { patchVlanState, isVlanSwitch, egressTag } from '../logic/vlan';
 import { processL2 } from '../logic/L2Layer';
 import { processL3, determineNextHop } from '../logic/L3Layer';
 import { ARPEngine } from '../logic/ARPEngine';
@@ -45,17 +45,17 @@ export class NetworkEngine {
         l2Result.updatedIgmpExpires || l2Result.updatedMrouterPortId !== undefined || 
         l2Result.updatedMrouterPortExpiresAt !== undefined || l2Result.updatedQuerierStandby !== undefined) {
       if (!update.nodes![receiverNode.id]) update.nodes![receiverNode.id] = {};
-      if (l2Result.updatedMacTable) update.nodes![receiverNode.id].macTable = l2Result.updatedMacTable;
       if (l2Result.updatedArpTable) update.nodes![receiverNode.id].arpTable = l2Result.updatedArpTable;
-      if (l2Result.updatedIgmpTable) update.nodes![receiverNode.id].igmpSnoopingTable = l2Result.updatedIgmpTable;
-      if (l2Result.updatedIgmpExpires) update.nodes![receiverNode.id].igmpSnoopingExpires = l2Result.updatedIgmpExpires;
-      // mrouter・クエリアの状態は、受けたポートのVLANの入れ物へ書く
-      if (l2Result.vlan !== undefined && (l2Result.updatedMrouterPortId !== undefined || l2Result.updatedMrouterPortExpiresAt !== undefined || l2Result.updatedQuerierStandby !== undefined)) {
+      // MAC表・スヌーピング表・mrouter・クエリアの状態は、フレームのVLANの入れ物へ書く
+      if (l2Result.vlan !== undefined) {
         const patch: Partial<VlanState> = {};
+        if (l2Result.updatedMacTable) patch.macTable = l2Result.updatedMacTable;
+        if (l2Result.updatedIgmpTable) patch.igmpSnoopingTable = l2Result.updatedIgmpTable;
+        if (l2Result.updatedIgmpExpires) patch.igmpSnoopingExpires = l2Result.updatedIgmpExpires;
         if (l2Result.updatedMrouterPortId !== undefined) patch.mrouterPortId = l2Result.updatedMrouterPortId || undefined;
         if (l2Result.updatedMrouterPortExpiresAt !== undefined) patch.mrouterPortExpiresAt = l2Result.updatedMrouterPortExpiresAt || undefined;
         if (l2Result.updatedQuerierStandby !== undefined) patch.querierStandby = l2Result.updatedQuerierStandby;
-        update.nodes![receiverNode.id].vlanState = patchVlanState(receiverNode, l2Result.vlan, patch);
+        if (Object.keys(patch).length > 0) update.nodes![receiverNode.id].vlanState = patchVlanState(receiverNode, l2Result.vlan, patch);
       }
     }
 
@@ -98,7 +98,7 @@ export class NetworkEngine {
         update.addLogs?.push({ ...packet, status: 'error', info: `L2 Loop Detected: Packet dropped by ${receiverNode.label} (L2 TTL expired)` });
       } else {
         l2Result.forwardPorts.forEach(portId => {
-          const res = this.prepareTransmission(receiverNode, { ...packet, from: receiverNode.id, originatingInterfaceId: portId, l2ttl: currentL2Ttl - 1 }, allNodes, allLinks, true);
+          const res = this.prepareTransmission(receiverNode, { ...packet, from: receiverNode.id, originatingInterfaceId: portId, l2ttl: currentL2Ttl - 1, ...(l2Result.vlan !== undefined ? { vlanTag: l2Result.vlan } : {}) }, allNodes, allLinks, true);
           this.mergeUpdates(update, res);
         });
       }
@@ -226,6 +226,13 @@ export class NetworkEngine {
       senderMAC: packetData.senderMAC || sourceIface.mac,
       status: packetData.status || 'pending' 
     };
+
+    // VLAN: スイッチのポートから出すときの、タグの符号化(アクセスはタグを外し、トランクはタグを付ける)。
+    // 内部のVLAN(packetData.vlanTag)が無い、スイッチ自身のフレームは、VLAN 1 として扱う。
+    if (isVlanSwitch(sourceNode)) {
+      const tag = egressTag(sourceNode, sourceIface.id, packetData.vlanTag);
+      if (tag === undefined) delete packet.vlanTag; else packet.vlanTag = tag;
+    }
 
     // ICMP echo の識別子: 送信元が振る通し番号(応答はこれを引き継ぐ)。NATが、どの要求への応答かを見分けるのに使う
     if (packet.protocol === 'ICMP' && packet.type === 'echo-request' && packet.icmpId === undefined) {

@@ -391,8 +391,6 @@ export const createPacketSlice = (set: any, get: any) => ({
     let nodesUpdated = false;
     const updatedNodes = freshNodes.map((n: NetNode) => {
       let nodeChanged = false;
-      let updatedTable = n.igmpSnoopingTable ? { ...n.igmpSnoopingTable } : undefined;
-      let updatedExpires = n.igmpSnoopingExpires ? { ...n.igmpSnoopingExpires } : undefined;
       let updatedVlanState = n.vlanState;
       
       // mrouter aging(VLANごと)。期限が切れたVLANで、待機中のクエリアは、クエリを再開する
@@ -408,49 +406,49 @@ export const createPacketSlice = (set: any, get: any) => ({
         });
       }
       
-      // snooping entries aging
-      if (updatedTable && updatedExpires) {
-        const newExpires = { ...updatedExpires };
-        const newTable = { ...updatedTable };
-        let tableChanged = false;
+      // snooping entries aging(VLANごとの表。期限が切れたポートを、その表から外す)
+      if (updatedVlanState) {
+        Object.entries(updatedVlanState).forEach(([vlanKey, s]) => {
+          if (!s.igmpSnoopingTable || !s.igmpSnoopingExpires) return;
+          const newExpires = { ...s.igmpSnoopingExpires };
+          const newTable = { ...s.igmpSnoopingTable };
+          let tableChanged = false;
 
-        Object.keys(newExpires).forEach(groupIP => {
-          const groupExpires = { ...newExpires[groupIP] };
-          let groupChanged = false;
-          
-          Object.keys(groupExpires).forEach(portId => {
-            if (now > groupExpires[portId]) {
-              delete groupExpires[portId];
-              groupChanged = true;
-              nodeChanged = true;
-              tableChanged = true;
+          Object.keys(newExpires).forEach(groupIP => {
+            const groupExpires = { ...newExpires[groupIP] };
+            let groupChanged = false;
+
+            Object.keys(groupExpires).forEach(portId => {
+              if (now > groupExpires[portId]) {
+                delete groupExpires[portId];
+                groupChanged = true;
+                tableChanged = true;
+              }
+            });
+
+            if (groupChanged) {
+              newExpires[groupIP] = groupExpires;
+              const activePorts = Object.keys(groupExpires);
+              if (activePorts.length === 0) {
+                delete newTable[groupIP];
+                delete newExpires[groupIP];
+              } else {
+                newTable[groupIP] = activePorts;
+              }
             }
           });
-          
-          if (groupChanged) {
-            newExpires[groupIP] = groupExpires;
-            const activePorts = Object.keys(groupExpires);
-            if (activePorts.length === 0) {
-              delete newTable[groupIP];
-              delete newExpires[groupIP];
-            } else {
-              newTable[groupIP] = activePorts;
-            }
+
+          if (tableChanged) {
+            updatedVlanState = { ...(updatedVlanState || {}), [Number(vlanKey)]: { ...s, igmpSnoopingTable: newTable, igmpSnoopingExpires: newExpires } };
+            nodeChanged = true;
           }
         });
-
-        if (tableChanged) {
-          updatedTable = newTable;
-          updatedExpires = newExpires;
-        }
       }
-      
+
       if (nodeChanged) {
         nodesUpdated = true;
         return {
           ...n,
-          igmpSnoopingTable: updatedTable,
-          igmpSnoopingExpires: updatedExpires,
           vlanState: updatedVlanState
         };
       }

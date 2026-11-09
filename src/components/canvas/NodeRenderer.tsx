@@ -5,7 +5,10 @@ import { NodeIcon } from './NodeIcon';
 import { PortHandle } from './PortHandle';
 import { getPortCenter, getPortStripExtra, type PortRef } from '../../logic/portLayout';
 import { useT } from '../../i18n/useT';
-import { isVlanSwitch, vlanOfInterface, vlanSummary } from '../../logic/vlan';
+import { isVlanSwitch, vlanOfInterface, vlanSummary, trunkPortNames, isTrunkInterface, allMacEntries, allSnoopingEntries, activeVlans } from '../../logic/vlan';
+
+/** VLANを使っている(複数のVLANがある、またはトランクがある)スイッチでは、表の行にVLAN番号を添える */
+const vlanBadgeNeeded = (node: Parameters<typeof vlanSummary>[0]): boolean => activeVlans(node).length > 1 || trunkPortNames(node).length > 0;
 
 interface NodeRendererProps {
   node: NetNode;
@@ -95,7 +98,7 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
             key={iface.id}
             cx={c.x - node.x} cy={c.y - node.y}
             name={iface.name}
-            tooltip={`${iface.name}${isVlanSwitch(node) ? ' • VLAN ' + vlanOfInterface(iface) : ''}${iface.ip ? ' • ' + iface.ip : ''}${iface.mac ? ' • ' + iface.mac : ''} — ${used ? t('port.connected') : t('port.free')}`}
+            tooltip={`${iface.name}${isVlanSwitch(node) ? (isTrunkInterface(iface) ? ' • Trunk' : ' • VLAN ' + vlanOfInterface(iface)) : ''}${iface.ip ? ' • ' + iface.ip : ''}${iface.mac ? ' • ' + iface.mac : ''} — ${used ? t('port.connected') : t('port.free')}`}
             used={used}
             isWireSource={isSource}
             isCandidate={!!wireSource && !isSource && !used && wireSource.nodeId !== node.id}
@@ -108,12 +111,16 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
       })}
       <span className="label-mono" style={{ marginTop: `${8 + getPortStripExtra(node.interfaces.length)}px`, background: 'var(--node-bg)', padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(var(--ink), 0.1)', fontSize: '11px', whiteSpace: 'nowrap' }}>{node.label}</span>
       {/* VLANを使っているスイッチだけ、VLANごとのポートの要約を出す(狭い幅でも折り返す) */}
-      {isVlanSwitch(node) && vlanSummary(node).length > 1 && (
+      {isVlanSwitch(node) && (vlanSummary(node).length > 1 || trunkPortNames(node).length > 0) && (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '4px', maxWidth: '180px' }}>
           {vlanSummary(node).map(s => (
             <span key={s.vlan} className="label-mono" style={{ fontSize: '11px', color: 'var(--text-dim)', textAlign: 'center', overflowWrap: 'anywhere' }}
               title={`VLAN ${s.vlan}: ${s.ports.join(', ')}`}>VLAN {s.vlan}: {s.ports.join(', ')}</span>
           ))}
+          {trunkPortNames(node).length > 0 && (
+            <span className="label-mono" style={{ fontSize: '11px', color: 'var(--text-dim)', textAlign: 'center', overflowWrap: 'anywhere' }}
+              title={`Trunk: ${trunkPortNames(node).join(', ')}`}>Trunk: {trunkPortNames(node).join(', ')}</span>
+          )}
         </div>
       )}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '4px', gap: '2px' }}>
@@ -156,12 +163,12 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
           )}
 
           {/* L2 MAC Table for Switches */}
-          {['switch', 'l3switch'].includes(node.type) && node.macTable && Object.keys(node.macTable).length > 0 && (
+          {['switch', 'l3switch'].includes(node.type) && allMacEntries(node).length > 0 && (
             <div style={{ background: 'color-mix(in srgb, var(--proto-other) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--proto-other) 20%, transparent)', borderRadius: '6px', padding: '4px', display: 'flex', flexDirection: 'column', gap: '2px', backdropFilter: 'blur(4px)', minWidth: '80px' }}>
               <div style={{ fontSize: '11px', color: 'var(--proto-other-text)', fontWeight: 700, textAlign: 'center', borderBottom: '1px solid color-mix(in srgb, var(--proto-other) 20%, transparent)', paddingBottom: '2px', marginBottom: '2px' }}>{t('table.mac')}</div>
-              {Object.entries(node.macTable).map(([mac, portId]) => (
-                <div key={mac} style={{ display: 'flex', gap: '8px', justifyContent: 'space-between', fontSize: '11px', fontFamily: 'monospace' }}>
-                  <span style={{ color: 'var(--proto-other-text)' }}>{mac.slice(-5)}</span>
+              {allMacEntries(node).map(({ vlan, mac, portId }) => (
+                <div key={`${vlan}-${mac}`} style={{ display: 'flex', gap: '8px', justifyContent: 'space-between', fontSize: '11px', fontFamily: 'monospace' }}>
+                  <span style={{ color: 'var(--proto-other-text)' }}>{vlanBadgeNeeded(node) ? `v${vlan} ` : ''}{mac.slice(-5)}</span>
                   <span style={{ color: 'rgba(var(--ink), 0.6)' }}>{node.interfaces.find(i => i.id === portId)?.name || 'P'}</span>
                 </div>
               ))}
@@ -169,7 +176,7 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
           )}
 
           {/* IGMP Table (Joined Groups for PC/Server, Snooping for Switches) */}
-          {( (node.joinedGroups && node.joinedGroups.length > 0) || (node.igmpSnoopingTable && Object.keys(node.igmpSnoopingTable).length > 0) ) && (
+          {( (node.joinedGroups && node.joinedGroups.length > 0) || (allSnoopingEntries(node).length > 0) ) && (
             <div style={{ background: 'color-mix(in srgb, var(--proto-igmp) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--proto-igmp) 20%, transparent)', borderRadius: '6px', padding: '4px', display: 'flex', flexDirection: 'column', gap: '2px', backdropFilter: 'blur(4px)', minWidth: '80px' }}>
               <div style={{ fontSize: '11px', color: 'var(--proto-igmp-text)', fontWeight: 700, textAlign: 'center', borderBottom: '1px solid color-mix(in srgb, var(--proto-igmp) 20%, transparent)', paddingBottom: '2px', marginBottom: '2px' }}>
                 {['switch', 'l3switch'].includes(node.type) ? 'IGMP SNOOPING' : t('node.joinedGroups')}
@@ -177,9 +184,9 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
               {node.joinedGroups?.map(group => (
                 <div key={group} style={{ fontSize: '11px', color: 'var(--proto-igmp-text)', textAlign: 'center', fontFamily: 'monospace' }}>{group}</div>
               ))}
-              {['switch', 'l3switch'].includes(node.type) && node.igmpSnoopingTable && Object.entries(node.igmpSnoopingTable).map(([group, ports]) => (
-                <div key={group} style={{ display: 'flex', gap: '8px', justifyContent: 'space-between', fontSize: '11px', fontFamily: 'monospace' }}>
-                  <span style={{ color: 'var(--proto-igmp-text)' }}>{group}</span>
+              {['switch', 'l3switch'].includes(node.type) && allSnoopingEntries(node).map(({ vlan, group, portIds: ports }) => (
+                <div key={`${vlan}-${group}`} style={{ display: 'flex', gap: '8px', justifyContent: 'space-between', fontSize: '11px', fontFamily: 'monospace' }}>
+                  <span style={{ color: 'var(--proto-igmp-text)' }}>{vlanBadgeNeeded(node) ? `v${vlan} ` : ''}{group}</span>
                   <span style={{ color: 'rgba(var(--ink), 0.6)' }}>{(ports as string[]).map(pid => node.interfaces.find(i => i.id === pid)?.name || 'P').join(',')}</span>
                 </div>
               ))}

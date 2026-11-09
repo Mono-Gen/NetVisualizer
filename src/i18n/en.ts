@@ -280,6 +280,12 @@ export const en = {
   "vlan.id": "VLAN number",
   "vlan.invalid": "Enter a whole number from 1 to 4094. Until then, the port keeps its previous VLAN.",
   "vlan.mismatch": "The other end ({peer}) is in VLAN {vlan}, but this port is in VLAN {mine}. Frames from this port enter the other switch as VLAN {vlan}, so the two VLANs get mixed. Set the same number on both ends unless you want to see this.",
+  "vlan.mode": "Port type",
+  "vlan.modeAccess": "Access",
+  "vlan.modeTrunk": "Trunk",
+  "vlan.trunkAll": "Carries every VLAN, each frame tagged with its VLAN number.",
+  "vlan.modeMismatch": "The other end ({peer}) is a different port type. An access port sends and accepts untagged frames, a trunk port only tagged ones, so frames between these two ports are dropped. Make both ends access (same VLAN) or both ends trunk.",
+  "vlan.trunkToHost": "This trunk port is connected to {peer}, which cannot use VLAN tags. It will drop the tagged frames. Connect hosts and routers to access ports.",
 };
 
 export type DictKey = keyof typeof en;

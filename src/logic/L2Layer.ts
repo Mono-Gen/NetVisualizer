@@ -1,7 +1,7 @@
 import type { NetNode, NetPacket } from '../types/network';
 import { isMulticastMAC, isLinkLocalMulticast } from './MulticastEngine';
 import { IGMPHandler } from './IGMPHandler';
-import { vlanOfPort, portsInVlan, getVlanState } from './vlan';
+import { portsInVlan, getVlanState, classifyIngress, isVlanSwitch } from './vlan';
 
 export interface L2ProcessingResult {
   action: 'drop' | 'forward' | 'process' | 'flood';
@@ -40,10 +40,32 @@ export const processL2 = (
 ): L2ProcessingResult => {
   const result: L2ProcessingResult = { action: 'process' };
   const ingressPortId = packet.toInterfaceId || '';
-  
-  // 1. MAC Learning (for Switch / L3Switch)
+
+  // 0. VLAN: スイッチは、受けたポートで1回だけ、フレームのVLANを決める(学習より前)。
+  //    アクセスはタグ無し、トランクはタグ付きだけを受ける。守られていないフレームは、学習せずに破棄する。
+  let ingressVlan = 1;
+  if (isVlanSwitch(currentNode)) {
+    const cls = classifyIngress(currentNode, ingressPortId, packet.vlanTag);
+    if (!cls.ok) {
+      const port = currentNode.interfaces.find(i => i.id === ingressPortId)?.name || ingressPortId;
+      return {
+        action: 'drop',
+        log: {
+          status: 'error',
+          info: cls.reason === 'taggedOnAccess'
+            ? `VLAN Drop: ${currentNode.label} received a tagged frame on access port ${port}. Access ports only accept untagged frames.`
+            : `VLAN Drop: ${currentNode.label} received an untagged frame on trunk port ${port}. Trunk ports only accept tagged frames.`
+        }
+      };
+    }
+    ingressVlan = cls.vlan;
+    result.vlan = ingressVlan;
+  }
+  const vlanState = getVlanState(currentNode, ingressVlan);
+
+  // 1. MAC Learning (for Switch / L3Switch): そのVLANの表へ
   if (['switch', 'l3switch'].includes(currentNode.type) && packet.senderMAC && ingressPortId) {
-    const macTable = { ...(currentNode.macTable || {}) };
+    const macTable = { ...(vlanState.macTable || {}) };
     if (!compareMAC(macTable[packet.senderMAC] || '', ingressPortId)) {
       macTable[packet.senderMAC] = ingressPortId;
       result.updatedMacTable = macTable;
@@ -52,6 +74,13 @@ export const processL2 = (
 
   // 2. L2 Filtering for L3 Devices (PC, Router, Server, DNS, DHCP Server)
   if (['pc', 'router', 'server', 'dns', 'dhcp'].includes(currentNode.type)) {
+    // タグ付きフレームは、VLANスイッチのトランクの上だけのもの。ホストやルーターは受け付けない
+    if (packet.vlanTag !== undefined) {
+      return {
+        action: 'drop',
+        log: { status: 'dropped', info: `VLAN Drop: ${currentNode.label} received a tagged frame. Hosts and routers only accept untagged frames; connect them to an access port.` }
+      };
+    }
     // DROP if the packet is from ME (prevent loop/reflection processing)
     if (packet.senderMAC && currentNode.interfaces.some(i => compareMAC(i.mac, packet.senderMAC || ''))) {
       return { action: 'drop' };
@@ -87,8 +116,7 @@ export const processL2 = (
   if (currentNode.type === 'switch' || currentNode.type === 'l3switch') {
     const isBroadcast = packet.targetMAC === 'FF:FF:FF:FF:FF:FF';
     const isMulticast = isMulticastMAC(packet.targetMAC);
-    // VLAN: フレームは、受けたポートのVLANに属し、同じVLANのポートにしか出ない
-    const ingressVlan = vlanOfPort(currentNode, ingressPortId);
+    // VLAN: フレームは、受けたポートで決まったVLANに属し、そのVLANのポート(とトランク)にしか出ない
     const sameVlanPorts = portsInVlan(currentNode, ingressVlan, ingressPortId);
     
     // L3Switch intercepts packets targeted to its own MAC
@@ -101,8 +129,7 @@ export const processL2 = (
 
     // IGMP Snooping Learning
     if (packet.protocol === 'IGMP' && ingressPortId && currentNode.igmpSnoopingEnabled !== false) {
-      const igmpResult = IGMPHandler.handleSnooping(currentNode, packet, ingressPortId);
-      result.vlan = ingressVlan;
+      const igmpResult = IGMPHandler.handleSnooping(currentNode, packet, ingressPortId, ingressVlan);
       if (igmpResult.updatedIgmpTable) {
         result.updatedIgmpTable = igmpResult.updatedIgmpTable;
       }
@@ -133,13 +160,13 @@ export const processL2 = (
         return { ...result, action: 'flood', forwardPorts: sameVlanPorts };
       }
 
-      const snoopingTable = currentNode.igmpSnoopingTable || {};
+      const snoopingTable = vlanState.igmpSnoopingTable || {};
       const registeredPorts = snoopingTable[packet.targetIP] || [];
       // 登録されたポートのうち、同じVLANのものだけ(アクセスポートは1つのVLANにしか属さないので、これで分離できる)
       let egressPortIds = registeredPorts.filter(p => p !== ingressPortId && sameVlanPorts.includes(p));
       
       // If there's an active mrouter port and it's not the ingress port, duplicate traffic to it
-      const currentMrouterPortId = result.updatedMrouterPortId !== undefined ? result.updatedMrouterPortId : getVlanState(currentNode, ingressVlan).mrouterPortId;
+      const currentMrouterPortId = result.updatedMrouterPortId !== undefined ? result.updatedMrouterPortId : vlanState.mrouterPortId;
       if (currentMrouterPortId && currentMrouterPortId !== ingressPortId && sameVlanPorts.includes(currentMrouterPortId) && !egressPortIds.includes(currentMrouterPortId)) {
         egressPortIds = [...egressPortIds, currentMrouterPortId];
       }
@@ -157,7 +184,7 @@ export const processL2 = (
       return { ...result, action: 'forward', forwardPorts: egressPortIds };
     }
 
-    const macTable = result.updatedMacTable || currentNode.macTable || {};
+    const macTable = result.updatedMacTable || vlanState.macTable || {};
     
     // Find entry using fuzzy MAC comparison
     const learnedPortId = Object.keys(macTable).find(m => compareMAC(m, packet.targetMAC || '')) 

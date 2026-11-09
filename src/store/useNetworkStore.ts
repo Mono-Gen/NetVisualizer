@@ -3,6 +3,7 @@ import type { NetworkState } from '../types/store';
 import { createNodeSlice } from './slices/nodeSlice';
 import { createPacketSlice } from './slices/packetSlice';
 import { createLogSlice } from './slices/logSlice';
+import { clearMacTables } from '../logic/vlan';
 
 export const useNetworkStore = create<NetworkState>((set, get) => ({
   ...createNodeSlice(set, get),
@@ -51,7 +52,7 @@ export const useNetworkStore = create<NetworkState>((set, get) => ({
   }),
 
   clearTables: () => set((state) => ({
-    nodes: state.nodes.map(n => ({ ...n, macTable: {}, arpTable: {}, dnsCache: {} })),
+    nodes: state.nodes.map(n => ({ ...n, vlanState: clearMacTables(n), arpTable: {}, dnsCache: {} })),
     packetLogs: [],
     pendingPackets: []
   })),
@@ -65,6 +66,6 @@ export const useNetworkStore = create<NetworkState>((set, get) => ({
   })),
   
   clearNodeMacTable: (nodeId: string) => set((state) => ({
-    nodes: state.nodes.map(n => n.id === nodeId ? { ...n, macTable: {} } : n)
+    nodes: state.nodes.map(n => n.id === nodeId ? { ...n, vlanState: clearMacTables(n) } : n)
   })),
 }));

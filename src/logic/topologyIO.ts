@@ -35,7 +35,8 @@ const configOf = (n: NetNode): NetNode => {
       ...(i.gateway !== undefined ? { gateway: i.gateway } : {}),
       ...(i.dns !== undefined ? { dns: i.dns } : {}),
       ...(i.metric !== undefined ? { metric: i.metric } : {}),
-      ...(i.accessVlan !== undefined ? { accessVlan: i.accessVlan } : {})
+      ...(i.accessVlan !== undefined ? { accessVlan: i.accessVlan } : {}),
+      ...(i.vlanMode === 'trunk' ? { vlanMode: 'trunk' as const } : {})
     }))
   };
   const copy = <K extends keyof NetNode>(k: K) => { if (n[k] !== undefined) (out as any)[k] = n[k]; };
@@ -63,6 +64,8 @@ const parseInterface = (raw: unknown): NetInterface | null => {
   if (num(raw.metric)) iface.metric = raw.metric;
   // 範囲外のVLANは捨てる(VLAN 1 として読む)
   if (isValidVlanId(raw.accessVlan)) iface.accessVlan = raw.accessVlan;
+  // 'trunk' だけを取り込む(それ以外は、未設定=アクセス)
+  if (raw.vlanMode === 'trunk') iface.vlanMode = 'trunk';
   return iface;
 };
 
@@ -94,7 +97,7 @@ export const parseTopology = (text: string): ParseResult => {
     nodeIds.add(raw.id);
     const node: NetNode = {
       id: raw.id, type: raw.type as NodeType, x: raw.x, y: raw.y, label: raw.label, interfaces,
-      macTable: {}, arpTable: {}, igmpSnoopingTable: {}, joinedGroups: []
+      arpTable: {}, joinedGroups: []
     };
     // 任意項目は、型が合うものだけ取り込む
     if (str(raw.managementIP)) node.managementIP = raw.managementIP;

@@ -279,4 +279,10 @@ export const ja: Record<DictKey, string> = {
   "vlan.id": "VLAN番号",
   "vlan.invalid": "1〜4094の整数を入力してください。正しい値になるまで、ポートは前のVLANのままです。",
   "vlan.mismatch": "反対側 ({peer}) は VLAN {vlan} ですが、このポートは VLAN {mine} です。このポートから出たフレームは、反対側のスイッチでは VLAN {vlan} として扱われ、2つのVLANが混ざります。確認したいとき以外は、両端を同じ番号にしてください。",
+  "vlan.mode": "ポートの種類",
+  "vlan.modeAccess": "アクセス",
+  "vlan.modeTrunk": "トランク",
+  "vlan.trunkAll": "すべてのVLANを、VLAN番号のタグを付けて通します。",
+  "vlan.modeMismatch": "反対側 ({peer}) は、別の種類のポートです。アクセスポートはタグ無し、トランクポートはタグ付きのフレームだけを送受信するので、この2つのポートの間のフレームは破棄されます。両端をアクセス(同じVLAN)にするか、両端をトランクにしてください。",
+  "vlan.trunkToHost": "このトランクポートは、VLANタグを扱えない {peer} につながっています。タグ付きのフレームは破棄されます。ホストやルーターは、アクセスポートにつないでください。",
 };

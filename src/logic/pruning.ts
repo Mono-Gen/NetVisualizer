@@ -1,4 +1,5 @@
-import type { NetNode, NetLink, NetPacket } from '../types/network';
+import type { NetNode, NetLink, NetPacket, VlanState } from '../types/network';
+import { mapVlanStates } from './vlan';
 import { dropEntriesOfInsideIPs } from './nat';
 
 /**
@@ -7,39 +8,43 @@ import { dropEntriesOfInsideIPs } from './nat';
  * 「もういない相手」が表に出て、初心者が混乱する。
  */
 
+/** 1つのVLANの入れ物から、そのポートの記憶(MAC・IGMP・mrouter)を消す */
+export const forgetPortInVlanState = (s: VlanState, ifaceId: string): VlanState => {
+  const out: VlanState = { ...s };
+  if (s.macTable) out.macTable = Object.fromEntries(Object.entries(s.macTable).filter(([, port]) => port !== ifaceId));
+  if (s.igmpSnoopingTable) {
+    const table: Record<string, string[]> = {};
+    Object.entries(s.igmpSnoopingTable).forEach(([group, ports]) => {
+      const rest = ports.filter(p => p !== ifaceId);
+      if (rest.length > 0) table[group] = rest;
+    });
+    out.igmpSnoopingTable = table;
+  }
+  if (s.igmpSnoopingExpires) {
+    const expires: Record<string, Record<string, number>> = {};
+    Object.entries(s.igmpSnoopingExpires).forEach(([group, ports]) => {
+      const rest = Object.fromEntries(Object.entries(ports).filter(([p]) => p !== ifaceId));
+      if (Object.keys(rest).length > 0) expires[group] = rest;
+    });
+    out.igmpSnoopingExpires = expires;
+  }
+  if (s.mrouterPortId === ifaceId) {
+    out.mrouterPortId = undefined;
+    out.mrouterPortExpiresAt = undefined;
+  }
+  return out;
+};
+
 /** ポートに結びついた学習状態(MACテーブル・IGMP・mrouter)を忘れる */
 export const forgetPortState = (node: NetNode, ifaceId: string): NetNode => {
   const next: NetNode = { ...node };
 
-  if (node.macTable) {
-    next.macTable = Object.fromEntries(Object.entries(node.macTable).filter(([, port]) => port !== ifaceId));
-  }
-  if (node.igmpSnoopingTable) {
-    const table: Record<string, string[]> = {};
-    Object.entries(node.igmpSnoopingTable).forEach(([group, ports]) => {
-      const rest = ports.filter(p => p !== ifaceId);
-      if (rest.length > 0) table[group] = rest;
-    });
-    next.igmpSnoopingTable = table;
-  }
-  if (node.igmpSnoopingExpires) {
-    const expires: Record<string, Record<string, number>> = {};
-    Object.entries(node.igmpSnoopingExpires).forEach(([group, ports]) => {
-      const rest = Object.fromEntries(Object.entries(ports).filter(([p]) => p !== ifaceId));
-      if (Object.keys(rest).length > 0) expires[group] = rest;
-    });
-    next.igmpSnoopingExpires = expires;
-  }
+  // MAC表・スヌーピング表・mrouterは、VLANごとの入れ物に持つ。全VLANから、そのポートの記憶を消す
+  next.vlanState = mapVlanStates(node, s => forgetPortInVlanState(s, ifaceId));
+  if (next.vlanState === undefined) delete next.vlanState;
   // ケーブルの抜き差し(リンクの切断)では、NATの変換を全て忘れる(再接続後に古い対応が残らないように)
   if (node.natTable && node.natTable.length > 0) next.natTable = [];
-  if (node.vlanState) {
-    // そのポートを mrouter にしていたVLANの記憶を消す
-    const state: NonNullable<NetNode['vlanState']> = {};
-    Object.entries(node.vlanState).forEach(([vlan, s]) => {
-      state[Number(vlan)] = s.mrouterPortId === ifaceId ? { ...s, mrouterPortId: undefined, mrouterPortExpiresAt: undefined } : s;
-    });
-    next.vlanState = state;
-  }
+
   return next;
 };
 
@@ -52,9 +57,10 @@ export const forgetDevice = (node: NetNode, removed: NetNode): NetNode => {
   if (node.arpTable) {
     next.arpTable = Object.fromEntries(Object.entries(node.arpTable).filter(([, mac]) => !macs.has(String(mac).toUpperCase())));
   }
-  if (node.macTable) {
-    next.macTable = Object.fromEntries(Object.entries(node.macTable).filter(([mac]) => !macs.has(mac.toUpperCase())));
-  }
+  const vs = mapVlanStates(node, s => s.macTable
+    ? { ...s, macTable: Object.fromEntries(Object.entries(s.macTable).filter(([mac]) => !macs.has(mac.toUpperCase()))) }
+    : s);
+  if (vs) next.vlanState = vs;
   return next;
 };
 
