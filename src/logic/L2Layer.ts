@@ -11,6 +11,7 @@ export interface L2ProcessingResult {
   updatedIgmpExpires?: Record<string, Record<string, number>>;
   updatedMrouterPortId?: string;
   updatedMrouterPortExpiresAt?: number;
+  updatedQuerierStandby?: boolean; // クエリアの選挙に負けたとき true
   processAtL3?: boolean;
   log?: {
     status: 'error' | 'sent' | 'dropped';
@@ -106,6 +107,10 @@ export const processL2 = (
       }
       if (igmpResult.updatedMrouterPortExpiresAt !== undefined) {
         result.updatedMrouterPortExpiresAt = igmpResult.updatedMrouterPortExpiresAt;
+      }
+      // 選挙の結果を、呼び出し側(エンジン)へ渡す。ここで落とすと、負けても待機に回らない
+      if (igmpResult.updatedQuerierStandby !== undefined) {
+        result.updatedQuerierStandby = igmpResult.updatedQuerierStandby;
       }
     }
 
