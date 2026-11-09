@@ -286,6 +286,8 @@ export const en = {
   "vlan.trunkAll": "Carries every VLAN, each frame tagged with its VLAN number.",
   "vlan.modeMismatch": "The other end ({peer}) is a different port type. An access port sends and accepts untagged frames, a trunk port only tagged ones, so frames between these two ports are dropped. Make both ends access (same VLAN) or both ends trunk.",
   "vlan.trunkToHost": "This trunk port is connected to {peer}, which cannot use VLAN tags. It will drop the tagged frames. Connect hosts and routers to access ports.",
+  "sample.vlan.name": "8. VLANs and a Trunk",
+  "sample.vlan.desc": "Two switches joined by one trunk cable. PC 1 and PC 2 are in VLAN 10, PC 3 and PC 4 in VLAN 20, all on the same IP network. Ping 192.168.1.2 from PC 1: it works even across the trunk. Ping 192.168.1.3 from PC 1: it times out, because VLAN 20 is a separate network. Open a switch to see the port types, the per-VLAN MAC tables and the tagged frames.",
 };
 
 export type DictKey = keyof typeof en;

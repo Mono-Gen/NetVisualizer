@@ -207,4 +207,33 @@ const natSample: SampleTopology = {
   }
 };
 
-export const SAMPLE_TOPOLOGIES: SampleTopology[] = [basicLan, routed, igmp, switchLoop, multiNic, firewall, natSample];
+const vlanSample: SampleTopology = {
+  id: 'vlan',
+  name: '8. VLANs and a Trunk',
+  description: 'Two switches joined by one trunk cable. PC 1 and PC 2 are in VLAN 10, PC 3 and PC 4 in VLAN 20, all on the same IP network. Ping works inside a VLAN, even across the trunk, but not between VLANs.',
+  build: () => {
+    MAC_SEQ.reset();
+    const sw1 = makeNode('sw1', 'switch', 'Switch 1', 140, 120, makeSwitchPorts('sw1', 8));
+    const sw2 = makeNode('sw2', 'switch', 'Switch 2', 620, 120, makeSwitchPorts('sw2', 8));
+    // sw1: eth0=VLAN 10, eth1=VLAN 20, eth7=トランク。sw2: eth0=トランク, eth1=VLAN 10, eth2=VLAN 20
+    sw1.interfaces[0].accessVlan = 10;
+    sw1.interfaces[1].accessVlan = 20;
+    sw1.interfaces[7].vlanMode = 'trunk';
+    sw2.interfaces[0].vlanMode = 'trunk';
+    sw2.interfaces[1].accessVlan = 10;
+    sw2.interfaces[2].accessVlan = 20;
+    const pc1 = makeNode('pc1', 'pc', 'PC 1', 60, 340, [makeIface('pc1', 0, '192.168.1.1', LAN)]);
+    const pc3 = makeNode('pc3', 'pc', 'PC 3', 220, 340, [makeIface('pc3', 0, '192.168.1.3', LAN)]);
+    const pc2 = makeNode('pc2', 'pc', 'PC 2', 540, 340, [makeIface('pc2', 0, '192.168.1.2', LAN)]);
+    const pc4 = makeNode('pc4', 'pc', 'PC 4', 700, 340, [makeIface('pc4', 0, '192.168.1.4', LAN)]);
+    return {
+      nodes: [sw1, sw2, pc1, pc3, pc2, pc4],
+      links: [
+        link('l1', pc1, 0, sw1, 0), link('l2', pc3, 0, sw1, 1), link('l3', sw1, 7, sw2, 0),
+        link('l4', pc2, 0, sw2, 1), link('l5', pc4, 0, sw2, 2)
+      ]
+    };
+  }
+};
+
+export const SAMPLE_TOPOLOGIES: SampleTopology[] = [basicLan, routed, igmp, switchLoop, multiNic, firewall, natSample, vlanSample];

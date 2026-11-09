@@ -362,6 +362,40 @@ PC 1 192.168.1.10:50001 ◄─ Router ◄─ 203.0.113.1:40000 ◄─ Server
 
 Try the sample "7. NAT Lets Inside PCs Go Out": the server has no route back to `192.168.1.0/24`, yet the replies arrive. Turn NAT off and ping again to see the difference.
 
+### 4.5 VLANs and Trunk Ports (Switch)
+
+A **VLAN** splits one switch into separate networks. Devices in different VLANs cannot reach each other through the switch, even when their IP addresses are on the same network.
+
+#### Port types
+
+Select a switch and open the **PORT VLANS** panel. Each port is one of two types:
+
+- **Access**: belongs to **one VLAN** (1-4094). Hosts connect here. Every port starts as Access in VLAN 1, so a switch you do not configure behaves as before.
+- **Trunk**: carries **every VLAN** over one cable, adding a **VLAN tag** to each frame so the other end knows which VLAN it belongs to. Use it between switches.
+
+#### How frames move
+
+1. A frame gets its VLAN **where it enters the switch**: an access port gives it the port's VLAN, a trunk port reads it from the tag.
+2. The switch only sends it to ports of the **same VLAN** (and to trunks). Flooding, MAC learning and IGMP snooping all stay inside the VLAN, so each VLAN has its own MAC table.
+3. Leaving through an access port, the tag is removed; leaving through a trunk, it is added. Hosts never see tags.
+
+Frames that break the rule are dropped and logged: an access port only accepts untagged frames, and a trunk port only tagged ones.
+
+#### Mistakes the app warns about
+
+The settings panel shows a warning on a port when:
+- the two ends of a cable are **access ports in different VLANs**: frames enter the other switch as that port's VLAN, so the VLANs get mixed;
+- one end is **access** and the other **trunk**: the frames are dropped;
+- a **trunk** is connected to a PC, server or router, which cannot use VLAN tags.
+
+Switches that use VLANs show their ports grouped by VLAN, and the MAC and IGMP tables show a VLAN number on each row.
+
+#### Multicast (IGMP v2)
+
+The group table, the router port (mrouter) and the **querier** are kept **per VLAN**. A querier sends its queries into every VLAN it has ports in (tagged on trunks). In VLAN 1 it uses the management IP as its address; in other VLANs it has no address (0.0.0.0), so any switch with a real address wins the election there. Leave messages arriving on a trunk do not remove the entry, because a trunk can stand for many receivers; the entry expires instead.
+
+Try the sample "8. VLANs and a Trunk". Not covered: allowed-VLAN lists, the native VLAN, STP, and routing between VLANs.
+
 ---
 
 ## Chapter 5 — Multicast and IGMP
