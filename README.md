@@ -4,6 +4,8 @@
 
 <video src="./docs/assets/ui_screenshot.mp4" controls muted autoplay loop style="max-width: 100%; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);"></video>
 
+![Sample 9: an L3 switch routing between VLAN 10 and VLAN 20, with the SVI addresses and the port VLAN settings](./docs/assets/ui_screenshot.png)
+
 ## 🌟 Key Features
 
 ### 📡 Visual Network Building
