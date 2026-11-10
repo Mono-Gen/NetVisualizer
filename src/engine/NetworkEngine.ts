@@ -212,7 +212,8 @@ export class NetworkEngine {
         const rawPackets = [...protoUpdate.addPackets];
         rawPackets.forEach(p => {
           // SVI方式: すでにVLANの中へ入れ済みのフレーム(出口が物理ポート)は、もう一度組み立てずにそのまま出す
-          if (l3Node !== receiverNode && !l3Node.interfaces.some(i => i.id === p.originatingInterfaceId)) {
+          if (l3Node !== receiverNode && p.originatingInterfaceId && !l3Node.interfaces.some(i => i.id === p.originatingInterfaceId)
+              && receiverNode.interfaces.some(i => i.id === p.originatingInterfaceId)) {
             update.addPackets = [...(update.addPackets || []), p];
             return;
           }

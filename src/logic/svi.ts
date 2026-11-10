@@ -61,18 +61,26 @@ export const sviIssue = (svi: Svi, node: NetNode, allNodes: NetNode[]): SviIssue
   return null;
 };
 
-/** 読込時用: 形式だけを見て(重複はVLANとIPの2点)、使えるSVIだけを残す。1件の不正で全体を失敗させない */
-export const sanitizeSvis = (raw: unknown[], usedMacs: Set<string>): Svi[] => {
+/** ユニキャストのMACアドレス(xx:xx:xx:xx:xx:xx で、先頭バイトの最下位ビットが0)。マルチキャスト/ブロードキャストは機器に付けられない */
+export const isUnicastMac = (mac: string): boolean =>
+  /^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/.test(mac) && (parseInt(mac.slice(0, 2), 16) & 1) === 0;
+
+/**
+ * 読込時用: 形式だけを見て(重複はVLAN・IP・ID・MAC)、使えるSVIだけを残す。1件の不正で全体を失敗させない。
+ * usedMacs / usedIds は、全機器のポートの値(呼び出し側が、全機器を読み終えてから渡す)。SVIのIDは物理ポートのIDと重ねない
+ * (出口が物理ポートかSVIかを、IDで見分けるため)。
+ */
+export const sanitizeSvis = (raw: unknown[], usedMacs: Set<string>, usedIds: Set<string>): Svi[] => {
   const out: Svi[] = [];
   const vlans = new Set<number>(), ips = new Set<string>(), ids = new Set<string>();
   for (const r of raw) {
     if (typeof r !== 'object' || r === null) continue;
     const o = r as Record<string, unknown>;
     if (typeof o.id !== 'string' || typeof o.ip !== 'string' || typeof o.subnet !== 'string' || typeof o.mac !== 'string') continue;
-    if (!isValidVlanId(o.vlan) || !isIPv4(o.ip) || !isValidMask(o.subnet) || o.mac === '') continue;
+    if (!isValidVlanId(o.vlan) || !isIPv4(o.ip) || !isValidMask(o.subnet) || !isUnicastMac(o.mac)) continue;
     const mac = o.mac.toUpperCase();
-    if (vlans.has(o.vlan) || ips.has(o.ip) || ids.has(o.id) || usedMacs.has(mac)) continue;
-    vlans.add(o.vlan); ips.add(o.ip); ids.add(o.id); usedMacs.add(mac);
+    if (vlans.has(o.vlan) || ips.has(o.ip) || ids.has(o.id) || usedIds.has(o.id) || usedMacs.has(mac)) continue;
+    vlans.add(o.vlan); ips.add(o.ip); ids.add(o.id); usedIds.add(o.id); usedMacs.add(mac);
     out.push({ id: o.id, vlan: o.vlan, ip: o.ip, subnet: o.subnet, mac: o.mac });
   }
   return out;

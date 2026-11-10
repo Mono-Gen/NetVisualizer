@@ -84,6 +84,7 @@ export const parseTopology = (text: string): ParseResult => {
   const nodeIds = new Set<string>();
   const ifaceIds = new Set<string>();
   const seenMacs = new Set<string>(); // SVIのMACが、ポートや他のSVIと重ならないように
+  const pendingSvis: { node: NetNode; raw: unknown[] }[] = [];
   for (const raw of data.nodes) {
     if (!isObj(raw) || !str(raw.id) || !str(raw.label) || !num(raw.x) || !num(raw.y)) return fail('bad-node');
     if (!str(raw.type) || !NODE_TYPES.includes(raw.type as NodeType)) return fail('bad-node-type');
@@ -104,8 +105,8 @@ export const parseTopology = (text: string): ParseResult => {
       arpTable: {}, joinedGroups: []
     };
     // 任意項目は、型が合うものだけ取り込む
-    // SVI方式(svis が配列)のL3スイッチだけ。不正な1件だけを捨てる。旧方式(無し)はそのまま
-    if (raw.type === 'l3switch' && Array.isArray(raw.svis)) node.svis = sanitizeSvis(raw.svis, seenMacs);
+    // SVI方式(svis が配列)のL3スイッチだけ。検証は、全機器のポートを読み終えてから行う(機器の並び順に依存させない)
+    if (raw.type === 'l3switch' && Array.isArray(raw.svis)) pendingSvis.push({ node, raw: raw.svis });
     if (str(raw.managementIP)) node.managementIP = raw.managementIP;
     if (str(raw.managementSubnet)) node.managementSubnet = raw.managementSubnet;
     if (typeof raw.igmpSnoopingEnabled === 'boolean') node.igmpSnoopingEnabled = raw.igmpSnoopingEnabled;
@@ -146,6 +147,9 @@ export const parseTopology = (text: string): ParseResult => {
     }
     nodes.push(node);
   }
+
+  // SVI: 不正な1件だけを捨てる。MAC・IDは、全機器のポートと重ならないものだけ
+  for (const { node, raw } of pendingSvis) node.svis = sanitizeSvis(raw, seenMacs, ifaceIds);
 
   const links: NetLink[] = [];
   const linkIds = new Set<string>();

@@ -38,6 +38,8 @@ export const portsInVlan = (node: NetNode, vlan: number, exceptId?: string): str
 /** アクセスポートに設定されているVLAN番号(昇順、重複なし)。クエリを送る対象 */
 export const activeVlans = (node: NetNode): number[] => {
   const set = new Set(node.interfaces.filter(i => !isTrunkInterface(i)).map(vlanOfInterface));
+  // SVIのVLANも、クエリを送る対象(トランクだけでつながるL3スイッチでも、SVIのVLANにクエリを出す)
+  (node.svis || []).filter(s => !!s.ip).forEach(s => set.add(s.vlan));
   if (set.size === 0) set.add(DEFAULT_VLAN); // トランクだけの機器でも、VLAN 1 は存在する
   return [...set].sort((a, b) => a - b);
 };
