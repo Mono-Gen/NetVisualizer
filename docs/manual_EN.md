@@ -83,6 +83,7 @@ The grid in the background moves and scales with the view. Loading a sample or p
 | 🗄 Server | Server | Provides web, DNS, DHCP, and other services |
 | 🔀 Switch | L2 Switch | Learns MAC addresses and forwards frames (Layer 2) |
 | 🔁 Router | Router | Connects different networks (Layer 3 routing) |
+| 🔆 L3 Switch | L3 Switch | A switch that also routes between VLANs through SVIs (see 4.6) |
 | 📡 Hub | Hub | Copies packets to all ports (legacy device) |
 
 ### 2.2 Adding Nodes
@@ -142,6 +143,7 @@ Use **Load a sample** at the bottom of the sidebar (available in both modes) to 
 | 2. Two Networks via Router | Ping `192.168.2.10` from PC 1 and watch the gateway ARP |
 | 3. IGMP Snooping | Join `239.1.1.1` on Receiver 1, then send UDP to `239.1.1.1` from the Sender |
 | 5. PC with Two NICs | Ping `192.168.1.20` and `192.168.2.20` from PC 1 and watch which NIC each packet leaves from (see the **Route** lines in the log) |
+| 9. L3 Switch Routes Between VLANs | Ping `192.168.20.10` from PC 1: the L3 switch routes between VLAN 10 and VLAN 20. Then remove the VLAN 20 SVI and ping again |
 | 4. Switch Loop (Broadcast Storm) | Ping `10.0.0.2` from PC 1 and watch the packet count explode; pause to see the MAC tables flip, then remove two of the three cables |
 
 > Loading replaces the current topology (a confirmation appears if the canvas is not empty).
@@ -394,7 +396,37 @@ Switches that use VLANs show their ports grouped by VLAN, and the MAC and IGMP t
 
 The group table, the router port (mrouter) and the **querier** are kept **per VLAN**. A querier sends its queries into every VLAN it has ports in (tagged on trunks). In VLAN 1 it uses the management IP as its address; in other VLANs it has no address (0.0.0.0), so any switch with a real address wins the election there. Leave messages arriving on a trunk do not remove the entry, because a trunk can stand for many receivers; the entry expires instead.
 
-Try the sample "8. VLANs and a Trunk". Not covered: allowed-VLAN lists, the native VLAN, STP, and routing between VLANs.
+Try the sample "8. VLANs and a Trunk". Not covered: allowed-VLAN lists, the native VLAN and STP. To connect VLANs to each other, see 4.6.
+
+### 4.6 L3 Switch: Routing Between VLANs (SVI)
+
+Devices in different VLANs cannot talk through a plain switch. An **L3 switch** adds routing: it gets its own address inside each VLAN, called an **SVI** (Switch Virtual Interface), and routes packets between them. The switch's ports carry **no IP address**; the addresses live in the SVIs.
+
+#### How to set it up
+
+1. Drag an **L3 Switch** onto the canvas and connect the PCs to its ports.
+2. In the **PORT VLANS** panel, put the ports into VLANs (for example VLAN 10 and VLAN 20).
+3. In the **SVIs** panel, press **Add SVI** once per VLAN. Enter the VLAN number, an IP address and a mask (for example `192.168.10.1` and `192.168.20.1`, both `255.255.255.0`).
+4. On each PC, set the **gateway** to the SVI of its own VLAN.
+
+#### What happens when PC 1 (VLAN 10) pings PC 3 (VLAN 20)
+
+1. PC 3 is on another network, so PC 1 sends the frame to its **gateway**, the VLAN 10 SVI (it ARPs for the SVI's MAC address first).
+2. The L3 switch accepts the frame, looks up the destination, lowers the **TTL by 1**, and builds a **new frame** with the VLAN 20 SVI as the sender.
+3. It resolves PC 3's MAC with an ARP request **inside VLAN 20 only**, then delivers the frame to PC 3.
+4. The reply takes the same way back.
+
+If both VLANs reach the switch over **one trunk** cable, the frame comes in tagged with VLAN 10 and goes out of the same cable tagged with VLAN 20.
+
+#### Notes
+
+- A VLAN **without an SVI** stays isolated: the switch has no address there, and pings to other VLANs fail.
+- Pinging an SVI's IP address works from any VLAN that can reach the switch.
+- The SVIs are also the addresses the IGMP **querier** uses in each VLAN.
+- An L3 switch from an older saved topology that still has IP addresses on its ports keeps working as before (each port is a routed port). New L3 switches use SVIs.
+- Not covered: the firewall and NAT on an L3 switch (use a router), DHCP relay, routing protocols, and using the same IP address in two different VLANs on one switch.
+
+Try the sample "9. L3 Switch Routes Between VLANs". Then remove the VLAN 20 SVI and ping again.
 
 ---
 

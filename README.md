@@ -23,6 +23,7 @@
 - **Playback Controls**: Pause, step to the next packet arrival, and slow down or speed up (0.25x–4x) to follow each protocol exchange.
 - **Router Firewall**: Allow or deny traffic by protocol, address and port, with an optional implicit deny. Denied packets are dropped silently, as on real equipment.
 - **VLANs and Trunks**: Split a switch into VLANs, join switches with a trunk, and watch frames get tagged. MAC tables and IGMP state are kept per VLAN.
+- **L3 Switch (SVI)**: Give each VLAN an address (SVI) on an L3 switch and watch it route between the VLANs, with the TTL going down by one at each hop.
 - **Router NAT**: Share one outside address among many inside devices (NAPT). Watch the translation table, and see why unsolicited traffic from outside is dropped.
 - **ICMP (Ping)**: Visualize reachability checks and observe ARP requests for next-hop resolution.
 - **L4 Messaging (TCP/UDP)**:

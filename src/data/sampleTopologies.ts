@@ -236,4 +236,32 @@ const vlanSample: SampleTopology = {
   }
 };
 
-export const SAMPLE_TOPOLOGIES: SampleTopology[] = [basicLan, routed, igmp, switchLoop, multiNic, firewall, natSample, vlanSample];
+const sviSample: SampleTopology = {
+  id: 'svi',
+  name: '9. L3 Switch Routes Between VLANs',
+  description: 'One L3 switch with VLAN 10 and VLAN 20. Each VLAN has an SVI (192.168.10.1 and 192.168.20.1) that the PCs use as their gateway. Ping works inside a VLAN, and between the VLANs because the switch routes.',
+  build: () => {
+    MAC_SEQ.reset();
+    const l3 = makeNode('l3', 'l3switch', 'L3 Switch 1', 380, 120, makeSwitchPorts('l3', 8), { svis: [] });
+    l3.interfaces[0].accessVlan = 10;
+    l3.interfaces[1].accessVlan = 10;
+    l3.interfaces[2].accessVlan = 20;
+    l3.interfaces[3].accessVlan = 20;
+    // SVIのMACは、ポートのMACの続きの番号で振る(サンプル内で一意)
+    const sviMac = () => `00:00:00:00:${hex2(Math.floor(MAC_SEQ.next() / 256))}:${hex2(MAC_SEQ.value % 256)}`.toUpperCase();
+    l3.svis = [
+      { id: 'l3_svi10', vlan: 10, ip: '192.168.10.1', subnet: LAN, mac: sviMac() },
+      { id: 'l3_svi20', vlan: 20, ip: '192.168.20.1', subnet: LAN, mac: sviMac() }
+    ];
+    const pc1 = makeNode('pc1', 'pc', 'PC 1', 120, 340, [makeIface('pc1', 0, '192.168.10.10', LAN, '192.168.10.1')]);
+    const pc2 = makeNode('pc2', 'pc', 'PC 2', 280, 340, [makeIface('pc2', 0, '192.168.10.11', LAN, '192.168.10.1')]);
+    const pc3 = makeNode('pc3', 'pc', 'PC 3', 480, 340, [makeIface('pc3', 0, '192.168.20.10', LAN, '192.168.20.1')]);
+    const pc4 = makeNode('pc4', 'pc', 'PC 4', 640, 340, [makeIface('pc4', 0, '192.168.20.11', LAN, '192.168.20.1')]);
+    return {
+      nodes: [l3, pc1, pc2, pc3, pc4],
+      links: [link('l1', pc1, 0, l3, 0), link('l2', pc2, 0, l3, 1), link('l3', pc3, 0, l3, 2), link('l4', pc4, 0, l3, 3)]
+    };
+  }
+};
+
+export const SAMPLE_TOPOLOGIES: SampleTopology[] = [basicLan, routed, igmp, switchLoop, multiNic, firewall, natSample, vlanSample, sviSample];

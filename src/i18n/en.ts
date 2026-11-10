@@ -302,6 +302,8 @@ export const en = {
   "svi.portsNote": "Ports on an L3 switch carry no IP addresses. Set each port's VLAN in the port VLAN section, and the addresses in the SVI section.",
   "sample.vlan.name": "8. VLANs and a Trunk",
   "sample.vlan.desc": "Two switches joined by one trunk cable. PC 1 and PC 2 are in VLAN 10, PC 3 and PC 4 in VLAN 20, all on the same IP network. Ping 192.168.1.2 from PC 1: it works even across the trunk. Ping 192.168.1.3 from PC 1: it times out, because VLAN 20 is a separate network. Open a switch to see the port types, the per-VLAN MAC tables and the tagged frames.",
+  "sample.svi.name": "9. L3 Switch Routes Between VLANs",
+  "sample.svi.desc": "One L3 switch with two VLANs. PC 1 and PC 2 are in VLAN 10 (192.168.10.0/24), PC 3 and PC 4 in VLAN 20 (192.168.20.0/24). Each VLAN has an SVI on the switch (192.168.10.1 and 192.168.20.1), which the PCs use as their gateway. Ping 192.168.10.11 from PC 1: it stays inside the VLAN. Ping 192.168.20.10 from PC 1: it works, because the L3 switch routes between the VLANs. Open the switch to see the SVIs and the ARP table. Then remove the VLAN 20 SVI and ping again.",
 };
 
 export type DictKey = keyof typeof en;
