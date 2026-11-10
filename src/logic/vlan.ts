@@ -90,10 +90,10 @@ export const allSnoopingEntries = (node: NetNode): { vlan: number; group: string
 
 /**
  * そのVLANで、クエリアが使う送信元IP。空なら、IPを持たない(選挙では常に負ける)。
- * 管理IPは VLAN 1 のインターフェースのもの。他のVLANには、SVI(別段階)が必要。
+ * SVIがあれば、そのVLANのSVIのIP。無ければ、VLAN 1 は管理IP、他のVLANはIPなし。
  */
 export const querierSourceIp = (node: NetNode, vlan: number): string =>
-  vlan === DEFAULT_VLAN ? (node.managementIP || '') : '';
+  node.svis?.find(s => s.vlan === vlan)?.ip || (vlan === DEFAULT_VLAN ? (node.managementIP || '') : '');
 
 export type IngressResult =
   | { ok: true; vlan: number }

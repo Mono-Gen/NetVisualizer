@@ -1,6 +1,7 @@
 import type { NetNode, NetLink, NetInterface, NodeType, FwRule } from '../types/network';
 import { fwRuleIssue } from './firewall';
 import { isValidVlanId } from './vlan';
+import { sanitizeSvis } from './svi';
 
 /**
  * トポロジー(構成)の保存形式と、読み込み時の検証(純粋関数)。
@@ -42,6 +43,7 @@ const configOf = (n: NetNode): NetNode => {
   const copy = <K extends keyof NetNode>(k: K) => { if (n[k] !== undefined) (out as any)[k] = n[k]; };
   (['managementIP', 'managementSubnet', 'igmpSnoopingEnabled', 'igmpSnoopingAgingTime', 'igmpQuerierEnabled',
     'igmpQuerierInterval', 'joinedGroups', 'dnsRecords', 'listeningPorts', 'services', 'firewall', 'nat'] as (keyof NetNode)[]).forEach(copy);
+  if (Array.isArray(n.svis)) out.svis = n.svis.map(s => ({ id: s.id, vlan: s.vlan, ip: s.ip, subnet: s.subnet, mac: s.mac }));
   if (n.dhcpScope) out.dhcpScope = { ...n.dhcpScope, leases: {} };
   return out;
 };
@@ -81,6 +83,7 @@ export const parseTopology = (text: string): ParseResult => {
   const nodes: NetNode[] = [];
   const nodeIds = new Set<string>();
   const ifaceIds = new Set<string>();
+  const seenMacs = new Set<string>(); // SVIのMACが、ポートや他のSVIと重ならないように
   for (const raw of data.nodes) {
     if (!isObj(raw) || !str(raw.id) || !str(raw.label) || !num(raw.x) || !num(raw.y)) return fail('bad-node');
     if (!str(raw.type) || !NODE_TYPES.includes(raw.type as NodeType)) return fail('bad-node-type');
@@ -92,6 +95,7 @@ export const parseTopology = (text: string): ParseResult => {
       if (!iface) return fail('bad-interface');
       if (ifaceIds.has(iface.id)) return fail('duplicate-id');
       ifaceIds.add(iface.id);
+      if (iface.mac) seenMacs.add(iface.mac.toUpperCase());
       interfaces.push(iface);
     }
     nodeIds.add(raw.id);
@@ -100,6 +104,8 @@ export const parseTopology = (text: string): ParseResult => {
       arpTable: {}, joinedGroups: []
     };
     // 任意項目は、型が合うものだけ取り込む
+    // SVI方式(svis が配列)のL3スイッチだけ。不正な1件だけを捨てる。旧方式(無し)はそのまま
+    if (raw.type === 'l3switch' && Array.isArray(raw.svis)) node.svis = sanitizeSvis(raw.svis, seenMacs);
     if (str(raw.managementIP)) node.managementIP = raw.managementIP;
     if (str(raw.managementSubnet)) node.managementSubnet = raw.managementSubnet;
     if (typeof raw.igmpSnoopingEnabled === 'boolean') node.igmpSnoopingEnabled = raw.igmpSnoopingEnabled;

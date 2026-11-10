@@ -52,6 +52,8 @@ export const createNode = (type: NodeType, nodes: NetNode[], position?: { x: num
   for (let i = 0; i < DEFAULT_PORT_COUNT[type]; i++) {
     interfaces.push(createInterface(type, interfaces, usedMacs));
   }
+  // 新しいL3スイッチはSVI方式: ポートはIPを持たず(L2のポート)、SVIは空から始める
+  if (type === 'l3switch') interfaces.forEach(i => { i.ip = ''; i.subnet = ''; i.gateway = ''; });
   const pos = position ?? findFreePosition(nodes);
 
   return {
@@ -61,6 +63,7 @@ export const createNode = (type: NodeType, nodes: NetNode[], position?: { x: num
     y: pos.y,
     label: nextLabel(prefix, nodes),
     interfaces,
+    ...(type === 'l3switch' ? { svis: [] } : {}),
     arpTable: {},
     joinedGroups: [],
     ...(type === 'dhcp' ? {

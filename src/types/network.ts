@@ -16,6 +16,17 @@ export interface NetInterface {
   accessVlan?: number;
   /** スイッチ/L3スイッチのポートの種類。未設定は 'access'。トランクは全VLANをタグ付きで通す(許可リスト・ネイティブVLANは無い) */
   vlanMode?: 'access' | 'trunk';
+  /** ルーティング用ビューの中だけで使う印(SVI)。保存しない。値はそのSVIのVLAN番号 */
+  sviVlan?: number;
+}
+
+/** L3スイッチのSVI(VLANごとの論理インターフェース)。ケーブルの端にはならない */
+export interface Svi {
+  id: string;
+  vlan: number;
+  ip: string;
+  subnet: string;
+  mac: string;
 }
 
 export interface ListeningPort {
@@ -73,6 +84,8 @@ export interface NetNode {
   y: number;
   label: string;
   interfaces: NetInterface[];
+  /** L3スイッチのSVI。undefined=旧方式(ポートごとのIPでルーティング)、配列(空でも)=SVI方式 */
+  svis?: Svi[];
   arpTable?: Record<string, string>;
   igmpSnoopingEnabled?: boolean;
   igmpSnoopingAgingTime?: number; // seconds (default 30)

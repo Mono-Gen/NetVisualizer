@@ -1,5 +1,5 @@
 import type { NetNode, NetPacket, NetLink, EngineUpdate, VlanState } from '../types/network';
-import { patchVlanState, isVlanSwitch, egressTag } from '../logic/vlan';
+import { patchVlanState, isVlanSwitch, egressTag, portsInVlan, getVlanState } from '../logic/vlan';
 import { processL2 } from '../logic/L2Layer';
 import { processL3, determineNextHop } from '../logic/L3Layer';
 import { ARPEngine } from '../logic/ARPEngine';
@@ -8,10 +8,11 @@ import { IGMPHandler } from '../logic/IGMPHandler';
 import { UDPHandler } from '../logic/UDPHandler';
 import { TCPHandler } from '../logic/TCPHandler';
 import { DNSHandler } from '../logic/DNSHandler';
-import { generateId } from '../logic/networkUtils';
-import { isMulticastIP, multicastIPToMAC } from '../logic/MulticastEngine';
+import { generateId, lookupRoute } from '../logic/networkUtils';
+import { isMulticastIP, multicastIPToMAC, isMulticastMAC } from '../logic/MulticastEngine';
 import { isInSameSubnet } from '../logic/networkUtils';
 import { L2_TTL_DEFAULT } from '../logic/simLimits';
+import { isSviMode, sviForVlan, routingView } from '../logic/svi';
 import { natOutsideInterface, translateInbound, translateOutbound, shouldDropUntranslated } from '../logic/nat';
 
 let nextIcmpId = 1;
@@ -69,10 +70,12 @@ export class NetworkEngine {
       if (packet.senderIP && packet.senderMAC) {
         // Find the receiving interface (or default to first if unknown)
         const rxIface = receiverNode.interfaces.find(i => i.id === packet.toInterfaceId) || receiverNode.interfaces[0];
-        const targetIP = ['switch', 'l3switch'].includes(receiverNode.type) && receiverNode.managementIP
+        // SVI方式のL3スイッチは、受けたVLANのSVIのアドレスで判定する
+        const rxSvi = isSviMode(receiverNode) ? sviForVlan(receiverNode, l2Result.vlan ?? 1) : undefined;
+        const targetIP = rxSvi ? rxSvi.ip : ['switch', 'l3switch'].includes(receiverNode.type) && receiverNode.managementIP
           ? receiverNode.managementIP
           : rxIface?.ip || '';
-        const targetSubnet = ['switch', 'l3switch'].includes(receiverNode.type) && receiverNode.managementSubnet
+        const targetSubnet = rxSvi ? rxSvi.subnet : ['switch', 'l3switch'].includes(receiverNode.type) && receiverNode.managementSubnet
           ? receiverNode.managementSubnet
           : rxIface?.subnet || '255.255.255.0';
         
@@ -111,42 +114,52 @@ export class NetworkEngine {
     // 2. Protocol Dispatcher / L3 Forwarding
     if (l2Result.action === 'process' || l2Result.action === 'flood') {
       let protoUpdate: EngineUpdate = {};
+
+      // SVI方式のL3スイッチ: 受けたVLANのSVIを「受信インターフェース」として、ルーティング用ビューでL3を処理する。
+      // そのVLANにSVIが無ければ、L3には上げない(純粋なL2として扱う)。
+      let l3Node: NetNode = receiverNode;
+      if (isSviMode(receiverNode)) {
+        const svi = sviForVlan(receiverNode, l2Result.vlan ?? 1);
+        if (!svi) return update;
+        l3Node = routingView({ ...receiverNode, ...(update.nodes![receiverNode.id] || {}) });
+        packet = { ...packet, toInterfaceId: svi.id };
+      }
       
       // NAT(戻り): 外側ポートに届いた、変換表にある応答は、内側のアドレスへ戻してから通常の転送へ進める。
       // 表に無い外からの通信は破棄する(「外から中へは入れない」)。
-      const natOutside = natOutsideInterface(receiverNode);
+      const natOutside = natOutsideInterface(l3Node);
       if (natOutside && packet.toInterfaceId === natOutside.id) {
-        const restored = translateInbound(receiverNode, packet);
+        const restored = translateInbound(l3Node, packet);
         if (restored) {
           const port = (p: NetPacket) => (p.protocol === 'ICMP' ? p.icmpId : p.destinationPort);
           update.addLogs?.push({ ...packet, status: 'sent', info: `NAT: reply to ${packet.targetIP}:${port(packet) ?? 0} sent back to ${restored.targetIP}:${port(restored) ?? 0}` });
           packet = restored;
-        } else if (shouldDropUntranslated(receiverNode, packet, packet.toInterfaceId)) {
+        } else if (shouldDropUntranslated(l3Node, packet, packet.toInterfaceId)) {
           update.addLogs?.push({ ...packet, status: 'error', info: `NAT: dropped ${packet.protocol} from ${packet.senderIP} to ${packet.targetIP}: no matching translation (not a reply to an inside host)` });
           return update;
         }
       }
 
       // A. Check L3 (Routing/Filtering)
-      const l3Result = processL3(receiverNode, packet);
+      const l3Result = processL3(l3Node, packet);
       
       if (l3Result.action === 'drop') {
         if (l3Result.log) update.addLogs?.push({ ...packet, status: 'error', info: l3Result.log.info });
         if (l3Result.errorType) {
-          const res = this.prepareTransmission(receiverNode, ICMPHandler.createError(receiverNode, packet, l3Result.errorType), allNodes, allLinks);
+          const res = this.prepareTransmission(l3Node, ICMPHandler.createError(l3Node, packet, l3Result.errorType), allNodes, allLinks);
           this.mergeUpdates(update, res);
         }
         return update;
       }
 
       if (l3Result.action === 'reply') {
-        protoUpdate = ICMPHandler.handle(receiverNode, packet);
+        protoUpdate = ICMPHandler.handle(l3Node, packet);
       } else if (l3Result.action === 'forward' && l3Result.egressInterfaceId) {
         // Forwarding Logic
-        const egressIface = receiverNode.interfaces.find(i => i.id === l3Result.egressInterfaceId);
+        const egressIface = l3Node.interfaces.find(i => i.id === l3Result.egressInterfaceId);
         let routedPacket: NetPacket = { 
           ...packet, 
-          from: receiverNode.id, 
+          from: l3Node.id, 
           targetMAC: '', 
           senderMAC: egressIface?.mac || '', 
           originatingInterfaceId: l3Result.egressInterfaceId, 
@@ -154,32 +167,32 @@ export class NetworkEngine {
           status: 'pending' as const
         };
         // NAT(行き): 内側のポートで受けて、外側ポートから出すとき、送信元を書き換えて変換表に記録する
-        const natOut = natOutsideInterface(receiverNode);
+        const natOut = natOutsideInterface(l3Node);
         if (natOut && l3Result.egressInterfaceId === natOut.id && packet.toInterfaceId !== natOut.id) {
-          const tr = translateOutbound(receiverNode, routedPacket);
+          const tr = translateOutbound(l3Node, routedPacket);
           if (tr) {
             if (tr.created) {
               const port = (p: NetPacket) => (p.protocol === 'ICMP' ? p.icmpId : p.sourcePort);
               update.addLogs?.push({ ...packet, status: 'sent', info: `NAT: ${packet.senderIP}:${port(packet) ?? 0} is now ${tr.packet.senderIP}:${port(tr.packet) ?? 0}` });
             }
             routedPacket = tr.packet;
-            update.nodes![receiverNode.id] = { ...(update.nodes![receiverNode.id] || {}), natTable: tr.table };
+            update.nodes![l3Node.id] = { ...(update.nodes![l3Node.id] || {}), natTable: tr.table };
           }
         }
-        const res = this.prepareTransmission(receiverNode, routedPacket, allNodes, allLinks);
+        const res = this.prepareTransmission(l3Node, routedPacket, allNodes, allLinks);
         protoUpdate = res;
       } else {
         // Packet is FOR ME - Dispatch to specific protocol handler
         switch (packet.protocol) {
-          case 'ARP': protoUpdate = ARPEngine.handle(receiverNode, packet, pendingPackets); break;
-          case 'ICMP': protoUpdate = ICMPHandler.handle(receiverNode, packet); break;
+          case 'ARP': protoUpdate = ARPEngine.handle(l3Node, packet, pendingPackets); break;
+          case 'ICMP': protoUpdate = ICMPHandler.handle(l3Node, packet); break;
           case 'UDP': 
           case 'DHCP': 
           case 'DNS':
           case 'mDNS':
-            protoUpdate = UDPHandler.handle(receiverNode, packet); break;
-          case 'TCP': protoUpdate = TCPHandler.handle(receiverNode, packet); break;
-          case 'IGMP': protoUpdate = IGMPHandler.handle(receiverNode, packet, packet.toInterfaceId || ''); break;
+            protoUpdate = UDPHandler.handle(l3Node, packet); break;
+          case 'TCP': protoUpdate = TCPHandler.handle(l3Node, packet); break;
+          case 'IGMP': protoUpdate = IGMPHandler.handle(l3Node, packet, packet.toInterfaceId || ''); break;
         }
       }
 
@@ -191,14 +204,19 @@ export class NetworkEngine {
         pendingPacketsUpdate: protoUpdate.pendingPacketsUpdate
       });
 
-      if (update.nodes && update.nodes[receiverNode.id]) {
-        Object.assign(receiverNode, update.nodes[receiverNode.id]);
+      if (update.nodes && update.nodes[l3Node.id]) {
+        Object.assign(l3Node, update.nodes[l3Node.id]);
       }
 
       if (protoUpdate.addPackets) {
         const rawPackets = [...protoUpdate.addPackets];
         rawPackets.forEach(p => {
-          const res = this.prepareTransmission(receiverNode, p, allNodes, allLinks);
+          // SVI方式: すでにVLANの中へ入れ済みのフレーム(出口が物理ポート)は、もう一度組み立てずにそのまま出す
+          if (l3Node !== receiverNode && !l3Node.interfaces.some(i => i.id === p.originatingInterfaceId)) {
+            update.addPackets = [...(update.addPackets || []), p];
+            return;
+          }
+          const res = this.prepareTransmission(l3Node, p, allNodes, allLinks);
           this.mergeUpdates(update, res);
         });
       }
@@ -210,11 +228,22 @@ export class NetworkEngine {
   static prepareTransmission(sourceNode: NetNode, packetData: any, allNodes: NetNode[], allLinks: NetLink[], isInternalFlood: boolean = false): EngineUpdate {
     const update: EngineUpdate = { addPackets: [], addLogs: [], pendingPacketsUpdate: { add: [] } };
     
-    const sourceIface = packetData.originatingInterfaceId 
+    let sourceIface = packetData.originatingInterfaceId 
       ? sourceNode.interfaces.find(i => i.id === packetData.originatingInterfaceId)
       : sourceNode.interfaces.find(i => i.ip === packetData.senderIP) || sourceNode.interfaces[0];
 
     if (!sourceIface) return update;
+
+    // SVI: 自分が出す返信(pingの応答など)の宛先が、そのSVIのネットワークに無いときは、経路で出口のSVIを選び直す
+    // (送信元IPは、問われたSVIのIPのまま。実機の返信と同じ)
+    if (sourceIface.sviVlan !== undefined && !packetData.targetMAC && packetData.targetIP !== '255.255.255.255'
+        && !isInSameSubnet(sourceIface.ip, packetData.targetIP, sourceIface.subnet)) {
+      const route = lookupRoute(sourceNode, packetData.targetIP);
+      if (route && route.iface.id !== sourceIface.id) {
+        sourceIface = route.iface;
+        packetData = { ...packetData, originatingInterfaceId: route.iface.id, senderMAC: route.iface.mac };
+      }
+    }
 
     let packet: NetPacket = { 
       ...packetData, 
@@ -280,6 +309,12 @@ export class NetworkEngine {
       // General IP/TCP/UDP logs are now handled more specifically by their protocol handlers to avoid redundancy
     }
 
+    // SVIから出るフレーム: 物理リンクではなく、そのVLANの中へ入れる
+    if (sourceIface.sviVlan !== undefined) {
+      this.mergeUpdates(update, this.injectIntoVlan(sourceNode, sourceIface.sviVlan, packet, allNodes, allLinks));
+      return update;
+    }
+
     const link = allLinks.find(l => (l.from === sourceNode.id && l.fromInterfaceId === sourceIface.id) || (l.to === sourceNode.id && l.toInterfaceId === sourceIface.id));
     if (link) {
       packet.to = link.from === sourceNode.id ? link.to : link.from;
@@ -293,6 +328,42 @@ export class NetworkEngine {
       }
     }
 
+    return update;
+  }
+
+  /**
+   * SVIで作ったフレームを、VLAN v の中へ入れる(L3スイッチの内部から、そのVLANのポートへ出す)。
+   * 宛先MACがそのVLANのMAC表にあれば1つのポートへ、無い(またはブロードキャスト/マルチキャスト)なら、VLANの全ポートへ。
+   * 出すポートで、タグを符号化する(アクセスは外し、トランクは付ける)。
+   */
+  static injectIntoVlan(viewNode: NetNode, vlan: number, packet: NetPacket, allNodes: NetNode[], allLinks: NetLink[]): EngineUpdate {
+    const update: EngineUpdate = { addPackets: [] };
+    const real = allNodes.find(n => n.id === viewNode.id);
+    if (!real) return update;
+    // ポートは実ノード、学習状態(今回のフレームで更新されたもの)はビューから
+    const sw: NetNode = { ...real, vlanState: viewNode.vlanState };
+    const vlanPorts = portsInVlan(sw, vlan);
+    const norm = (m: string) => m.replace(/:/g, '').toLowerCase();
+    const macTable = getVlanState(sw, vlan).macTable || {};
+    const key = Object.keys(macTable).find(m => norm(m) === norm(packet.targetMAC || ''));
+    const learned = key !== undefined && packet.targetMAC !== 'FF:FF:FF:FF:FF:FF' && !isMulticastMAC(packet.targetMAC || '') ? macTable[key] : undefined;
+    const outPorts = learned && vlanPorts.includes(learned) ? [learned] : vlanPorts;
+    outPorts.forEach((portId, n) => {
+      const link = allLinks.find(l => (l.from === sw.id && l.fromInterfaceId === portId) || (l.to === sw.id && l.toInterfaceId === portId));
+      if (!link) return;
+      const out: NetPacket = {
+        ...packet,
+        id: n === 0 ? packet.id : generateId('p_'),
+        fromInterfaceId: portId,
+        originatingInterfaceId: portId,
+        l2ttl: L2_TTL_DEFAULT,
+        to: link.from === sw.id ? link.to : link.from,
+        toInterfaceId: link.from === sw.id ? link.toInterfaceId : link.fromInterfaceId
+      };
+      const tag = egressTag(sw, portId, vlan);
+      if (tag === undefined) delete out.vlanTag; else out.vlanTag = tag;
+      update.addPackets!.push(out);
+    });
     return update;
   }
 

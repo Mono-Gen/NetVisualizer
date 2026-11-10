@@ -2,6 +2,7 @@ import type { NetNode, NetPacket } from '../types/network';
 import { isMulticastMAC, isLinkLocalMulticast } from './MulticastEngine';
 import { IGMPHandler } from './IGMPHandler';
 import { portsInVlan, getVlanState, classifyIngress, isVlanSwitch } from './vlan';
+import { isSviMode, sviForVlan } from './svi';
 
 export interface L2ProcessingResult {
   action: 'drop' | 'forward' | 'process' | 'flood';
@@ -121,7 +122,11 @@ export const processL2 = (
     
     // L3Switch intercepts packets targeted to its own MAC
     if (currentNode.type === 'l3switch') {
-      const isMyMac = currentNode.interfaces.some(i => compareMAC(i.mac, packet.targetMAC || ''));
+      // SVI方式: 受けたVLANのSVIのMAC宛てだけをL3に上げる。旧方式: ポート自身のMAC宛て
+      const sviHere = isSviMode(currentNode) ? sviForVlan(currentNode, ingressVlan) : undefined;
+      const isMyMac = isSviMode(currentNode)
+        ? !!sviHere && compareMAC(sviHere.mac, packet.targetMAC || '')
+        : currentNode.interfaces.some(i => compareMAC(i.mac, packet.targetMAC || ''));
       if (isMyMac && !isBroadcast && !isMulticast) {
         return { ...result, action: 'process' };
       }
@@ -199,7 +204,7 @@ export const processL2 = (
         ...result, 
         action: 'flood', 
         forwardPorts: sameVlanPorts,
-        processAtL3: currentNode.type === 'l3switch' && isBroadcast 
+        processAtL3: currentNode.type === 'l3switch' && isBroadcast && (!isSviMode(currentNode) || !!sviForVlan(currentNode, ingressVlan))
       };
     } else {
       // Targeted forwarding
