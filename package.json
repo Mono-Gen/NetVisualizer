@@ -1,6 +1,8 @@
 {
   "name": "netvisualizer",
   "private": true,
+  "license": "MIT",
+  "author": "Mono-Gen",
   "version": "0.9.1",
   "type": "module",
   "main": "electron/main.js",

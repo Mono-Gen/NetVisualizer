@@ -7,7 +7,7 @@
 ## 🌟 Key Features
 
 ### 📡 Visual Network Building
-- **Interactive Canvas**: Drag and drop network nodes (PCs, Servers, Switches, Routers, and Hubs).
+- **Interactive Canvas**: Drag and drop network nodes (PCs, Servers, Switches, L3 Switches, Routers, Hubs, and DNS/DHCP servers).
 - **Beginner-Friendly Feedback**: "Request timed out" explanations, input checks for IP/mask/gateway, and automatic saving in your browser.
 - **Pan, Zoom & Fit**: Drag the canvas to move, zoom around the pointer, and fit every device into view with one button.
 - **Dynamic Linking**: Connect nodes with virtual Ethernet cables and manage multiple interfaces.
@@ -16,7 +16,7 @@
 
 - **English / Japanese UI**: Switch the screen language at any time (follows your browser by default).
 - **Light / Dark Theme**: Follows your system setting by default, with a manual switch.
-- **Sample Topologies**: Load ready-made networks (basic LAN, routed networks, IGMP Snooping) from the sidebar and start experimenting right away.
+- **Sample Topologies**: Load nine ready-made networks from the sidebar (basic LAN, routing, IGMP Snooping, a switch loop, multi-NIC PC, firewall, NAT, VLANs with a trunk, and an L3 switch routing between VLANs) and start experimenting right away.
 
 ### 🔬 Real-time Protocol Simulation
 - **Consistent Protocol Colors**: One soft color per protocol across packets, logs, tables and a built-in legend.

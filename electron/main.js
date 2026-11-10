@@ -17,6 +17,13 @@ function createWindow() {
     icon: path.join(__dirname, '../public/icon.png'), // アイコンがあれば
   });
 
+  // 外部への遷移・新しいウィンドウは、すべて拒否する(このアプリは自分の画面だけを表示する)
+  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  win.webContents.on('will-navigate', (event, url) => {
+    const isLocal = url.startsWith('file://') || url.startsWith('http://localhost:5173');
+    if (!isLocal) event.preventDefault();
+  });
+
   // 開発環境ではローカルホスト、本番環境ではビルドされた index.html を読み込む
   if (app.isPackaged) {
     win.loadFile(path.join(__dirname, '../dist/index.html'));
