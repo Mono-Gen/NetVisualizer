@@ -115,18 +115,18 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
       {isVlanSwitch(node) && (vlanSummary(node).length > 1 || trunkPortNames(node).length > 0) && (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '4px', width: 'max-content', maxWidth: '180px' }}>
           {vlanSummary(node).map(s => (
-            <span key={s.vlan} className="label-mono" style={{ fontSize: '11px', color: 'var(--text-dim)', textAlign: 'center', overflowWrap: 'anywhere' }}
+            <span key={s.vlan} className="label-mono" style={{ fontSize: '11px', color: 'var(--text-dim)', textAlign: 'center', overflowWrap: 'anywhere', background: 'var(--node-bg)', padding: '0 4px', borderRadius: '3px' }}
               title={`VLAN ${s.vlan}: ${s.ports.join(', ')}`}>VLAN {s.vlan}: {s.ports.join(', ')}</span>
           ))}
           {trunkPortNames(node).length > 0 && (
-            <span className="label-mono" style={{ fontSize: '11px', color: 'var(--text-dim)', textAlign: 'center', overflowWrap: 'anywhere' }}
+            <span className="label-mono" style={{ fontSize: '11px', color: 'var(--text-dim)', textAlign: 'center', overflowWrap: 'anywhere', background: 'var(--node-bg)', padding: '0 4px', borderRadius: '3px' }}
               title={`Trunk: ${trunkPortNames(node).join(', ')}`}>Trunk: {trunkPortNames(node).join(', ')}</span>
           )}
         </div>
       )}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '4px', gap: '2px' }}>
         {isSviMode(node) && (node.svis || []).filter(s => s.ip).map(s => (
-          <div key={s.id} title={`${sviName(s)} ${s.ip}`} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(var(--shade), 0.2)', padding: '2px 6px', borderRadius: '4px', maxWidth: '100%' }}>
+          <div key={s.id} title={`${sviName(s)} ${s.ip}`} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--node-bg)', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(var(--ink), 0.1)', maxWidth: '100%' }}>
             <span className="label-mono" style={{ fontSize: '11px', color: 'var(--text-dim)' }}>{sviName(s)}</span>
             <span className="label-mono" style={{ fontSize: '11px', color: 'var(--text-main)', fontWeight: 600 }}>{s.ip}</span>
           </div>

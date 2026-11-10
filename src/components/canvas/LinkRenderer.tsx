@@ -63,6 +63,9 @@ export const LinkRenderer: React.FC<LinkRendererProps> = ({
  * 文字は背景色の縁取り(ハロー)を付け、線やノードの上でも読めるようにする。
  */
 const LABEL_DISTANCE = 30;
+/** 十分に長いケーブルでは、ポート名を少し遠くへ置く(下辺に並ぶ機器名ラベルと重ならないように)。短いケーブルでは、両端の文字が重なるので近いまま */
+const LABEL_DISTANCE_LONG = 46;
+const LONG_LINK = 150;
 
 export const LinkPortLabels: React.FC<{ link: NetLink; nodes: NetNode[] }> = ({ link, nodes }) => {
   const fromNode = nodes.find((n) => n.id === link.from);
@@ -77,11 +80,12 @@ export const LinkPortLabels: React.FC<{ link: NetLink; nodes: NetNode[] }> = ({ 
   const dist = Math.hypot(dx, dy) || 1;
   // 線に沿って相手側へ寄せ、さらに線に直交する方向へずらして、線そのものと文字が重ならないようにする
   const nx = -dy / dist, ny = dx / dist;
-  const at = (p: { x: number; y: number }, sign: number) => ({
-    x: p.x + sign * (dx / dist) * LABEL_DISTANCE + nx * 10,
-    y: p.y + sign * (dy / dist) * LABEL_DISTANCE + ny * 10
+  const distance = dist >= LONG_LINK ? LABEL_DISTANCE_LONG : LABEL_DISTANCE;
+  const at = (p: { x: number; y: number }, sign: number, d: number) => ({
+    x: p.x + sign * (dx / dist) * d + nx * 10,
+    y: p.y + sign * (dy / dist) * d + ny * 10
   });
-  const a = at(p1, 1), b = at(p2, -1);
+  const a = at(p1, 1, distance), b = at(p2, -1, distance);
   const style: React.CSSProperties = {
     fill: 'var(--text-main)', stroke: 'rgba(var(--panel-rgb), 0.9)', strokeWidth: 3, paintOrder: 'stroke',
     pointerEvents: 'none', userSelect: 'none'
