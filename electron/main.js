@@ -14,7 +14,8 @@ function createWindow() {
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.cjs'),
     },
-    icon: path.join(__dirname, '../public/icon.png'), // アイコンがあれば
+    // 配布版では、public/ の中身は dist/ へコピーされる(public/ は同梱されない)
+    icon: path.join(__dirname, app.isPackaged ? '../dist/icon.png' : '../public/icon.png'),
   });
 
   // 外部への遷移・新しいウィンドウは、すべて拒否する(このアプリは自分の画面だけを表示する)
