@@ -111,11 +111,12 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
         );
       })}
       <span className="label-mono" style={{ marginTop: `${8 + getPortStripExtra(node.interfaces.length)}px`, background: 'var(--node-bg)', padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(var(--ink), 0.1)', fontSize: '11px', whiteSpace: 'nowrap' }}>{node.label}</span>
-      {/* VLANを使っているスイッチだけ、VLANごとのポートの要約を出す(狭い幅でも折り返す) */}
+      {/* VLANを使っているスイッチだけ、VLANごとのポートの要約を、ノードの右に出す。
+          下辺のポートから下へ広がるケーブルと、重ならないようにするため(ノードの横は空いている) */}
       {isVlanSwitch(node) && (vlanSummary(node).length > 1 || trunkPortNames(node).length > 0) && (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '4px', width: 'max-content', maxWidth: '180px' }}>
+        <div style={{ position: 'absolute', left: '76px', top: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: 'max-content', maxWidth: '180px' }}>
           {vlanSummary(node).map(s => (
-            <span key={s.vlan} className="label-mono" style={{ fontSize: '11px', color: 'var(--text-dim)', textAlign: 'center', overflowWrap: 'anywhere', background: 'var(--node-bg)', padding: '0 4px', borderRadius: '3px' }}
+            <span key={s.vlan} className="label-mono" style={{ fontSize: '11px', color: 'var(--text-dim)', textAlign: 'left', overflowWrap: 'anywhere', background: 'var(--node-bg)', padding: '0 4px', borderRadius: '3px' }}
               title={`VLAN ${s.vlan}: ${s.ports.join(', ')}`}>VLAN {s.vlan}: {s.ports.join(', ')}</span>
           ))}
           {trunkPortNames(node).length > 0 && (
@@ -124,13 +125,18 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
           )}
         </div>
       )}
+      {/* SVIのアドレスは、ノードの左に出す(右はVLANの要約) */}
+      {isSviMode(node) && (node.svis || []).some(s => s.ip) && (
+        <div style={{ position: 'absolute', right: '76px', top: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px', width: 'max-content' }}>
+          {(node.svis || []).filter(s => s.ip).map(s => (
+            <div key={s.id} title={`${sviName(s)} ${s.ip}`} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--node-bg)', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(var(--ink), 0.1)' }}>
+              <span className="label-mono" style={{ fontSize: '11px', color: 'var(--text-dim)' }}>{sviName(s)}</span>
+              <span className="label-mono" style={{ fontSize: '11px', color: 'var(--text-main)', fontWeight: 600 }}>{s.ip}</span>
+            </div>
+          ))}
+        </div>
+      )}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '4px', gap: '2px' }}>
-        {isSviMode(node) && (node.svis || []).filter(s => s.ip).map(s => (
-          <div key={s.id} title={`${sviName(s)} ${s.ip}`} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--node-bg)', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(var(--ink), 0.1)', maxWidth: '100%' }}>
-            <span className="label-mono" style={{ fontSize: '11px', color: 'var(--text-dim)' }}>{sviName(s)}</span>
-            <span className="label-mono" style={{ fontSize: '11px', color: 'var(--text-main)', fontWeight: 600 }}>{s.ip}</span>
-          </div>
-        ))}
         {!isSviMode(node) && ['pc', 'router', 'server', 'dns', 'l3switch'].includes(node.type) && node.interfaces.map(iface => (
           <div key={iface.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'rgba(var(--shade), 0.2)', padding: '2px 6px', borderRadius: '4px' }}>
             {iface.ip && <span className="label-mono" style={{ fontSize: '11px', color: 'var(--text-main)', fontWeight: 600 }}>{iface.ip}</span>}

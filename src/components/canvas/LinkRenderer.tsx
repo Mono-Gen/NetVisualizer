@@ -64,8 +64,8 @@ export const LinkRenderer: React.FC<LinkRendererProps> = ({
  */
 const LABEL_DISTANCE = 30;
 /** 十分に長いケーブルでは、ポート名を少し遠くへ置く(下辺に並ぶ機器名ラベルと重ならないように)。短いケーブルでは、両端の文字が重なるので近いまま */
-const LABEL_DISTANCE_LONG = 46;
-const LONG_LINK = 150;
+const LABEL_DISTANCE_LONG = 60;
+const LONG_LINK = 160;
 
 export const LinkPortLabels: React.FC<{ link: NetLink; nodes: NetNode[] }> = ({ link, nodes }) => {
   const fromNode = nodes.find((n) => n.id === link.from);
