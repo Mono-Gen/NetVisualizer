@@ -113,7 +113,7 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
       <span className="label-mono" style={{ marginTop: `${8 + getPortStripExtra(node.interfaces.length)}px`, background: 'var(--node-bg)', padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(var(--ink), 0.1)', fontSize: '11px', whiteSpace: 'nowrap' }}>{node.label}</span>
       {/* VLANを使っているスイッチだけ、VLANごとのポートの要約を出す(狭い幅でも折り返す) */}
       {isVlanSwitch(node) && (vlanSummary(node).length > 1 || trunkPortNames(node).length > 0) && (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '4px', maxWidth: '180px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '4px', width: 'max-content', maxWidth: '180px' }}>
           {vlanSummary(node).map(s => (
             <span key={s.vlan} className="label-mono" style={{ fontSize: '11px', color: 'var(--text-dim)', textAlign: 'center', overflowWrap: 'anywhere' }}
               title={`VLAN ${s.vlan}: ${s.ports.join(', ')}`}>VLAN {s.vlan}: {s.ports.join(', ')}</span>
