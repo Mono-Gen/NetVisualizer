@@ -5,6 +5,8 @@ import { DNSConfig } from './settings/DNSConfig';
 import { FirewallConfig } from './settings/FirewallConfig';
 import { NatConfig } from './settings/NatConfig';
 import { VlanConfig } from './settings/VlanConfig';
+import { SviConfig } from './settings/SviConfig';
+import { isSviMode } from '../logic/svi';
 import { activeVlans, getVlanState, allMacEntries, allSnoopingEntries, trunkPortNames } from '../logic/vlan';
 import { MulticastConfig } from './settings/MulticastConfig';
 import { ServiceConfig } from './settings/ServiceConfig';
@@ -97,6 +99,8 @@ export const NodeSettings: React.FC = () => {
         {['switch', 'l3switch'].includes(node.type) && (
           <SwitchIGMPConfig node={node} />
         )}
+
+        {isSviMode(node) && <SviConfig node={node} />}
 
         {['switch', 'l3switch'].includes(node.type) && (
           <VlanConfig node={node} />

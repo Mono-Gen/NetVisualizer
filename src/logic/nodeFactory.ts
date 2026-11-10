@@ -11,7 +11,7 @@ export const NODE_PALETTE: { type: NodeType; label: string }[] = [
   { type: 'pc', label: 'PC' },
   { type: 'router', label: 'Router' },
   { type: 'switch', label: 'Switch' },
-  // L3スイッチはVLAN+SVIが入るまでパレットから外す(型・ロジックは残す。保存データの読込は可能)
+  { type: 'l3switch', label: 'L3 Switch' },
   { type: 'server', label: 'Server' },
   { type: 'hub', label: 'Hub' },
   { type: 'dns', label: 'DNS Server' },

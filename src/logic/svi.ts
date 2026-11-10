@@ -2,7 +2,8 @@ import type { NetNode, NetInterface, Svi } from '../types/network';
 import { isIPv4 } from './commandForm';
 import { isValidMask } from './ipValidation';
 import { ipToLong, prefixLength } from './networkUtils';
-import { isValidVlanId } from './vlan';
+import { isValidVlanId, vlanOfInterface, isTrunkInterface, DEFAULT_VLAN } from './vlan';
+import { generateUniqueMac, collectMacs } from './interfaceFactory';
 
 /**
  * L3スイッチのSVI(VLANごとの論理インターフェース)の純粋関数。
@@ -75,4 +76,23 @@ export const sanitizeSvis = (raw: unknown[], usedMacs: Set<string>): Svi[] => {
     out.push({ id: o.id, vlan: o.vlan, ip: o.ip, subnet: o.subnet, mac: o.mac });
   }
   return out;
+};
+
+/** 次に作るSVIのVLAN: SVIがまだ無いアクセスVLANのうち最小のもの。無ければ、使われていない最小の番号 */
+export const nextSviVlan = (node: NetNode): number => {
+  const have = new Set((node.svis || []).map(s => s.vlan));
+  const used = [...new Set(node.interfaces.filter(i => !isTrunkInterface(i)).map(vlanOfInterface))].sort((a, b) => a - b);
+  const free = used.find(v => !have.has(v));
+  if (free !== undefined) return free;
+  let v = DEFAULT_VLAN;
+  while (have.has(v)) v++;
+  return v;
+};
+
+/** 新しいSVI(IPは空。全機器のMAC・既存SVIのMACと重ならないMACを振る) */
+export const createSvi = (node: NetNode, allNodes: NetNode[]): Svi => {
+  const macs = collectMacs(allNodes);
+  allNodes.forEach(n => (n.svis || []).forEach(s => macs.add(s.mac.toUpperCase())));
+  const vlan = nextSviVlan(node);
+  return { id: `${node.id}_svi_${vlan}_${Math.random().toString(36).slice(2, 7)}`, vlan, ip: '', subnet: '255.255.255.0', mac: generateUniqueMac(macs) };
 };

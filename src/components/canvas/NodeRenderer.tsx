@@ -5,6 +5,7 @@ import { NodeIcon } from './NodeIcon';
 import { PortHandle } from './PortHandle';
 import { getPortCenter, getPortStripExtra, type PortRef } from '../../logic/portLayout';
 import { useT } from '../../i18n/useT';
+import { isSviMode, sviName } from '../../logic/svi';
 import { isVlanSwitch, vlanOfInterface, vlanSummary, trunkPortNames, isTrunkInterface, allMacEntries, allSnoopingEntries, activeVlans } from '../../logic/vlan';
 
 /** VLANを使っている(複数のVLANがある、またはトランクがある)スイッチでは、表の行にVLAN番号を添える */
@@ -124,7 +125,13 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
         </div>
       )}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '4px', gap: '2px' }}>
-        {['pc', 'router', 'server', 'dns', 'l3switch'].includes(node.type) && node.interfaces.map(iface => (
+        {isSviMode(node) && (node.svis || []).filter(s => s.ip).map(s => (
+          <div key={s.id} title={`${sviName(s)} ${s.ip}`} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(var(--shade), 0.2)', padding: '2px 6px', borderRadius: '4px', maxWidth: '100%' }}>
+            <span className="label-mono" style={{ fontSize: '11px', color: 'var(--text-dim)' }}>{sviName(s)}</span>
+            <span className="label-mono" style={{ fontSize: '11px', color: 'var(--text-main)', fontWeight: 600 }}>{s.ip}</span>
+          </div>
+        ))}
+        {!isSviMode(node) && ['pc', 'router', 'server', 'dns', 'l3switch'].includes(node.type) && node.interfaces.map(iface => (
           <div key={iface.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'rgba(var(--shade), 0.2)', padding: '2px 6px', borderRadius: '4px' }}>
             {iface.ip && <span className="label-mono" style={{ fontSize: '11px', color: 'var(--text-main)', fontWeight: 600 }}>{iface.ip}</span>}
             <span className="label-mono" style={{ fontSize: '11px', color: 'rgba(var(--ink), 0.6)', letterSpacing: '0.05em' }}>{iface.mac}</span>

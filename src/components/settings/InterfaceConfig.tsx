@@ -3,6 +3,7 @@ import type { NetNode, NetInterface } from '../../types/network';
 import { useNetworkStore } from '../../store/useNetworkStore';
 import { PORT_LIMITS, canChangePortCount } from '../../logic/interfaceFactory';
 import { DEFAULT_METRIC } from '../../logic/networkUtils';
+import { isSviMode } from '../../logic/svi';
 import { interfaceIssues, type IfaceIssues } from '../../logic/ipValidation';
 import type { DictKey } from '../../i18n/en';
 import { useT } from '../../i18n/useT';
@@ -37,7 +38,7 @@ export const InterfaceConfig: React.FC<InterfaceConfigProps> = ({ node, mode, on
   const issueOf = (iface: NetInterface) => interfaceIssues(iface, nodes);
   const canHaveMultipleInterfaces = canChangePortCount(node.type);
   const limits = PORT_LIMITS[node.type];
-  const isL3Node = ['pc', 'router', 'server', 'dns', 'l3switch'].includes(node.type);
+  const isL3Node = ['pc', 'router', 'server', 'dns', 'l3switch'].includes(node.type) && !isSviMode(node);
   // NICが2つ以上のL3ノードでは、送信に使うNICを選ぶ規則(メトリックなど)が意味を持つ
   const isMultiNic = isL3Node && node.interfaces.length > 1;
 
@@ -75,6 +76,8 @@ export const InterfaceConfig: React.FC<InterfaceConfigProps> = ({ node, mode, on
         )}
       </div>
       
+      {isSviMode(node) && <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginBottom: '10px', lineHeight: 1.5, overflowWrap: 'anywhere' }}>{t('svi.portsNote')}</div>}
+
       {isMultiNic && (
         <details style={{ marginBottom: '10px', fontSize: '11px', color: 'var(--text-dim)' }}>
           <summary style={{ cursor: 'pointer', fontWeight: 700, color: 'var(--text-main)' }}>{t('iface.ruleTitle')}</summary>

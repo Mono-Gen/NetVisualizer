@@ -3,6 +3,7 @@ import type { NetNode } from '../../types/network';
 import { useNetworkStore } from '../../store/useNetworkStore';
 import { IGMPHandler } from '../../logic/IGMPHandler';
 import { activeVlans, getVlanState } from '../../logic/vlan';
+import { isSviMode } from '../../logic/svi';
 import { AlertCircle, Cpu, RefreshCw, Layers } from 'lucide-react';
 import { useT } from '../../i18n/useT';
 
@@ -56,7 +57,7 @@ export const SwitchIGMPConfig: React.FC<SwitchIGMPConfigProps> = ({ node }) => {
   };
 
   const toggleQuerier = () => {
-    if (!node.managementIP) return;
+    if (isUnmanaged) return;
     const isEnabled = !!node.igmpQuerierEnabled;
     // 切り替えたら、全VLANの選挙の状態を戻す
     const vlanState: NonNullable<NetNode['vlanState']> = {};
@@ -70,7 +71,9 @@ export const SwitchIGMPConfig: React.FC<SwitchIGMPConfigProps> = ({ node }) => {
 
   const isSnoopingEnabled = node.igmpSnoopingEnabled !== false;
   const isQuerierEnabled = !!node.igmpQuerierEnabled;
-  const isUnmanaged = !node.managementIP;
+  const sviMode = isSviMode(node);
+  // SVI方式: 管理IPの代わりにSVIが機器のアドレス。SVIが1つも無ければ「管理なし」
+  const isUnmanaged = sviMode ? !(node.svis || []).some(s => !!s.ip) : !node.managementIP;
 
   return (
     <div className="switch-igmp-config animate-slide-up" style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '8px' }}>
@@ -87,21 +90,21 @@ export const SwitchIGMPConfig: React.FC<SwitchIGMPConfigProps> = ({ node }) => {
           <div style={{ display: 'flex', gap: '8px', color: 'var(--proto-igmp-text)', fontSize: '11px', lineHeight: '1.4' }}>
             <AlertCircle size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
             <div>
-              {t('igmp.unmanagedNote')}
+              {sviMode ? t('svi.unmanagedNote') : t('igmp.unmanagedNote')}
             </div>
           </div>
         ) : (
           <div style={{ display: 'flex', gap: '8px', color: 'var(--proto-igmp-text)', fontSize: '11px', lineHeight: '1.4' }}>
             <Layers size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
             <div>
-              {t('igmp.managedNote')}
+              {sviMode ? t('svi.managedNote') : t('igmp.managedNote')}
             </div>
           </div>
         )}
       </div>
 
-      {/* 2. Management IP & Subnet Settings */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      {/* 2. Management IP & Subnet Settings (SVI方式では、SVIがアドレスなので出さない) */}
+      {!sviMode && <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         <h4 className="heading-sm" style={{ fontSize: '11px', marginBottom: '0' }}>{t('igmp.mgmtTitle')}</h4>
         
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
@@ -128,7 +131,7 @@ export const SwitchIGMPConfig: React.FC<SwitchIGMPConfigProps> = ({ node }) => {
             />
           </div>
         </div>
-      </div>
+      </div>}
 
       {/* 3. IGMP Snooping Config */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '8px 0', borderBottom: '1px solid rgba(var(--ink), 0.05)' }}>
