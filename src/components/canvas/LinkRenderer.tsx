@@ -1,6 +1,6 @@
 import React from 'react';
 import type { NetNode, NetLink } from '../../types/network';
-import { getPortPosition } from '../../logic/portLayout';
+import { getPortPosition, getNodeLabelBox, boxesOverlap } from '../../logic/portLayout';
 import { useT } from '../../i18n/useT';
 
 interface LinkRendererProps {
@@ -85,7 +85,18 @@ export const LinkPortLabels: React.FC<{ link: NetLink; nodes: NetNode[] }> = ({ 
     x: p.x + sign * (dx / dist) * d + nx * 10,
     y: p.y + sign * (dy / dist) * d + ny * 10
   });
-  const a = at(p1, 1, distance), b = at(p2, -1, distance);
+  // 文字が、そのノードの機器名ラベルに重なるときは、線に沿って少しずつ遠ざける
+  const place = (p: { x: number; y: number }, sign: number, node: NetNode, name: string) => {
+    const w = name.length * 6.6 + 6;
+    const labelBox = getNodeLabelBox(node);
+    let pos = at(p, sign, distance);
+    for (let step = 0; step < 6; step++) {
+      if (!boxesOverlap({ x: pos.x - w / 2, y: pos.y - 11, w, h: 14 }, labelBox, 2)) break;
+      pos = at(p, sign, distance + (step + 1) * 8);
+    }
+    return pos;
+  };
+  const a = place(p1, 1, fromNode, fromIface?.name || 'P'), b = place(p2, -1, toNode, toIface?.name || 'P');
   const style: React.CSSProperties = {
     fill: 'var(--text-main)', stroke: 'rgba(var(--panel-rgb), 0.9)', strokeWidth: 3, paintOrder: 'stroke',
     pointerEvents: 'none', userSelect: 'none'

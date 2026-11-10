@@ -35,6 +35,17 @@ export const getPortCenter = (node: NetNode, index: number): Point => {
   };
 };
 
+export interface Box { x: number; y: number; w: number; h: number }
+
+/** 機器名ラベル(ノード本体の下、ポートの列の下に出る)のおおよその範囲。ポート名の文字が、これと重ならないよう避けるのに使う */
+export const getNodeLabelBox = (node: NetNode): Box => {
+  const w = 16 + node.label.length * 6.6; // 等幅11px + 左右の余白
+  return { x: node.x + NODE_BODY / 2 - w / 2, y: node.y + NODE_BODY + 8 + getPortStripExtra(node.interfaces.length), w, h: 20 };
+};
+
+export const boxesOverlap = (a: Box, b: Box, margin = 0): boolean =>
+  a.x < b.x + b.w + margin && a.x + a.w + margin > b.x && a.y < b.y + b.h + margin && a.y + a.h + margin > b.y;
+
 /** インターフェースIDからポート座標を引く。見つからなければノード中心 */
 export const getPortPosition = (node: NetNode, ifaceId?: string): Point => {
   const index = ifaceId ? node.interfaces.findIndex(i => i.id === ifaceId) : -1;
